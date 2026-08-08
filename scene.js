@@ -127,7 +127,8 @@
       // hot pink, cyan, neon purple, electric yellow, neon green
       neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d'],
       roof: '#090318', roofLit: '#2a0f5c', roofSpeck: '#150733',
-      rail: '#060210',
+      rail: '#150a32', railLit: '#4a2490', railDark: '#05010e',
+      bounce: ['#ff2bb0', '#00f0ff', '#b026ff'],
       wet: ['#ff2bb0', '#00f0ff', '#b026ff'],
       cat: '#060214',
       catRim: '#b026ff',
@@ -159,7 +160,8 @@
       roof: '#4b5468',
       roofLit: '#5f6a80',
       roofSpeck: '#556076',
-      rail: '#394152',
+      rail: '#3a4254', railLit: '#6b7890', railDark: '#232a37',
+      bounce: ['#8fa8c4', '#a0b4cc', '#7e94b0'],
       wet: ['#8fa8c4', '#a0b4cc', '#7e94b0'],
       cat: '#333b4c',
       catRim: '#5c6a80',
@@ -206,13 +208,39 @@
     }
 
     // city glow pooling above the skyline
-    for (let y = SKYLINE - 120; y < SKYLINE; y++) {
-      const t = 1 - (SKYLINE - y) / 120
+    for (let y = SKYLINE - 150; y < SKYLINE; y++) {
+      const t = 1 - (SKYLINE - y) / 150
       const brow = BAYER[y & 3]
       for (let x = 0; x < W; x++) {
-        if (t * t * 0.7 > (brow[x & 3] + 0.5) / 16) {
+        if (t * t * 0.85 > (brow[x & 3] + 0.5) / 16) {
           g.fillStyle = T.haze
           g.fillRect(x, y, 1, 1)
+        }
+      }
+    }
+
+    /* Coloured pools in that haze. A single flat haze colour is what
+       made the night sky read as merely dark; broad, very sparse
+       patches of sign colour bleeding upward give it life without
+       lifting the base value. */
+    if (T.bounce) {
+      const rnd = mulberry32(6161)
+      for (let i = 0; i < 26; i++) {
+        const cx = Math.floor(rnd() * W)
+        const cw = 90 + Math.floor(rnd() * 190)
+        const ch = 60 + Math.floor(rnd() * 90)
+        const col = T.bounce[Math.floor(rnd() * T.bounce.length)]
+        for (let y = SKYLINE - ch; y < SKYLINE; y++) {
+          const ty = 1 - (SKYLINE - y) / ch
+          const brow = BAYER[y & 3]
+          for (let x = cx; x < cx + cw && x < W; x++) {
+            const tx = 1 - Math.abs(x - (cx + cw / 2)) / (cw / 2)
+            const t = ty * tx
+            if (t > 0 && t * t * 0.5 > (brow[x & 3] + 0.5) / 16) {
+              g.fillStyle = col
+              g.fillRect(x, y, 1, 1)
+            }
+          }
         }
       }
     }
@@ -342,6 +370,41 @@
     return { buf, windows, fill: o.fill }
   }
 
+  /* A lit signboard standing on a building's roof, with a support leg
+     and a dithered halo. Drawn into a skyline buffer so it scrolls. */
+  function signboard(g, x, y) {
+    const w = 78
+    const h = 28
+
+    // halo
+    for (let yy = y - 8; yy < y + h + 8; yy++) {
+      const brow = BAYER[yy & 3]
+      for (let xx = x - 8; xx < x + w + 8; xx++) {
+        if (xx < 0 || xx >= LOOP_W) continue
+        const dx = Math.max(0, Math.max(x - xx, xx - (x + w - 1)))
+        const dy = Math.max(0, Math.max(y - yy, yy - (y + h - 1)))
+        const d = Math.hypot(dx, dy)
+        if (d === 0 || d > 8) continue
+        if ((1 - d / 8) * 0.8 > (brow[xx & 3] + 0.5) / 16) {
+          g.fillStyle = T.sign
+          g.fillRect(xx, yy, 1, 1)
+        }
+      }
+    }
+
+    // support leg
+    g.fillStyle = T.signBox
+    g.fillRect(x + w / 2 - 2, y + h, 4, 16)
+
+    // box and lettering bars
+    g.fillStyle = T.signBox
+    g.fillRect(x, y, w, h)
+    g.fillStyle = T.sign
+    g.fillRect(x + 2, y + 2, w - 4, 2)
+    g.fillRect(x + 2, y + h - 4, w - 4, 2)
+    for (let i = 0; i < 7; i++) g.fillRect(x + 7 + i * 10, y + 8, 6, 13)
+  }
+
   function buildSkyline() {
     city = [
       buildCity(4411, {
@@ -363,6 +426,11 @@
         ...T.city[2],
       }),
     ]
+
+    // signboards on the mid skyline, spread so one is usually in frame
+    signboard(city[1].buf.x, 210, SKYLINE - 168)
+    signboard(city[1].buf.x, 980, SKYLINE - 142)
+    signboard(city[1].buf.x, 1560, SKYLINE - 186)
   }
 
   /* ---- Clouds: small flat slabs, as in the reference ---- */
@@ -411,12 +479,60 @@
       g.fillRect(x, y, 1 + Math.floor(rnd() * 2), 1)
     }
 
-    // parapet railing along the roof edge
-    const railY = ROOF_TOP + 10
+    /* Parapet.
+       A flat bar reads as a sticker. This is built as a solid with
+       thickness: a coping stone whose TOP face catches light and whose
+       FRONT face falls into shadow, a dark undercut beneath it, then
+       balusters with a lit left edge and a shadowed right edge, and a
+       bottom rail treated the same way. */
+    const capY = ROOF_TOP + 3
+
+    // coping — top face, front face, undercut
+    g.fillStyle = T.railLit
+    g.fillRect(0, capY, W, 3)
     g.fillStyle = T.rail
-    g.fillRect(0, railY, W, 3)
-    g.fillRect(0, railY + 16, W, 2)
-    for (let x = 2; x < W; x += 22) g.fillRect(x, railY, 2, 18)
+    g.fillRect(0, capY + 3, W, 6)
+    g.fillStyle = T.railDark
+    g.fillRect(0, capY + 9, W, 3)
+
+    // balusters, each with its own lit and shadowed side
+    for (let x = 5; x < W; x += 27) {
+      g.fillStyle = T.rail
+      g.fillRect(x, capY + 12, 6, 22)
+      g.fillStyle = T.railLit
+      g.fillRect(x, capY + 12, 1, 22)
+      g.fillStyle = T.railDark
+      g.fillRect(x + 5, capY + 12, 1, 22)
+    }
+
+    // bottom rail
+    g.fillStyle = T.railLit
+    g.fillRect(0, capY + 34, W, 2)
+    g.fillStyle = T.rail
+    g.fillRect(0, capY + 36, W, 5)
+    g.fillStyle = T.railDark
+    g.fillRect(0, capY + 41, W, 2)
+
+    /* Neon bounce. The city throws coloured light up onto the coping and
+       across the near deck; dithered patches of sign colour along the
+       cap are what stop the whole foreground reading as flat black. */
+    for (let i = 0; i < 34; i++) {
+      const bx = Math.floor(rnd() * W)
+      const bw = 14 + Math.floor(rnd() * 46)
+      const col = T.bounce[Math.floor(rnd() * T.bounce.length)]
+      for (let k = 0; k < 4; k++) {
+        const y = capY + k
+        // fade in from both ends so a patch is a pool, not a bar
+        const t = (1 - k / 4) * 0.34
+        for (let x = bx; x < bx + bw && x < W; x++) {
+          const edge = 1 - Math.abs(x - (bx + bw / 2)) / (bw / 2)
+          if (t * edge > (BAYER[y & 3][x & 3] + 0.5) / 16) {
+            g.fillStyle = col
+            g.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+    }
 
     /* Wet asphalt. Vertical neon streaks bleeding down the roof, which
        is what makes the surface read as reflective rather than as a
@@ -478,17 +594,10 @@
     g.fillStyle = T.roofLit
     g.fillRect(926, ROOF_TOP + 20, 8, 2)
 
-    // a lit sign box on the left parapet
-    g.fillStyle = T.signBox
-    g.fillRect(118, ROOF_TOP - 34, 74, 26)
-    g.fillStyle = T.sign
-    g.fillRect(120, ROOF_TOP - 32, 70, 1)
-    g.fillRect(120, ROOF_TOP - 11, 70, 1)
-    for (let i = 0; i < 7; i++) {
-      g.fillRect(126 + i * 9, ROOF_TOP - 28, 5, 13)
-    }
-    g.fillStyle = T.rail
-    g.fillRect(150, ROOF_TOP - 8, 4, 12)
+    /* The lit sign used to live here, on the static rooftop, so it sat
+       still while the city slid past behind it. It belongs to a
+       building, so it is drawn into a skyline layer instead and
+       parallaxes with it. */
   }
 
   function buildStatic() {
@@ -812,7 +921,7 @@
      that its silhouette falls against the lit skyline rather than
      against the near-black rooftop, where it would vanish. */
   const CAT_X = 790
-  const CAT_BASE = ROOF_TOP + 8
+  const CAT_BASE = ROOF_TOP + 6
 
   function drawCat() {
     const c = T.cat
