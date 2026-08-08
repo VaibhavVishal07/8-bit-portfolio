@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vaibhav Vishal — Portfolio</title>
+<meta name="description" content="An 8-bit game title screen, as a personal portfolio landing page." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400..700&display=swap"
+  rel="stylesheet"
+/>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- The whole background is one 384x216 pixel canvas, drawn in
+     scene.js and upscaled nearest-neighbour to fill the viewport. -->
+<canvas id="scene" aria-hidden="true"></canvas>
+
+<!-- Weather draws on its own canvas *above* the panel, so rain and snow
+     pass in front of it and can land on its top edge. -->
+<canvas id="weather" aria-hidden="true"></canvas>
+
+<div class="controls">
+  <button class="btn" id="modeToggle" type="button" aria-pressed="false">
+    <span class="btn__glyph btn__glyph--mode" aria-hidden="true"></span>
+    <span class="btn__label">NIGHT</span>
+  </button>
+
+  <button class="btn" id="rainToggle" type="button" aria-pressed="false">
+    <span class="btn__glyph btn__glyph--rain" aria-hidden="true"></span>
+    <span class="btn__label">RAIN OFF</span>
+  </button>
+
+  <button class="btn" id="snowToggle" type="button" aria-pressed="false">
+    <span class="btn__glyph btn__glyph--snow" aria-hidden="true"></span>
+    <span class="btn__label">SNOW OFF</span>
+  </button>
+</div>
+
+<main class="stage">
+  <div class="window">
+
+    <div class="window__bar">
+      <span class="window__icon" aria-hidden="true"></span>
+      <p class="window__title">NIGHTFALL.EXE</p>
+      <span class="winbtns" aria-hidden="true">
+        <span class="winbtn winbtn--min"><i></i></span>
+        <span class="winbtn winbtn--max"><i></i></span>
+        <span class="winbtn winbtn--close"><i></i></span>
+      </span>
+    </div>
+
+    <div class="screen">
+      <div class="scanlines" aria-hidden="true"></div>
+
+      <div class="screen__inner">
+        <h1 class="wordmark">VAIBHAV<br />VISHAL</h1>
+
+        <p class="role">YOUR ROLE &middot; PORTFOLIO 2026</p>
+
+        <nav class="menu" aria-label="Main">
+          <ul>
+            <li>
+              <a href="#work">
+                <svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg>
+                <span class="menu__num">1</span> WORK
+              </a>
+            </li>
+            <li>
+              <a href="#about">
+                <svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg>
+                <span class="menu__num">2</span> ABOUT
+              </a>
+            </li>
+            <li>
+              <a href="#contact">
+                <svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg>
+                <span class="menu__num">3</span> CONTACT
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <p class="press">PRESS ANY KEY</p>
+        <p class="copyright">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 12x11 heart, used as the menu cursor -->
+    <g id="heart-shape">
+      <rect x="2" y="0"  width="3"  height="1" fill="#7a1520" />
+      <rect x="7" y="0"  width="3"  height="1" fill="#7a1520" />
+      <rect x="1" y="1"  width="1"  height="1" fill="#7a1520" />
+      <rect x="2" y="1"  width="3"  height="1" fill="#ff9a9a" />
+      <rect x="5" y="1"  width="2"  height="1" fill="#7a1520" />
+      <rect x="7" y="1"  width="3"  height="1" fill="#e83b3b" />
+      <rect x="10" y="1" width="1"  height="1" fill="#7a1520" />
+      <rect x="0" y="2"  width="1"  height="1" fill="#7a1520" />
+      <rect x="1" y="2"  width="3"  height="1" fill="#ff9a9a" />
+      <rect x="4" y="2"  width="7"  height="1" fill="#e83b3b" />
+      <rect x="11" y="2" width="1"  height="1" fill="#7a1520" />
+      <rect x="0" y="3"  width="1"  height="1" fill="#7a1520" />
+      <rect x="1" y="3"  width="2"  height="1" fill="#ff9a9a" />
+      <rect x="3" y="3"  width="8"  height="1" fill="#e83b3b" />
+      <rect x="11" y="3" width="1"  height="1" fill="#7a1520" />
+      <rect x="0" y="4"  width="1"  height="1" fill="#7a1520" />
+      <rect x="1" y="4"  width="9"  height="1" fill="#e83b3b" />
+      <rect x="10" y="4" width="1"  height="1" fill="#b02020" />
+      <rect x="11" y="4" width="1"  height="1" fill="#7a1520" />
+      <rect x="1" y="5"  width="1"  height="1" fill="#7a1520" />
+      <rect x="2" y="5"  width="7"  height="1" fill="#e83b3b" />
+      <rect x="9" y="5"  width="1"  height="1" fill="#b02020" />
+      <rect x="10" y="5" width="1"  height="1" fill="#7a1520" />
+      <rect x="2" y="6"  width="1"  height="1" fill="#7a1520" />
+      <rect x="3" y="6"  width="5"  height="1" fill="#e83b3b" />
+      <rect x="8" y="6"  width="1"  height="1" fill="#b02020" />
+      <rect x="9" y="6"  width="1"  height="1" fill="#7a1520" />
+      <rect x="3" y="7"  width="1"  height="1" fill="#7a1520" />
+      <rect x="4" y="7"  width="3"  height="1" fill="#e83b3b" />
+      <rect x="7" y="7"  width="1"  height="1" fill="#b02020" />
+      <rect x="8" y="7"  width="1"  height="1" fill="#7a1520" />
+      <rect x="4" y="8"  width="1"  height="1" fill="#7a1520" />
+      <rect x="5" y="8"  width="2"  height="1" fill="#e83b3b" />
+      <rect x="7" y="8"  width="1"  height="1" fill="#7a1520" />
+      <rect x="5" y="9"  width="1"  height="1" fill="#7a1520" />
+      <rect x="6" y="9"  width="1"  height="1" fill="#b02020" />
+      <rect x="6" y="10" width="1"  height="1" fill="#7a1520" />
+    </g>
+  </defs>
+</svg>
+
+<script src="scene.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

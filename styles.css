@@ -1,0 +1,620 @@
+/* ==================================================================
+   8-BIT TITLE SCREEN
+   ------------------------------------------------------------------
+   The background is a 384x216 canvas drawn in scene.js and upscaled
+   nearest-neighbour. Everything in this file is the UI on top of it.
+
+   Two rules govern the UI:
+     1. Pixel grid only — no border-radius, no blur, every shadow a
+        hard offset block.
+     2. Every animation is stepped. Arcade hardware swapped frames, it
+        did not tween, so every keyframe uses steps() and there are no
+        transitions anywhere.
+   ================================================================== */
+
+:root {
+  --ink: #05070f;
+  --cream: #eaf0ff;
+  --chrome: #c8c8d0;
+  --chrome-dark: #8f8fa0;
+  --screen: #05070f;
+
+  --gold: #f8c838;
+
+  /* Wordmark: neon cyan face, a chromatic fringe either side, and a
+     violet extrusion stepping down-and-left. */
+  --wm-face: #7dfcff;
+  --wm-face-b: #ffffff;
+  --wm-fringe-r: #ff2bb0;
+  --wm-fringe-l: #b026ff;
+  --wm-ext-1: #8a1fb8;
+  --wm-ext-2: #5c1280;
+  --wm-ext-3: #33064d;
+  --wm-outline: #10032a;
+
+  --moon: #cfd8f5;
+  --leaf: #6fc44e;
+
+  /* HUD panel — neon on deep violet, to sit with the city behind it */
+  --panel: #170a34;
+  --panel-bar: #220f4c;
+  --panel-edge: #3ef0ff;
+  --panel-accent: #ff3ea5;
+  --panel-dim: #6b4fa8;
+  --panel-text: #d8c8ff;
+
+  --font-display: 'Press Start 2P', 'Courier New', monospace;
+  --font-body: 'Pixelify Sans', 'Press Start 2P', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  /* Arcade hardware had no tweening. Nothing here eases. */
+  transition: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: #05070f;
+  font-family: var(--font-body);
+  color: var(--cream);
+  overflow: hidden;
+  -webkit-font-smoothing: none;
+}
+
+svg { display: block; image-rendering: pixelated; }
+
+/* ==================================================================
+   THE SCENE CANVAS
+   Nearest-neighbour upscale is the whole point — the canvas is 384px
+   wide and every pixel is blown up as a hard square.
+   ================================================================== */
+#scene,
+#weather {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#scene { z-index: 0; }
+
+/* Above the panel, so weather falls in front of it. */
+#weather { z-index: 5; pointer-events: none; }
+
+/* ==================================================================
+   STAGE + WINDOW
+   ================================================================== */
+.stage {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+/* ---- HUD panel.
+   Beveled desktop chrome fought the neon city behind it, so the window
+   is now a terminal panel: a thin neon frame, a magenta offset shadow
+   standing in for depth, and corner brackets. Still hard edges only —
+   no radius, no blur. ---- */
+.window {
+  position: relative;
+  width: min(88vw, 1120px);
+  padding: 3px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    10px 10px 0 rgba(255, 62, 165, 0.45),
+    inset 0 0 0 1px rgba(62, 240, 255, 0.22);
+}
+
+/* Corner brackets, drawn from two L-shaped pseudo-elements */
+.window::before,
+.window::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.window::before {
+  top: -6px;
+  left: -6px;
+  border-top: 3px solid var(--panel-accent);
+  border-left: 3px solid var(--panel-accent);
+}
+
+.window::after {
+  right: -6px;
+  bottom: -6px;
+  border-bottom: 3px solid var(--panel-accent);
+  border-right: 3px solid var(--panel-accent);
+}
+
+.window__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  background: var(--panel-bar);
+  border-bottom: 2px solid var(--panel-edge);
+  margin-bottom: 3px;
+}
+
+.window__icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--panel-accent);
+  box-shadow: inset 0 0 0 2px var(--panel-bar), inset 0 0 0 4px var(--panel-accent);
+}
+
+.window__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(9px, 0.8vw, 14px);
+  letter-spacing: 2px;
+  color: var(--panel-edge);
+  text-align: left;
+}
+
+/* ---- Title-bar indicators ---- */
+.winbtns {
+  display: flex;
+  gap: 5px;
+  flex: none;
+}
+
+.winbtn {
+  position: relative;
+  width: 16px;
+  height: 14px;
+  background: transparent;
+  border: 2px solid var(--panel-dim);
+}
+
+.winbtn i {
+  position: absolute;
+  display: block;
+  inset: 2px;
+}
+
+.winbtn--min i { background: var(--panel-edge); }
+.winbtn--max i { background: #ffd93e; }
+.winbtn--close i { background: var(--panel-accent); }
+
+/* ---- The screen ---- */
+.screen {
+  position: relative;
+  background: var(--screen);
+  border: 2px solid var(--panel-dim);
+  overflow: hidden;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.15) 0 2px,
+    transparent 2px 4px
+  );
+  animation: scanroll 8s steps(8, end) infinite;
+}
+
+@keyframes scanroll {
+  from { transform: translateY(0); }
+  to   { transform: translateY(32px); }
+}
+
+.screen__inner {
+  position: relative;
+  z-index: 2;
+  padding: clamp(38px, 4.2vw, 76px) clamp(20px, 4vw, 68px) clamp(32px, 3.6vw, 62px);
+  text-align: center;
+}
+
+/* ---- Wordmark ----
+   Extruded 3D block logotype. The face is the text colour; a pale rim
+   peeks above it; then nine stepped shadows stack down-and-left to
+   build a solid slab, darkening as they recede. All offsets are in em,
+   so the construction scales with font-size. */
+.wordmark {
+  position: relative;
+  margin: 0 0 clamp(20px, 2.4vw, 40px);
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3.6vw, 62px);
+  line-height: 1.5;
+  letter-spacing: 3px;
+  color: var(--wm-face);
+  text-shadow:
+    /* chromatic fringe — the misregistered colour channels that read
+       as a bad signal, and the whole reason this looks cyberpunk */
+    0.035em 0 0 var(--wm-fringe-r),
+    -0.035em 0 0 var(--wm-fringe-l),
+    /* violet extrusion, down-and-left */
+    -0.03em 0.05em 0 var(--wm-ext-1),
+    -0.06em 0.10em 0 var(--wm-ext-1),
+    -0.09em 0.15em 0 var(--wm-ext-2),
+    -0.12em 0.20em 0 var(--wm-ext-2),
+    -0.15em 0.25em 0 var(--wm-ext-3),
+    -0.18em 0.30em 0 var(--wm-outline);
+  /* The logotype holds still — only its colour snaps. An idle hop and a
+     glitch jolt both read as the title shaking, which it should not. */
+  animation: title-flash 2.4s steps(1, end) infinite;
+}
+
+@keyframes title-flash {
+  0%, 62%   { color: var(--wm-face); }
+  63%, 100% { color: var(--wm-face-b); }
+}
+
+.role {
+  margin: 0 0 clamp(26px, 3vw, 50px);
+  font-family: var(--font-display);
+  font-size: clamp(9px, 0.85vw, 14px);
+  line-height: 1.9;
+  letter-spacing: 2px;
+  color: var(--moon);
+}
+
+/* ---- Menu ---- */
+.menu ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: inline-flex;
+  flex-direction: column;
+  gap: clamp(15px, 1.5vw, 26px);
+  text-align: left;
+}
+
+.menu a {
+  position: relative;
+  display: block;
+  padding-left: clamp(32px, 3vw, 52px);
+  font-family: var(--font-display);
+  font-size: clamp(13px, 1.25vw, 22px);
+  letter-spacing: 1px;
+  color: var(--cream);
+  text-decoration: none;
+}
+
+.menu__num { color: var(--leaf); }
+
+.cursor {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(16px, 1.5vw, 26px);
+  height: auto;
+  visibility: hidden;
+}
+
+/* Attract-mode default: row 1 sits selected on load, so the cursor is
+   already blinking before the visitor touches anything. */
+.menu li:first-child a { color: var(--gold); }
+.menu li:first-child a .menu__num { color: var(--gold); }
+
+.menu li:first-child .cursor {
+  visibility: visible;
+  animation: blink 0.5s steps(1, end) infinite;
+}
+
+.menu:hover li:first-child a { color: var(--cream); }
+.menu:hover li:first-child a .menu__num { color: var(--leaf); }
+
+.menu:hover li:first-child .cursor {
+  visibility: hidden;
+  animation: none;
+}
+
+.menu a:hover,
+.menu a:focus-visible {
+  color: var(--gold);
+  outline: none;
+}
+
+.menu a:hover .menu__num,
+.menu a:focus-visible .menu__num { color: var(--gold); }
+
+.menu a:hover .cursor,
+.menu a:focus-visible .cursor {
+  visibility: visible;
+  animation: blink 0.5s steps(1, end) infinite;
+}
+
+/* ---- Press any key ---- */
+.press {
+  margin: clamp(30px, 3.4vw, 56px) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(9px, 0.85vw, 14px);
+  letter-spacing: 3px;
+  color: #fff;
+  animation: blink 1.06s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0%, 55%   { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+.copyright {
+  margin: clamp(22px, 2.4vw, 40px) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(8px, 0.75vw, 12px);
+  letter-spacing: 1px;
+  color: var(--chrome-dark);
+}
+
+.accent { color: var(--gold); }
+
+/* ==================================================================
+   DAY MODE
+   The scene repaints itself from its own palette; the window has to
+   follow, or a bright landscape ends up framing a black screen.
+   ================================================================== */
+html[data-mode='day'] {
+  --panel: #e6eef8;
+  --panel-bar: #cfdcec;
+  --panel-edge: #2f6f9e;
+  --panel-accent: #d05a7a;
+  --panel-dim: #90a4bc;
+  --panel-text: #1b2b3e;
+}
+
+html[data-mode='day'] .screen {
+  background: #f4f8fd;
+}
+
+/* Scanlines have to invert: dark lines over a light screen read as
+   dirt, so in day mode they lighten instead. */
+html[data-mode='day'] .scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.5) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+html[data-mode='day'] .role { color: #2f5480; }
+html[data-mode='day'] .menu a { color: #17203a; }
+html[data-mode='day'] .menu__num { color: #2d7a34; }
+html[data-mode='day'] .press { color: #10182e; }
+html[data-mode='day'] .copyright { color: #55647d; }
+
+html[data-mode='day'] .menu li:first-child a,
+html[data-mode='day'] .menu a:hover,
+html[data-mode='day'] .menu a:focus-visible { color: #b06f00; }
+
+html[data-mode='day'] .menu li:first-child a .menu__num,
+html[data-mode='day'] .menu a:hover .menu__num,
+html[data-mode='day'] .menu a:focus-visible .menu__num { color: #b06f00; }
+
+/* Day drops the cyberpunk treatment entirely: no chromatic fringe, no
+   glitch, no neon. Just a solid dark face over a cool grey-blue
+   extrusion — the same block construction, read straight. */
+html[data-mode='day'] .wordmark {
+  left: 0;
+  /* Saturated indigo rather than a grey navy — on a pale screen a
+     desaturated face just sits there. The extrusion runs light to dark
+     so the block still has depth. */
+  color: #1d2a86;
+  text-shadow:
+    -0.022em 0 0 #0d1240,
+    0.022em 0 0 #0d1240,
+    0 -0.022em 0 #0d1240,
+    0 0.022em 0 #0d1240,
+    -0.03em 0.05em 0 #93a3e2,
+    -0.06em 0.10em 0 #93a3e2,
+    -0.09em 0.15em 0 #5c6cbe,
+    -0.12em 0.20em 0 #5c6cbe,
+    -0.15em 0.25em 0 #333f92,
+    -0.18em 0.30em 0 #0d1240;
+  animation: none;
+}
+
+/* ==================================================================
+   CONTROLS — same HUD language as the window
+   ================================================================== */
+.controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 2px solid var(--panel-dim);
+  box-shadow: 4px 4px 0 rgba(255, 62, 165, 0.4);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--panel-text);
+  cursor: pointer;
+}
+
+.btn[aria-pressed='true'] {
+  border-color: var(--panel-edge);
+  color: var(--panel-edge);
+}
+
+/* Pressed just snaps the offset shut — no transition. */
+.btn:active {
+  box-shadow: 0 0 0 rgba(255, 62, 165, 0.4);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--panel-edge);
+  outline-offset: 2px;
+}
+
+.btn__glyph {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+/* Moon: a disc with a bite taken out of it. */
+.btn__glyph--mode {
+  background: var(--panel-text);
+  clip-path: polygon(
+    36% 0, 64% 0, 100% 36%, 100% 64%,
+    64% 100%, 36% 100%, 0 64%, 0 36%
+  );
+}
+
+#modeToggle[data-mode='night'] .btn__glyph--mode::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: -3px;
+  width: 12px;
+  height: 12px;
+  background: var(--panel);
+  clip-path: polygon(
+    36% 0, 64% 0, 100% 36%, 100% 64%,
+    64% 100%, 36% 100%, 0 64%, 0 36%
+  );
+}
+
+/* Sun: a smaller disc with four rays. */
+#modeToggle[data-mode='day'] .btn__glyph--mode {
+  width: 10px;
+  height: 10px;
+  margin: 2px;
+  box-shadow:
+    0 -5px 0 -1px var(--panel-text), 0 5px 0 -1px var(--panel-text),
+    -5px 0 0 -1px var(--panel-text), 5px 0 0 -1px var(--panel-text);
+}
+
+/* A cloud with two drops falling from it, all blocks. */
+.btn__glyph--rain::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 14px;
+  height: 5px;
+  background: var(--panel-text);
+  box-shadow: 3px -2px 0 -1px var(--panel-text);
+}
+
+.btn__glyph--rain::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 9px;
+  width: 2px;
+  height: 4px;
+  background: var(--panel-dim);
+  box-shadow: 5px 1px 0 var(--panel-dim);
+}
+
+#rainToggle[aria-pressed='true'] .btn__glyph--rain::before { background: var(--panel-edge); box-shadow: 3px -2px 0 -1px var(--panel-edge); }
+#rainToggle[aria-pressed='true'] .btn__glyph--rain::after  { background: var(--panel-edge); box-shadow: 5px 1px 0 var(--panel-edge); }
+
+/* A cloud with three flakes beneath it — the same cloud as the rain
+   glyph, with dots instead of streaks so the pair read as a set.
+   Deliberately no crossed diagonals. */
+.btn__glyph--snow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 14px;
+  height: 5px;
+  background: var(--panel-text);
+  box-shadow: 3px -2px 0 -1px var(--panel-text);
+}
+
+.btn__glyph--snow::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 9px;
+  width: 2px;
+  height: 2px;
+  background: var(--panel-text);
+  box-shadow: 4px 2px 0 var(--panel-text), 8px 0 0 var(--panel-text);
+}
+
+#snowToggle[aria-pressed='true'] .btn__glyph--snow::before {
+  background: var(--panel-edge);
+  box-shadow: 3px -2px 0 -1px var(--panel-edge);
+}
+
+#snowToggle[aria-pressed='true'] .btn__glyph--snow::after {
+  background: var(--panel-edge);
+  box-shadow: 4px 2px 0 var(--panel-edge), 8px 0 0 var(--panel-edge);
+}
+
+/* ==================================================================
+   RESPONSIVE
+   ================================================================== */
+@media (max-width: 900px) {
+  .stage { padding: 24px 14px; }
+  .window { width: 100%; }
+  .screen__inner { padding: 30px 18px 26px; }
+
+  /* Shorter extrusion so two lines of the wordmark still clear each
+     other at small sizes. */
+  .wordmark {
+    line-height: 1.42;
+    text-shadow:
+      0 -0.045em 0 var(--gold-hi),
+      -0.02em 0.04em 0 var(--gold-mid),
+      -0.04em 0.08em 0 var(--gold-mid),
+      -0.06em 0.12em 0 var(--gold-deep),
+      -0.08em 0.16em 0 var(--gold-deep),
+      -0.10em 0.20em 0 var(--gold-edge),
+      -0.12em 0.24em 0 var(--ink);
+  }
+}
+
+/* ==================================================================
+   REDUCED MOTION
+   scene.js holds its first frame; these hold theirs.
+   ================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .wordmark,
+  .press,
+  .scanlines,
+  .menu li:first-child .cursor,
+  .menu a:hover .cursor,
+  .menu a:focus-visible .cursor {
+    animation: none !important;
+  }
+  .press { opacity: 1; }
+}
