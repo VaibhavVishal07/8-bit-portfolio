@@ -127,8 +127,11 @@
       // hot pink, cyan, neon purple, electric yellow, neon green
       neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d'],
       roof: '#090318', roofLit: '#2a0f5c', roofSpeck: '#150733',
-      rail: '#150a32', railLit: '#4a2490', railDark: '#05010e',
+      rail: '#150a32', railLit: '#7a4fd8', railDark: '#040108',
       bounce: ['#ff2bb0', '#00f0ff', '#b026ff'],
+      viaduct: '#1a0f3e', viaductLit: '#331c72', viaductDark: '#080320',
+      train: '#26155c', trainLit: '#5230a8', trainDark: '#0b0524',
+      trainWin: '#c2e8ff', trainHead: '#fff3b0',
       wet: ['#ff2bb0', '#00f0ff', '#b026ff'],
       cat: '#060214',
       catRim: '#b026ff',
@@ -160,8 +163,11 @@
       roof: '#4b5468',
       roofLit: '#5f6a80',
       roofSpeck: '#556076',
-      rail: '#3a4254', railLit: '#6b7890', railDark: '#232a37',
+      rail: '#3a4254', railLit: '#93a2b8', railDark: '#1a1f29',
       bounce: ['#8fa8c4', '#a0b4cc', '#7e94b0'],
+      viaduct: '#5f6d84', viaductLit: '#8090a6', viaductDark: '#3a4354',
+      train: '#8494ac', trainLit: '#a8b6c8', trainDark: '#576678',
+      trainWin: '#e2eef8', trainHead: '#fff8d8',
       wet: ['#8fa8c4', '#a0b4cc', '#7e94b0'],
       cat: '#333b4c',
       catRim: '#5c6a80',
@@ -184,7 +190,7 @@
      STATIC LAYERS
      ================================================================== */
   const LOOP_W = W * 2
-  let sky, clouds, roof
+  let sky, clouds, roof, viaduct
   let city = []
 
   /* ---- Sky: six bands, ordered-dithered into each other ---- */
@@ -487,6 +493,14 @@
        bottom rail treated the same way. */
     const capY = ROOF_TOP + 3
 
+    /* The single most important line in the whole scene: a hard, near
+       black rim along the very top of the coping. Without it the
+       parapet shares values with the lit city behind and the two read
+       as one flat plane. A silhouette edge is what separates a
+       foreground from a background in pixel art. */
+    g.fillStyle = T.railDark
+    g.fillRect(0, capY - 3, W, 3)
+
     // coping — top face, front face, undercut
     g.fillStyle = T.railLit
     g.fillRect(0, capY, W, 3)
@@ -600,10 +614,130 @@
        parallaxes with it. */
   }
 
+  /* ==================================================================
+     ELEVATED LINE
+
+     A viaduct running across the middle distance, between the near
+     buildings and the rooftop. It gives the scene a third depth plane,
+     and every so often a train crosses it.
+     ================================================================== */
+  const VIA_Y = 360 // top of the deck
+  const VIA_H = 11
+
+  function buildViaduct() {
+    viaduct = makeBuffer(LOOP_W, H)
+    const g = viaduct.x
+
+    // Piers, dropping out of frame behind the parapet.
+    for (let x = 30; x < LOOP_W; x += 104) {
+      g.fillStyle = T.viaduct
+      g.fillRect(x, VIA_Y + VIA_H, 15, ROOF_TOP - VIA_Y)
+      g.fillStyle = T.viaductLit
+      g.fillRect(x, VIA_Y + VIA_H, 2, ROOF_TOP - VIA_Y)
+      g.fillStyle = T.viaductDark
+      g.fillRect(x + 13, VIA_Y + VIA_H, 2, ROOF_TOP - VIA_Y)
+      // haunch where the pier meets the deck
+      g.fillStyle = T.viaduct
+      g.fillRect(x - 4, VIA_Y + VIA_H, 23, 4)
+    }
+
+    // Deck.
+    g.fillStyle = T.viaductDark
+    g.fillRect(0, VIA_Y - 1, LOOP_W, 1)
+    g.fillStyle = T.viaductLit
+    g.fillRect(0, VIA_Y, LOOP_W, 2)
+    g.fillStyle = T.viaduct
+    g.fillRect(0, VIA_Y + 2, LOOP_W, VIA_H - 4)
+    g.fillStyle = T.viaductDark
+    g.fillRect(0, VIA_Y + VIA_H - 2, LOOP_W, 2)
+
+    // Guard posts, and a lamp every fifth one.
+    for (let x = 8, i = 0; x < LOOP_W; x += 16, i++) {
+      g.fillStyle = T.viaductLit
+      g.fillRect(x, VIA_Y - 6, 1, 6)
+      if (i % 5) continue
+      g.fillStyle = T.viaductLit
+      g.fillRect(x - 1, VIA_Y - 13, 1, 7)
+      g.fillStyle = T.trainWin
+      g.fillRect(x - 2, VIA_Y - 15, 3, 2)
+      // dithered pool of lamplight on the deck
+      for (let dy = 0; dy < 5; dy++) {
+        for (let dx = -7; dx <= 7; dx++) {
+          const f = (1 - Math.abs(dx) / 8) * (1 - dy / 5)
+          if (f <= 0) continue
+          if (BAYER[dy & 3][(x + dx) & 3] / 16 > f * 0.55) continue
+          const xx = x + dx
+          if (xx < 0 || xx >= LOOP_W) continue
+          g.fillStyle = T.trainWin
+          g.fillRect(xx, VIA_Y - 1 + dy, 1, 1)
+        }
+      }
+    }
+  }
+
+  /* The train is an event, not a loop: it crosses, then the line is
+     empty for a while. Drawn in screen space so it runs along the deck
+     independently of the parallax. */
+  const TRAIN_CYCLE = 620
+  const TRAIN_RUN = 300
+  const CAR_W = 52
+  const CARS = 6
+
+  function drawTrain() {
+    const t = frame % TRAIN_CYCLE
+    if (t >= TRAIN_RUN) return
+
+    const len = CARS * CAR_W
+    const x0 = Math.round(-len - 20 + (t / TRAIN_RUN) * (W + len * 2 + 40))
+    const carH = 22
+    const top = VIA_Y - carH
+
+    for (let i = 0; i < CARS; i++) {
+      const cx = x0 + i * CAR_W
+      if (cx > W || cx + CAR_W < 0) continue
+      const lead = i === CARS - 1
+
+      ctx.fillStyle = T.train
+      ctx.fillRect(cx, top, CAR_W - 4, carH)
+      ctx.fillStyle = T.trainLit
+      ctx.fillRect(cx, top, CAR_W - 4, 2) // roof catches the sky
+      ctx.fillRect(cx, top, 1, carH)
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(cx, top + carH - 3, CAR_W - 4, 3)
+      ctx.fillRect(cx + CAR_W - 5, top, 1, carH)
+
+      // Windows. A few blink as passengers pass them.
+      for (let k = 0; k < 4; k++) {
+        const lit = (frame * 3 + i * 7 + k * 13) % 47 > 5
+        ctx.fillStyle = lit ? T.trainWin : T.trainDark
+        ctx.fillRect(cx + 4 + k * 11, top + 6, 8, 8)
+      }
+
+      // Bogies, tucked into the deck.
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(cx + 6, top + carH, 9, 2)
+      ctx.fillRect(cx + 32, top + carH, 9, 2)
+
+      if (!lead) continue
+      ctx.fillStyle = T.trainHead
+      ctx.fillRect(cx + CAR_W - 6, top + 15, 3, 4)
+    }
+
+    // Light spilling from the windows onto the deck below.
+    for (let x = Math.max(0, x0); x < Math.min(W, x0 + len); x++) {
+      for (let dy = 0; dy < 4; dy++) {
+        if (BAYER[dy & 3][x & 3] / 16 > (1 - dy / 4) * 0.4) continue
+        ctx.fillStyle = T.trainWin
+        ctx.fillRect(x, VIA_Y + dy, 1, 1)
+      }
+    }
+  }
+
   function buildStatic() {
     buildSky()
     buildSkyline()
     buildClouds()
+    buildViaduct()
     buildRoof()
   }
 
@@ -1062,6 +1196,12 @@
     flicker(city[1], o1)
     blit(city[2].buf, o2)
     flicker(city[2], o2)
+
+    // The elevated line sits in front of the city and behind the roof.
+    // It drifts at its own rate, faster than the nearest buildings, so
+    // it reads as the closest thing that is still far away.
+    blit(viaduct, -Math.floor(frame / 8))
+    drawTrain()
 
     // The rooftop is deliberately static — the cat and the brazier stand
     // on it, so it cannot scroll underneath them.

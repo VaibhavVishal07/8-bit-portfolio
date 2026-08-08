@@ -41,7 +41,8 @@ Techniques, all period-correct:
 - **Window flicker** done by repainting individual lit cells back to the
   building colour, the way a tile engine would, rather than regenerating the
   layer. Antenna beacons invert — they blink *on*.
-- **Parallax** across the three skylines, furthest slowest.
+- **Parallax** across the three skylines, furthest slowest, with an elevated
+  railway in front of them drifting faster still.
 - **A fixed 12fps tick**, so every motion is inherently stepped — no smooth
   interpolation anywhere.
 
@@ -53,6 +54,18 @@ and is filled in four bands from a dark red rim to a near-white core.
 
 **The rooftop layer does not scroll.** The cat and the brazier stand on it, so
 if it moved they would appear to slide across the ground.
+
+**The parapet is drawn with a hard, near-black rim along the top of its
+coping.** That single line is what makes it read as foreground; without it the
+railing shares values with the lit city behind and the two collapse into one
+flat plane. The rest of its depth comes from the same idea applied smaller — a
+lit top face, a shadowed front face, a dark undercut, and balusters lit on one
+side and shadowed on the other.
+
+**The train is an event, not a loop.** It crosses the viaduct, then the line is
+empty for about half a minute. It is drawn in screen space rather than into the
+viaduct buffer, so it runs along the deck at its own speed instead of being
+carried by the parallax.
 
 **The canvas is cleared every frame.** The layers do not cover every pixel, and
 without a clear those rows keep the previous frame — which on a theme switch
