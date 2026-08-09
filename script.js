@@ -611,109 +611,11 @@
       if (back) back.focus()
     }
 
-    /* ---- loading a cartridge ----
-
-       Choosing a project is not a click on a card, it is putting a
-       game in a machine. The cart you picked lifts out of the rack,
-       the console rises to meet it, the cart goes in, the machine
-       thumps, the screen whites out - and the project is running.
-
-       The flying cart is the ACTUAL canvas from the card, cloned, so
-       the object that leaves the shelf is unmistakably the one you
-       touched. Every beat is a stepped keyframe; nothing eases. */
-    let rig = null
-
-    function buildRig() {
-      if (rig) return rig
-      rig = document.createElement('div')
-      rig.className = 'rig'
-      rig.setAttribute('aria-hidden', 'true')
-      rig.innerHTML =
-        '<div class="rig__set">' +
-        '<div class="rig__monitor"><span class="rig__screen"></span>' +
-        '<span class="rig__stand"></span></div>' +
-        '<div class="rig__box">' +
-        '<span class="rig__slot"></span>' +
-        '<span class="rig__led"></span>' +
-        '<span class="rig__vent"></span>' +
-        '</div>' +
-        '</div>' +
-        '<div class="rig__cart"></div>' +
-        '<div class="rig__flash"></div>'
-      document.body.appendChild(rig)
-      return rig
-    }
-
-    function insertCart(card, id) {
-      const src = card.querySelector('canvas')
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (!src || reduce) {
-        showLevel(id)
-        return
-      }
-
-      const r = buildRig()
-      const holder = r.querySelector('.rig__cart')
-      holder.innerHTML = ''
-      // the exact cartridge that was on the shelf, not a stand-in
-      const clone = src.cloneNode(true)
-      clone.removeAttribute('data-painted')
-      holder.appendChild(clone)
-      if (window.Posters) window.Posters.paint(clone)
-
-      /* Everything is measured, nothing is guessed. The cart starts at
-         the exact rectangle the card occupies, finishes at the exact
-         mouth of the slot, and the monitor zooms around the centre of
-         its own glass - so the screen you are watching grows into the
-         screen you end up reading. */
-      r.classList.add('is-measuring')
-      const b = src.getBoundingClientRect()
-      const slot = r.querySelector('.rig__slot').getBoundingClientRect()
-      const glass = r.querySelector('.rig__screen').getBoundingClientRect()
-      r.classList.remove('is-measuring')
-
-      const cx = window.innerWidth / 2
-      const cy = window.innerHeight / 2
-
-      holder.style.setProperty('--from-x', b.left + b.width / 2 - cx + 'px')
-      holder.style.setProperty('--from-y', b.top + b.height / 2 - cy + 'px')
-      holder.style.setProperty('--from-w', b.width + 'px')
-      // the mouth of the slot, which is where a cartridge goes
-      holder.style.setProperty('--slot-x', slot.left + slot.width / 2 - cx + 'px')
-      holder.style.setProperty('--slot-y', slot.top - cy + 'px')
-      holder.style.setProperty('--slot-w', slot.width * 0.92 + 'px')
-
-      /* How far the monitor has to grow for its glass to cover the
-         viewport, and where that glass sits relative to centre. */
-      const zoom = Math.max(window.innerWidth / glass.width, window.innerHeight / glass.height) * 1.08
-      const set = r.querySelector('.rig__set')
-      set.style.setProperty('--zoom', zoom.toFixed(2))
-      set.style.setProperty('--gx', glass.left + glass.width / 2 - cx + 'px')
-      set.style.setProperty('--gy', glass.top + glass.height / 2 - cy + 'px')
-
-      r.classList.remove('is-running')
-      void r.offsetWidth
-      r.classList.add('is-running')
-
-      // the screen changes under the white-out, so the cut is unseen
-      clearTimeout(rigTimer)
-      // the project is revealed under the zoom's white-out
-      rigTimer = setTimeout(() => showLevel(id), 1500)
-      setTimeout(() => r.classList.remove('is-running'), 1760)
-    }
-
-    let rigTimer = 0
-
     document.addEventListener('click', (e) => {
       const go = e.target.closest('[data-goto]')
       if (go) {
         e.preventDefault()
-        if (go.classList.contains('card')) {
-          lastCard = go
-          // a cartridge does not open a page; it gets loaded
-          insertCart(go, go.dataset.goto)
-          return
-        }
+        if (go.classList.contains('card')) lastCard = go
         showLevel(go.dataset.goto)
         return
       }
