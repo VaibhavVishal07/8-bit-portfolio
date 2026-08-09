@@ -352,7 +352,7 @@
       fogAmt: [0.30, 0.16, 0.04],
       rainSky: '#0d0520',
       snowSky: '#241c48',
-      snowWash: [0.10, 0.26], blanket: [0.72, 0.28], fogSnowBoost: 0.18,
+      snowWash: [0.10, 0.26], blanket: [0.85, 0.15], fogSnowBoost: 0.18,
       lightning: '#c9b6ff', boltCore: '#ffffff',
 
       orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#6b1fa8',
@@ -399,9 +399,9 @@
       steam: '#6b4fa8',
       cloth: ['#8e3358', '#35617e', '#8a7038'],
 
-      snowLie: '#3d3468', snowLit: '#8d80c0', snowDark: '#241b48', ice: '#7b6fae',
+      snowLie: '#4a4180', snowLit: '#a89ce6', snowDark: '#241b48', ice: '#8a7ec2',
       rainDrop: '#7d5cc8', rainHi: '#d0b8ff',
-      snowFlake: '#cfc2ee', snowPile: '#655898',
+      snowFlake: '#cfc2ee', snowPile: '#7a6cb4',
 
       fire: true,
     },
@@ -440,8 +440,11 @@
         { fill: '#6c7aa6', lit: '#8894c0', dark: '#56638d', window: '#b0bada', warm: '#ffc78c' },
         { fill: '#49527e', lit: '#646d9c', dark: '#343b60', window: '#959fca', warm: '#ffb478' },
       ],
-      neon: ['#ff3ea0', '#19d7e8', '#a44dff', '#ffd21f', '#2fe39a'],
-      halo: 0.55, // daylight eats the bleed, so the halo pulls in
+      /* Daylight neon is OFF. The signs keep their exact geometry — same
+         random draws, so the city never rearranges between themes — but
+         they render in unlit greys with no halo at all. Calm. */
+      neon: ['#7c87a0', '#7a98a4', '#8a80a0', '#a89a78', '#7f9c8c'],
+      halo: 0,
 
       /* The daylight roof was a mid grey and sat too close in value to
          the city behind it. It is the nearest plane in the scene; it
@@ -456,11 +459,11 @@
 
       viaduct: '#6a5f78', viaductLit: '#8d8299', viaductDark: '#403848',
       train: '#8b8098', trainLit: '#b3a8bf', trainDark: '#554c60',
-      trainWin: '#f0e4f4', trainHead: '#fff8d8', trainStripe: '#ff3ea0',
+      trainWin: '#f0e4f4', trainHead: '#fff8d8', trainStripe: '#8b97ad',
 
       ship: '#8f9ab8', shipLit: '#b9c1d6', shipDark: '#6a7593', shipTrim: '#0d7f96',
       cat: '#2a2436', catRim: '#ffbc7a', catEye: '#19d7e8', catCollar: '#ff3ea0',
-      sign: '#ff3ea0', signBox: '#3a3048',
+      sign: '#66788f', signBox: '#3a3048',
       lamp: '#ffd89a', lampDim: '#a08258',
       steam: '#e8dce8',
       cloth: ['#b06a86', '#6e90aa', '#b8a070'],
@@ -2139,6 +2142,20 @@
       g.fillStyle = T.snowLit
       g.fillRect(0, capY + 33, W, 1)
 
+      /* Somebody has strung lights along the whole railing. The
+         positions join roofLights, so they twinkle and cycle festive
+         colours through the same code as the deck garlands. */
+      if (snowLevel > 0.3) {
+        for (let x = 18; x < W; x += 36) roofLights.push({ x, y: capY - 7 })
+        // and wound the light poles in red - candy canes, effectively
+        for (const pole of [58, 302, 566, 830]) {
+          for (let y = ROOF_TOP + 30; y < ROOF_TOP + 98; y += 8) {
+            g.fillStyle = FESTIVE[0]
+            g.fillRect(pole, y, 3, 4)
+          }
+        }
+      }
+
       /* ---- the tree ----
          Somebody has put a tree up on the deck, because it snowed and
          that is what people do. Three green tiers, a trunk, a star, and
@@ -2175,6 +2192,19 @@
         g.fillRect(tx - 8, tb - 10, 6, 1)
         g.fillRect(tx + 3, tb - 19, 5, 1)
         g.fillRect(tx - 4, tb - 27, 4, 1)
+
+        // presents under it, ribbons crossed
+        g.fillStyle = FESTIVE[0]
+        g.fillRect(tx - 18, tb - 8, 11, 8)
+        g.fillStyle = '#f8c838'
+        g.fillRect(tx - 14, tb - 8, 2, 8)
+        g.fillRect(tx - 18, tb - 5, 11, 2)
+        g.fillStyle = FESTIVE[1]
+        g.fillRect(tx + 10, tb - 7, 9, 7)
+        g.fillStyle = FESTIVE[0]
+        g.fillRect(tx + 13, tb - 7, 2, 7)
+        g.fillStyle = T.snowLit
+        g.fillRect(tx - 18, tb - 9, 11, 1)
 
         /* and a wreath on the hutch door: a green diamond ring with a
            red bow, eight pixels of Christmas */
@@ -4186,6 +4216,22 @@
     ctx.fillRect(x + 7, y, 2, 1)
   }
 
+  /* The tree's bulbs, repainted per frame over the baked ones so they
+     twinkle â€” each on its own cycle, the way real tree lights never
+     quite agree with each other. */
+  function drawTreeLights() {
+    if (weather !== 'snow' || snowLevel <= 0.4) return
+    const tx = 550
+    const tb = ROOF_TOP + 88
+    for (let b = 0; b < 9; b++) {
+      const ty = tb - 9 - b * 3
+      const sway = Math.round(Math.sin(b * 2.1) * (9 - b))
+      const on = (frame + b * 5) % 13 < 9
+      ctx.fillStyle = on ? FESTIVE[b % 3] : '#1d5c33'
+      ctx.fillRect(tx + sway, ty, 2, 2)
+    }
+  }
+
   /* The string lights, repainted per frame so a few can gutter. */
   function drawRoofLights() {
     for (let i = 0; i < roofLights.length; i++) {
@@ -4195,11 +4241,14 @@
       ctx.fillStyle = on ? bulb : T.lampDim
       ctx.fillRect(l.x, l.y, 1, 2)
       if (!on) continue
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
+      // against snow the glow reaches further - festive, not forensic
+      const R = weather === 'snow' ? 3.5 : 2.5
+      const Ri = Math.ceil(R)
+      for (let dy = -Ri; dy <= Ri; dy++) {
+        for (let dx = -Ri; dx <= Ri; dx++) {
           const d = Math.hypot(dx, dy)
-          if (d === 0 || d > 2.5) continue
-          dot(ctx, l.x + dx, l.y + dy, 1 - d / 2.5, bulb)
+          if (d === 0 || d > R) continue
+          dot(ctx, l.x + dx, l.y + dy, 1 - d / R, bulb)
         }
       }
     }
@@ -4336,7 +4385,7 @@
     flicker(city[1], o1)
     blit(city[2].buf, o2)
     flicker(city[2], o2)
-    drawLightBeams(o2)
+    if (T.stars) drawLightBeams(o2) // a lighthouse beam by day is a smudge
 
     // In front of the skyline, behind the elevated line — it is flying
     // over the city, not through it.
@@ -4353,6 +4402,7 @@
     blit(roof, 0)
     drawWashing()
     drawRoofLights()
+    drawTreeLights()
     drawMoths()
     drawSteam()
     drawRat()
