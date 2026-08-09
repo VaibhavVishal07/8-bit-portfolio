@@ -81,6 +81,34 @@
         city.appendChild(b)
       }
       towers = [...city.children]
+
+      // a nearer, darker row in front — even the loader has parallax
+      const near = document.getElementById('bootCityNear')
+      if (near) {
+        for (let i = 0; i < H.length; i++) {
+          const b = document.createElement('span')
+          b.style.height = H[(i + 9) % H.length] + '%'
+          near.appendChild(b)
+        }
+        towers = towers.concat([...near.children])
+      }
+
+      // the rain, waiting for its cue
+      const rainBox = document.getElementById('bootRain')
+      if (rainBox) {
+        let rs = 977
+        const rr = () => {
+          rs = (Math.imul(rs, 1103515245) + 12345) >>> 0
+          return rs / 4294967296
+        }
+        for (let i = 0; i < 42; i++) {
+          const d = document.createElement('span')
+          d.style.left = (rr() * 100).toFixed(2) + '%'
+          d.style.animationDelay = (rr() * 0.9).toFixed(2) + 's'
+          d.style.animationDuration = (0.7 + rr() * 0.5).toFixed(2) + 's'
+          rainBox.appendChild(d)
+        }
+      }
     }
 
     /* The tips are not filler. Half of what is in this page is only
@@ -133,7 +161,19 @@
         }
         lastP = p
         if (pct) pct.textContent = p
-        if (statusEl) statusEl.textContent = STATUSES[Math.min(STATUSES.length - 1, Math.floor(i / 3))]
+        const beat = Math.min(STATUSES.length - 1, Math.floor(i / 3))
+        if (statusEl) statusEl.textContent = STATUSES[beat]
+
+        /* The loader performs its own status lines. Once a cue fires
+           it stays fired — rain does not stop because the subject
+           changed. */
+        boot.classList.toggle('boot--neon', beat >= 1)
+        boot.classList.toggle('boot--rain', beat >= 2)
+        if (beat === 3) boot.classList.add('boot--train')
+        if (beat === 4 && cat) cat.classList.add('is-idle') // sit. good cat.
+        if (beat === 5) boot.classList.add('boot--glint')
+        if (beat === 7) boot.classList.add('boot--thunder')
+        if (beat === 9) boot.classList.add('boot--duck')
 
         lines.forEach((li, n) => li.classList.toggle('is-on', n < Math.floor(t * lines.length * 1.6)))
 

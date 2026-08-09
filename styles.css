@@ -857,20 +857,147 @@ html[data-max='on'] .controls {
   inset: 0;
   z-index: 40;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
+  /* A title card, centred — the boot stopped being a BIOS the moment
+     it started performing. */
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   background: #05070f;
   padding: var(--s7);
 }
 
 .boot[hidden] { display: none; }
 
-/* Anchored top-left and wide. A BIOS is not a centred dialog. */
 .boot__inner {
   position: relative;
   z-index: 2;
-  width: min(92vw, 1100px);
+  width: min(92vw, 720px);
 }
+
+/* ---- the performance ----
+   Layers the status lines switch on. Every animation steps. */
+
+/* rain: streaks with staggered starts, visible once ordered */
+.boot__rain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boot--rain .boot__rain { visibility: visible; }
+
+.boot__rain span {
+  position: absolute;
+  top: -8%;
+  width: 2px;
+  height: 16px;
+  background: #7d5cc8;
+  animation: bootfall 0.9s steps(14, end) infinite;
+}
+
+@keyframes bootfall {
+  from { transform: translateY(0); }
+  to { transform: translateY(118vh); }
+}
+
+/* the delayed train, finally crossing — BEHIND the skyline, so it
+   flickers through the gaps between towers */
+.boot__train {
+  position: absolute;
+  z-index: 0;
+  bottom: 38vh;
+  left: -80px;
+  width: 64px;
+  height: 10px;
+  background: #26155c;
+  box-shadow:
+    inset 0 2px 0 #5230a8,
+    12px 0 0 -1px #26155c,
+    inset -4px 0 0 #0b0524;
+  visibility: hidden;
+}
+
+.boot__train::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 6px;
+  height: 4px;
+  background: #c2e8ff;
+  box-shadow: 12px 0 0 #c2e8ff, 24px 0 0 #c2e8ff, 36px 0 0 #c2e8ff;
+}
+
+.boot--train .boot__train {
+  visibility: visible;
+  animation: bootcross 1.6s steps(40, end) forwards;
+}
+
+@keyframes bootcross {
+  from { left: -80px; }
+  to { left: 104%; }
+}
+
+/* the moon, polished on cue */
+.boot--glint .boot__moon {
+  animation: glint 0.5s steps(2, end) 2;
+}
+
+@keyframes glint {
+  0%, 49% { filter: brightness(1.6); }
+  50%, 100% { filter: brightness(1); }
+}
+
+/* thunder rehearsal: two hard flashes over the sky layers */
+.boot__flash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #c9b6ff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.boot--thunder .boot__flash {
+  animation: bootflash 0.36s steps(2, end) 2;
+}
+
+@keyframes bootflash {
+  0%, 40% { opacity: 0.55; }
+  41%, 100% { opacity: 0; }
+}
+
+/* the rubber duck, briefly found, then lost again */
+.boot__duck {
+  position: absolute;
+  z-index: 1;
+  right: 12%;
+  bottom: 8%;
+  width: 12px;
+  height: 8px;
+  background: #e8c23a;
+  box-shadow:
+    7px -4px 0 -1px #e8c23a,
+    12px -4px 0 -3px #e0662a,
+    inset 0 -2px 0 #c8942a;
+  visibility: hidden;
+}
+
+.boot--duck .boot__duck {
+  visibility: visible;
+  animation: duckgone 0.8s steps(2, end) forwards;
+}
+
+@keyframes duckgone {
+  0%, 70% { opacity: 1; }
+  71%, 100% { opacity: 0; }
+}
+
+/* neon warms up across the skyline on the first cue */
+.boot--neon .boot__city span:nth-child(4n) { border-top-color: var(--panel-edge); }
+.boot--neon .boot__city span:nth-child(7n) { border-top-color: var(--panel-accent); }
 
 /* ---- the attract screen ----
    A text readout in a black void is a loading screen you resent. This
@@ -946,6 +1073,16 @@ html[data-max='on'] .controls {
   border-top: 2px solid #2c1566;
 }
 
+.boot__city--near { height: 30vh; z-index: 2; gap: 4px; }
+
+.boot__city--near span {
+  background-color: #0a0418;
+  background-image:
+    repeating-linear-gradient(to bottom, transparent 0 4px, #0a0418 4px 18px),
+    repeating-linear-gradient(to right, #5a3fa0 0 3px, transparent 3px 15px);
+  border-top-color: #2c1566;
+}
+
 .boot__city span.is-up { visibility: visible; }
 .boot__city span:nth-child(3n) { background-color: #0c0420; }
 .boot__city span:nth-child(4n) { border-top-color: var(--panel-edge); }
@@ -982,7 +1119,9 @@ html[data-max='on'] .controls {
 }
 
 .boot__lines {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 460px;
+  text-align: left;
   padding: 20px 0 28px;
   list-style: none;
   font-family: var(--font-display);
@@ -1111,12 +1250,12 @@ html[data-max='on'] .controls {
 /* A percentage you can read across the room, which is most of what
    makes a loading screen feel like a game and not a spinner. */
 .boot__status {
-  margin: var(--s3) 0 0;
+  margin: var(--s4) 0 0;
   font-family: var(--font-display);
-  font-size: 12px;
-  letter-spacing: 2px;
-  color: var(--panel-edge);
-  min-height: 1.4em;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  min-height: 1.5em;
 }
 
 .boot__pct {
