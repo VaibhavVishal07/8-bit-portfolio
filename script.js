@@ -611,11 +611,80 @@
       if (back) back.focus()
     }
 
+    /* ---- loading a cartridge ----
+
+       Choosing a project is not a click on a card, it is putting a
+       game in a machine. The cart you picked lifts out of the rack,
+       the console rises to meet it, the cart goes in, the machine
+       thumps, the screen whites out - and the project is running.
+
+       The flying cart is the ACTUAL canvas from the card, cloned, so
+       the object that leaves the shelf is unmistakably the one you
+       touched. Every beat is a stepped keyframe; nothing eases. */
+    let rig = null
+
+    function buildRig() {
+      if (rig) return rig
+      rig = document.createElement('div')
+      rig.className = 'rig'
+      rig.setAttribute('aria-hidden', 'true')
+      rig.innerHTML =
+        '<div class="rig__box">' +
+        '<span class="rig__slot"></span>' +
+        '<span class="rig__led"></span>' +
+        '<span class="rig__vent"></span>' +
+        '</div>' +
+        '<div class="rig__cart"></div>' +
+        '<div class="rig__flash"></div>'
+      document.body.appendChild(rig)
+      return rig
+    }
+
+    function insertCart(card, id) {
+      const src = card.querySelector('canvas')
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (!src || reduce) {
+        showLevel(id)
+        return
+      }
+
+      const r = buildRig()
+      const holder = r.querySelector('.rig__cart')
+      holder.innerHTML = ''
+      // the exact cartridge that was on the shelf, not a stand-in
+      const clone = src.cloneNode(true)
+      clone.removeAttribute('data-painted')
+      holder.appendChild(clone)
+      if (window.Posters) window.Posters.paint(clone)
+
+      // start it where it actually sits, then let CSS fly it home
+      const b = src.getBoundingClientRect()
+      holder.style.setProperty('--from-x', b.left + b.width / 2 - window.innerWidth / 2 + 'px')
+      holder.style.setProperty('--from-y', b.top + b.height / 2 - window.innerHeight / 2 + 'px')
+      holder.style.setProperty('--from-w', b.width + 'px')
+
+      r.classList.remove('is-running')
+      void r.offsetWidth
+      r.classList.add('is-running')
+
+      // the screen changes under the white-out, so the cut is unseen
+      clearTimeout(rigTimer)
+      rigTimer = setTimeout(() => showLevel(id), 980)
+      setTimeout(() => r.classList.remove('is-running'), 1320)
+    }
+
+    let rigTimer = 0
+
     document.addEventListener('click', (e) => {
       const go = e.target.closest('[data-goto]')
       if (go) {
         e.preventDefault()
-        if (go.classList.contains('card')) lastCard = go
+        if (go.classList.contains('card')) {
+          lastCard = go
+          // a cartridge does not open a page; it gets loaded
+          insertCart(go, go.dataset.goto)
+          return
+        }
         showLevel(go.dataset.goto)
         return
       }
