@@ -3402,7 +3402,10 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
    stops. */
 .facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  /* Two columns, capped. Left to auto-fit on a 1700px window this
+     spread into six thin strips and stopped reading as a ledger. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 980px;
   gap: var(--s3) var(--s6);
   margin: 0;
   padding: 0;
@@ -3536,6 +3539,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 .wire a:focus-visible .wire__go { color: var(--panel-accent); }
 
 @media (max-width: 760px) {
+  .facts { grid-template-columns: minmax(0, 1fr); }
   .facts { grid-template-columns: minmax(0, 1fr); }
   .facts span { width: 7.5em; }
   .takes li { padding-left: 2.6em; }
