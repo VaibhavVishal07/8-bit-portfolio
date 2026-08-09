@@ -228,7 +228,7 @@ svg { display: block; image-rendering: pixelated; }
    no radius, no blur. ---- */
 .window {
   position: relative;
-  width: min(84vw, 1400px);
+  width: min(92vw, 1720px);
   padding: 3px;
   background: var(--panel);
   border: 2px solid var(--panel-edge);
@@ -2747,7 +2747,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 /* ---- the rack ---- */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
   gap: var(--s4);
   margin: 0;
   padding: 0;
@@ -2755,7 +2755,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 }
 
 .cards--shelf {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
 }
 
 /* A card is a button, not a link: it changes what this screen shows
@@ -3091,4 +3091,181 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   aspect-ratio: 16 / 9;
   max-height: 360px;
   object-fit: cover;
+}
+/* ==================================================================
+   THE WINDOW, PROPERLY
+
+   It had a title bar and called itself a window. A window from this
+   era is really four things stacked - title, MENU, a SUNKEN well for
+   the content, and a STATUS BAR with fields - and every edge on it is
+   bevelled: light catching the top-left, shadow falling bottom-right.
+   That bevel is the whole language. Miss it and you have a rectangle.
+
+   All of it is inert. A FILE menu that opened would be a promise this
+   page has no reason to keep; it is scenery, and it is marked
+   aria-hidden so a screen reader is not marched through fake menus.
+   ================================================================== */
+
+/* The bevel, as one reusable idea. Two hard inset lines, no blur:
+   raised for things that stick out, sunken for things you look into. */
+:root {
+  --bevel-lit: rgba(255, 255, 255, 0.16);
+  --bevel-shade: rgba(0, 0, 0, 0.55);
+}
+
+/* ---- the menu bar ---- */
+.window__menu {
+  display: flex;
+  gap: 2px;
+  padding: 3px 4px;
+  margin-bottom: 3px;
+  background: var(--panel);
+  border-bottom: 2px solid var(--panel-edge);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lit),
+    inset -1px -1px 0 var(--bevel-shade);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-text);
+  user-select: none;
+}
+
+.window__menu span {
+  padding: 5px 10px;
+}
+
+/* the accelerator underline every one of these menus had */
+.window__menu u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ---- the content well ----
+   Sunken, so the document reads as something the window is looking
+   INTO rather than a panel sitting on top of it. */
+.screen__inner--doc {
+  background: var(--panel-well, rgba(0, 0, 0, 0.22));
+  box-shadow:
+    inset 2px 2px 0 var(--bevel-shade),
+    inset -2px -2px 0 var(--bevel-lit);
+}
+
+/* ---- the status bar ---- */
+.window__status {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 3px;
+  background: var(--panel);
+  border-top: 2px solid var(--panel-edge);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+  user-select: none;
+}
+
+/* Every field is its own sunken box - the detail that makes a status
+   bar read as a status bar and not a line of small text. */
+.field {
+  padding: 5px 10px;
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-shade),
+    inset -1px -1px 0 var(--bevel-lit);
+}
+
+.field--grow { flex: 1 1 auto; }
+
+/* ---- the title bar ----
+   Stepped, not smooth: the gradient of the era was dithered, and a
+   soft one would be the only un-pixelated thing on screen. */
+.window__bar {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--panel-bar) 0 6px,
+    var(--panel) 6px 8px
+  );
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lit),
+    inset -1px -1px 0 var(--bevel-shade);
+}
+
+/* ---- buttons get the bevel too, and press IN ---- */
+.winbtn {
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lit),
+    inset -1px -1px 0 var(--bevel-shade);
+}
+
+.winbtn:active,
+.card:active,
+.level__back:active,
+.level__nav button:active {
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-shade),
+    inset -1px -1px 0 var(--bevel-lit);
+}
+
+.card,
+.level__back,
+.level__nav button,
+.chip {
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lit),
+    inset -1px -1px 0 var(--bevel-shade),
+    var(--cast);
+}
+
+/* ---- scrollbars ----
+   The last giveaway. A modern hairline scrollbar in the corner of a
+   1998 window is the one pixel that breaks the whole illusion. */
+.screen__inner {
+  scrollbar-color: var(--panel-bar) var(--panel);
+}
+
+.screen__inner::-webkit-scrollbar {
+  width: 20px;
+  height: 20px;
+}
+
+.screen__inner::-webkit-scrollbar-track {
+  background-color: var(--panel);
+  background-image: repeating-conic-gradient(
+    var(--panel-dim) 0% 25%,
+    var(--panel) 0% 50%
+  );
+  background-size: 4px 4px;
+}
+
+.screen__inner::-webkit-scrollbar-thumb {
+  background: var(--panel-bar);
+  border: 2px solid var(--panel-edge);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lit),
+    inset -1px -1px 0 var(--bevel-shade);
+}
+
+.screen__inner::-webkit-scrollbar-corner { background: var(--panel); }
+
+/* ---- the resize grip ----
+   Bottom-right, diagonal ridges. It does not resize anything, and it
+   was never going to: it is the punctuation mark at the end of a
+   window. */
+.window--wide .screen { position: relative; }
+
+.window__status::after {
+  content: '';
+  flex: none;
+  width: 16px;
+  align-self: stretch;
+  background-image:
+    linear-gradient(135deg, transparent 45%, var(--bevel-lit) 45% 55%, transparent 55%),
+    linear-gradient(135deg, transparent 70%, var(--bevel-lit) 70% 80%, transparent 80%);
+}
+
+@media (max-width: 760px) {
+  /* a phone has no room for menus it cannot use */
+  .window__menu { display: none; }
+  .window__status .field:not(.field--grow) { display: none; }
 }
