@@ -439,9 +439,9 @@ at all times is wallpaper; something crossing it now and then is an event.
 
 Every billboard, vertical sign, rooftop signboard and airship banner is drawn
 from the 3x5 font with a word picked to fit the space. The copy is deliberately
-daft, because that is the joke the reference is making: `FREE WIFI`, `NO WIFI`,
-`BEEP BOOP`, `GOOD SOUP`, `NICE HAT`, `MOSTLY OK`, `SEMI OPEN`, `NAPS 24H`,
-`LOW BATT`, `TRUST ME`. A skyline of portentous slogans is set dressing; a
+kind: `GOOD SOUP`, `WARM BREAD`, `CATS ONLY`, `NAPS 24H`, `FREE HUGS`,
+`TEA HOUSE` - and the airship carries small kindnesses (`YOU LOOKED UP. NICE.`,
+`HOME BY DINNER`) plus one motto: `SIC PARVIS MAGNA`. A skyline of portentous slogans is set dressing; a
 skyline of businesses cheerfully overselling themselves is a city with people in
 it. Nothing on it is a real brand, including the ones that sound like they
 might be.

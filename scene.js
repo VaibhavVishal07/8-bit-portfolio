@@ -254,20 +254,13 @@
   }
 
   /* What the city sells. Short, because a billboard is forty pixels
-     across — and daft, because that is the joke the reference is
-     making. A skyline of portentous slogans is set dressing; a skyline
-     of businesses cheerfully overselling themselves is a city with
-     people in it. Nothing here is a real brand, including the ones that
-     sound like they might be. */
+     across - and kind, because a skyline of good small businesses is a
+     city you want to look at longer. Nothing here is a real brand. */
   const SIGNS = [
-    'FREE WIFI', 'NO WIFI', 'OPEN 25H', 'BEEP BOOP', 'GOOD SOUP',
-    'NICE HAT', 'TACOS', 'RAMEN', 'SUSHI', 'NOODLES', 'BUY STUFF',
-    'FOR RENT', 'TRUST ME', 'PIXELS', 'SO RETRO', 'EAT MORE',
-    'BIG SIGN', 'LOW BATT', 'CATS ONLY', 'ROBOT BAR', 'DRINK UP',
-    'MEGA CORP', 'THIS WAY', 'NAPS 24H', 'FREE HUGS', 'HOT PIZZA',
-    'DENTIST', 'KARAOKE', 'LAUNDRY', 'DUMPLING', 'NEW PHONE',
-    'MOON RENT', 'YES OPEN', 'WHY NOT', 'GOOD DOG', 'ASK LATER',
-    'ALMOST', 'SEMI OPEN', 'MOSTLY OK', 'HUGE SALE', 'TINY SALE',
+    'RAMEN', 'SUSHI', 'NOODLES', 'TACOS', 'HOT PIZZA', 'DUMPLING',
+    'KARAOKE', 'LAUNDRY', 'GOOD SOUP', 'CATS ONLY', 'ROBOT BAR',
+    'NAPS 24H', 'FREE HUGS', 'FLOWERS', 'BOOKS', 'OPEN LATE',
+    'WARM BREAD', 'TEA HOUSE', 'MOON RENT', 'ARCADE',
   ]
   const TALL_SIGNS = [
     'RAMEN', 'BAR', 'SAKE', 'NEON', 'HOTEL', 'NOODLE',
@@ -275,12 +268,13 @@
   ]
 
   /* The airship flies a different banner every time it comes round. */
-  /* One of them is not a joke. Greatness from small beginnings — which
-     for a scene assembled a pixel at a time is close enough to a
-     mission statement. */
+  /* What the airship carries. Not gags - small kindnesses. A banner
+     over a rainy city should feel like a hand on the shoulder, and one
+     of them is a motto: greatness from small beginnings. The font has
+     no comma, which keeps every line honest and short. */
   const BANNERS = [
-    'FREE WIFI', 'LOOK UP', 'BEEP BOOP', 'SIC PARVIS MAGNA', 'GOOD SOUP',
-    'HI THERE', 'NOT A BLIMP', 'MOSTLY SAFE', 'WHY NOT',
+    'SIC PARVIS MAGNA', 'THE CAT SAYS HI', 'YOU LOOKED UP. NICE.',
+    'CARRYING GOOD NEWS', 'NO HURRY UP HERE', 'HOME BY DINNER',
   ]
 
   const MOVIES = ['NOW SHOWING', 'SOLD OUT', 'ONE NIGHT ONLY', 'BRING SNACKS']
