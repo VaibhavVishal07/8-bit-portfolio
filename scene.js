@@ -4437,6 +4437,37 @@
     screenCtx.drawImage(snapB.c, 0, 0)
   }
 
+  /* ---- presenting through the tube ----
+
+     A real CRT is a curved sheet of glass, so the picture bows: the
+     middle of the screen bulges toward you and the corners fall away.
+     Rounded corners and a vignette imply that; they do not do it. This
+     does it, by presenting the finished frame as a stack of horizontal
+     bands, each stretched a little wider the nearer it is to the
+     centre line, and nudged vertically by the same curve.
+
+     Thirty-two bands is enough that the seams disappear at this pixel
+     size, and it costs thirty-two drawImage calls a frame instead of
+     the per-pixel warp a filter would need. */
+  const BANDS = 32
+  const BOW = 0.018 // how far the glass bulges. Past ~0.03 it reads as a fishbowl.
+
+  function present(src) {
+    const bh = H / BANDS
+    for (let i = 0; i < BANDS; i++) {
+      const sy = i * bh
+      // -1 at the top, 0 at the centre line, +1 at the bottom
+      const t = (i + 0.5) / BANDS * 2 - 1
+      const bulge = (1 - t * t) * BOW
+      const dw = W * (1 + bulge)
+      const dx = (W - dw) / 2
+      // the band also rises toward the middle, which is the vertical
+      // half of the same curve
+      const dy = sy - bulge * H * 0.5 * t
+      screenCtx.drawImage(src, 0, sy, W, bh + 1, dx, dy, dw, bh + 1.2)
+    }
+  }
+
   function swapWorld() {
     weather = target
     snowLevel = weather === 'snow' ? wx : 0
@@ -4569,7 +4600,7 @@
     /* Reduced motion has no compositor loop, so a one-off render
        presents itself. */
     if (!animating) {
-      screenCtx.drawImage(sceneCv, 0, 0)
+      present(sceneCv)
       overlay(0)
     }
   }
@@ -4717,8 +4748,9 @@
       render()
     }
 
-    // present: the offscreen scene, then the dissolve mask over it
-    screenCtx.drawImage(sceneCv, 0, 0)
+    // present: the offscreen scene through the curve of the glass,
+    // then the dissolve mask over it
+    present(sceneCv)
     drawDissolve()
   }
 
