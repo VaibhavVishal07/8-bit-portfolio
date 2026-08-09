@@ -341,7 +341,7 @@
       haze: '#7a1fb0',
       smog: '#5a1a8c',
       fog: '#3a1880',
-      fogAmt: [0.22, 0.13, 0.05],
+      fogAmt: [0.30, 0.16, 0.04],
       rainSky: '#0d0520',
       snowSky: '#241c48',
       snowWash: [0.10, 0.26], blanket: [0.72, 0.28], fogSnowBoost: 0.18,
@@ -352,6 +352,10 @@
       cloud: '#2c1159', cloudLit: '#4d219a', cloudDark: '#170733',
       star: '#ffffff', starDim: '#b98cf0', starWarm: '#ffd0a0', stars: true,
 
+      /* The ridge behind everything: a fourth silhouette plane pitched
+         just below the haze, so the far city has something to be in
+         front of. Depth is planes, and three was one short. */
+      cityFar: { fill: '#241247', lit: '#2f1a5c', dark: '#1a0c38', window: '#5a3fa0', warm: '#7a55b8' },
       city: [
         { fill: '#150931', lit: '#22104c', dark: '#0a0420', window: '#7b4fd8', warm: '#ff2bb0' },
         { fill: '#1c0d42', lit: '#2c1566', dark: '#0f0626', window: '#a86bff', warm: '#ff5cc4' },
@@ -406,7 +410,7 @@
       haze: '#ffbc7a',
       smog: '#e8a878',
       fog: '#d9b6b4',
-      fogAmt: [0.40, 0.26, 0.11],
+      fogAmt: [0.48, 0.28, 0.09],
       rainSky: '#6f7789',
       snowSky: '#dde0ec',
       /* Pale-on-pale: keep the sky wash sparse and the blanket near
@@ -422,6 +426,7 @@
       /* Buildings stay cool and desaturated so the signage on them is
          the only saturated thing at this depth — daylight neon only
          reads if nothing else is competing for the colour. */
+      cityFar: { fill: '#a9b3cb', lit: '#b8c1d5', dark: '#9aa4be', window: '#c6cede', warm: '#d4c8b8' },
       city: [
         { fill: '#8d9cc0', lit: '#a9b6d4', dark: '#7685ab', window: '#c6cfe6', warm: '#ffd7a4' },
         { fill: '#6c7aa6', lit: '#8894c0', dark: '#56638d', window: '#b0bada', warm: '#ffc78c' },
@@ -479,6 +484,7 @@
      ================================================================== */
   let sky, clouds, roof, viaduct
   let city = []
+  let ridge = null
   let roofLights = []
   let puddles = []
   /* Lighthouse lanterns. Their beams sweep, so they cannot be baked
@@ -512,7 +518,7 @@
     /* Smog strata. Thin horizontal shelves of haze lying across the
        ramp, tapering at both ends — pollution settles in layers, and a
        sky with layers in it reads as air rather than as a gradient. */
-    for (let n = 0; n < 11; n++) {
+    for (let n = 0; n < 7; n++) {
       const by = 120 + Math.floor(rnd() * (SKYLINE - 160))
       const bh = 3 + Math.floor(rnd() * 10)
       const bx = Math.floor(rnd() * W)
@@ -522,7 +528,7 @@
         for (let k = 0; k < bw; k++) {
           const x = (bx + k) % W
           const vx = 1 - Math.abs(k - bw / 2) / (bw / 2)
-          dot(g, x, y, vx * vy * 0.45, T.smog)
+          dot(g, x, y, vx * vy * 0.32, T.smog)
         }
       }
     }
@@ -566,9 +572,9 @@
        patches of sign colour bleeding upward give it life without
        lifting the base value. */
     if (T.bounce) {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 12; i++) {
         const cx = Math.floor(rnd() * W)
-        const cw = 90 + Math.floor(rnd() * 170)
+        const cw = 110 + Math.floor(rnd() * 190)
         const ch = 60 + Math.floor(rnd() * 90)
         const col = T.bounce[Math.floor(rnd() * T.bounce.length)]
         for (let y = SKYLINE - ch; y < SKYLINE; y++) {
@@ -1548,6 +1554,18 @@
 
   function buildSkyline() {
     beamSources = []
+
+    /* The far ridge: low, wide, nearly featureless towers one step off
+       the haze colour. No neon, almost no windows, no flicker — at that
+       distance a city is a shape, not an event. It drifts slowest of
+       all, which is what tells the eye it is furthest away. */
+    ridge = buildCity(7777, {
+      minW: 26, maxW: 60, minH: 18, maxH: 64,
+      step: 6, ww: 1, wh: 1, litChance: 0.1,
+      neon: T.neon, neonChance: 0, halo: 0, fog: 0.46,
+      ...T.cityFar,
+    })
+
     city = [
       buildCity(4411, {
         minW: 12, maxW: 26, minH: 60, maxH: 150,
@@ -1812,7 +1830,7 @@
        from noise. A loose scatter of single pixels in three colours is
        just dirt on the screen, so there are far fewer of them than a
        scatter would use and only two values in play. */
-    for (let i = 0; i < 1500; i++) {
+    for (let i = 0; i < 900; i++) {
       const x = Math.floor(rnd() * W)
       const y = ROOF_TOP + 8 + Math.floor(rnd() * (H - ROOF_TOP - 12))
       const sw = rnd() < 0.28 ? 2 : 1
@@ -2021,13 +2039,15 @@
     /* Neon bounce. The city throws coloured light up onto the coping and
        across the near deck; dithered patches of sign colour along the
        cap are what stop the whole foreground reading as flat black. */
-    for (let i = 0; i < 34; i++) {
+    // Sixteen pools, not thirty-four: enough to keep the coping from
+    // reading flat, few enough that none of it reads as stray pixels.
+    for (let i = 0; i < 16; i++) {
       const bx = Math.floor(rnd() * W)
-      const bw = 14 + Math.floor(rnd() * 46)
+      const bw = 20 + Math.floor(rnd() * 46)
       const col = T.bounce[Math.floor(rnd() * T.bounce.length)]
       for (let k = 0; k < 4; k++) {
         const y = capY + k
-        const t = (1 - k / 4) * (wet ? 0.5 : 0.34)
+        const t = (1 - k / 4) * (wet ? 0.5 : 0.24)
         for (let x = bx; x < bx + bw && x < W; x++) {
           dot(g, x, y, t * (1 - Math.abs(x - (bx + bw / 2)) / (bw / 2)), col)
         }
@@ -4296,7 +4316,8 @@
     drawCameo()
     if (!T.stars) drawBirds()
 
-    // Parallax: furthest layer slowest.
+    // Parallax: furthest layer slowest. The ridge barely moves at all.
+    if (ridge) blit(ridge.buf, -Math.floor(frame / 40))
     const o0 = -Math.floor(frame / 26)
     const o1 = -Math.floor(frame / 17)
     const o2 = -Math.floor(frame / 11)
