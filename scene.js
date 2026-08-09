@@ -806,8 +806,27 @@
 
     let x = -30
     while (x < LOOP_W + 30) {
-      const w = o.minW + Math.floor(rnd() * (o.maxW - o.minW))
-      const h = o.minH + Math.floor(rnd() * (o.maxH - o.minH))
+      let w = o.minW + Math.floor(rnd() * (o.maxW - o.minW))
+      let h = o.minH + Math.floor(rnd() * (o.maxH - o.minH))
+
+      /* ---- archetypes ----
+         BANDED  continuous lit floor strips instead of a window grid -
+                 the office slab, the most recognisable shape in the
+                 reference after the neon itself.
+         NEEDLE  a narrow spire, far taller than its neighbours.
+         SLAB    low, wide, nearer the street.
+         GRID    the ordinary tower.
+         Picked BEFORE w and h are used, so a needle reshapes itself
+         rather than being a normal tower wearing a mast. */
+      const roll = rnd()
+      const type = roll < 0.22 ? 'banded' : roll < 0.32 ? 'needle' : roll < 0.46 ? 'slab' : 'grid'
+      if (type === 'needle') {
+        w = Math.max(6, Math.floor(w * 0.45))
+        h = Math.floor(h * 1.35)
+      } else if (type === 'slab') {
+        w = Math.floor(w * 1.5)
+        h = Math.floor(h * 0.55)
+      }
       const top = SKYLINE - h
 
       // body
@@ -910,14 +929,53 @@
         if (rnd() < 0.55) windows.push({ x: mx, y: cy - mh - 1, w: 1, h: 1, beacon: true })
       }
 
+      /* A banded tower wears continuous strips of lit floor instead of
+         a grid of cells: one long window per storey, broken only where
+         the structure crosses it. Cheaper to draw than the grid it
+         replaces and far more legible at this scale. */
+      if (type === 'banded') {
+        for (let ly = top + 5; ly < SKYLINE - 3; ly += o.step + 1) {
+          if (ly + 1 > bandY && ly < bandY + bandH) continue
+          const lit = rnd() < 0.55
+          g.fillStyle = lit ? o.window : o.dark
+          g.fillRect(x + 2, ly, w - 4, Math.min(2, o.wh))
+          if (lit) {
+            // a few warm rooms among the cold ones
+            if (rnd() < 0.3) {
+              g.fillStyle = o.warm
+              const sx2 = x + 2 + Math.floor(rnd() * Math.max(1, w - 8))
+              g.fillRect(sx2, ly, 3, Math.min(2, o.wh))
+            }
+            // and the mullions cutting the strip into offices
+            g.fillStyle = o.dark
+            for (let mx = x + 4; mx < x + w - 3; mx += 4) g.fillRect(mx, ly, 1, Math.min(2, o.wh))
+            if (rnd() < 0.3) windows.push({ x: x + 2, y: ly, w: w - 4, h: Math.min(2, o.wh) })
+          }
+        }
+      }
+
       // window grid
-      const cols = Math.floor((w - 3) / o.step)
+      const cols = type === 'banded' ? 0 : Math.floor((w - 3) / o.step)
       const rows = Math.floor((h - 5) / o.step)
       for (let c = 0; c < cols; c++) {
         // a whole unlet stack reads as a real building, not a texture
         const colDark = rnd() < 0.13
         for (let r = 0; r < rows; r++) {
-          if (colDark || rnd() > o.litChance) continue
+          /* The unlit cells are DRAWN, not skipped. That is where the
+             reference's density actually comes from: every storey of
+             every tower carries a visible grid of dark recesses, and
+             the lit ones are the minority burning inside it. Skipping
+             them left bare wall and forced the lit count up to
+             compensate, which is what turned the city amber. */
+          const wx0 = x + 2 + c * o.step
+          const wy0 = top + 4 + r * o.step
+          if (wy0 > SKYLINE - o.wh - 1) continue
+          if (wy0 + o.wh > bandY && wy0 < bandY + bandH) continue
+          if (colDark || rnd() > o.litChance) {
+            g.fillStyle = o.dark
+            g.fillRect(wx0, wy0, o.ww, o.wh)
+            continue
+          }
           const wx = x + 2 + c * o.step
           const wy = top + 4 + r * o.step
           if (wy > SKYLINE - o.wh - 1) continue
@@ -944,6 +1002,13 @@
       if (o.neonChance && rnd() < o.neonChance && h > 40 && w > 8) {
         const col = o.neon[Math.floor(rnd() * o.neon.length)]
         const kind = rnd()
+        /* Registered as a flickering tube. `sign` entries invert the
+           window logic: a window is repainted to go OUT, a sign is
+           repainted to come back ON brighter, then drops to a dim
+           state between catches. */
+        const tube = (tx, ty, tw, th) => {
+          windows.push({ x: tx, y: ty, w: tw, h: th, sign: true, col: col, off: o.dark })
+        }
 
         const halo = (hx, hy, hw, hh) => {
           const reach = 8
@@ -969,12 +1034,14 @@
           halo(sx, sy, 2, sh)
           g.fillStyle = col
           g.fillRect(sx, sy, 2, sh)
+          tube(sx, sy, 2, sh)
         } else if (kind < 0.52) {
           // horizontal band near the top
           const sy = top + 6 + Math.floor(rnd() * 14)
           halo(x + 2, sy, w - 4, 2)
           g.fillStyle = col
           g.fillRect(x + 2, sy, w - 4, 2)
+          tube(x + 2, sy, w - 4, 2)
         } else if (kind < 0.78) {
           /* Billboard. The word is chosen to fit the wall rather than
              the wall being sized to the word, so a narrow tower gets
@@ -1589,7 +1656,7 @@
     city = [
       buildCity(4411, {
         minW: 12, maxW: 26, minH: 60, maxH: 150,
-        step: 5, ww: 2, wh: 2, litChance: 0.34,
+        step: 4, ww: 2, wh: 2, litChance: 0.30,
         neon: T.neon, neonChance: 0.18, halo: T.halo, fog: T.fogAmt[0],
         ...T.city[0],
         landmarks: (g, o) => {
@@ -1600,7 +1667,7 @@
       }),
       buildCity(881, {
         minW: 16, maxW: 34, minH: 90, maxH: 205,
-        step: 6, ww: 2, wh: 3, litChance: 0.38,
+        step: 5, ww: 2, wh: 3, litChance: 0.34,
         neon: T.neon, neonChance: 0.32, halo: T.halo, fog: T.fogAmt[1],
         ...T.city[1],
         /* Spread across the loop so that at any moment one or two are
@@ -3656,6 +3723,28 @@
     for (let i = 0; i < list.length; i++) {
       const wnd = list[i]
       const beacon = wnd.beacon
+
+      /* A neon tube is not a window. A window is either occupied or it
+         is not; a tube is a gas discharge on an ageing transformer,
+         which means it holds steady for a long while and then STUTTERS
+         — out, back, out, caught — in a fast burst. So signs run their
+         own cycle: mostly nothing, and a couple of frames of trouble
+         every few seconds, at a period unique to each sign so no two
+         ever gutter together. */
+      if (wnd.sign) {
+        const period = 150 + ((i * 37) % 130)
+        const beat = (frame + i * 13) % period
+        // the stutter: three flicks in the last handful of frames
+        if (beat < period - 7) continue
+        const k = beat - (period - 7)
+        const dark = k === 0 || k === 2 || k === 5
+        const sx2 = wnd.x - o
+        if (sx2 < -40 || sx2 >= W) continue
+        ctx.fillStyle = dark ? wnd.off : wnd.col
+        ctx.fillRect(sx2, wnd.y, wnd.w, wnd.h)
+        continue
+      }
+
       /* Cabins darken in a travelling band rather than at random, which
          is what reads as the wheel's lights chasing round it. */
       const on = wnd.cabin
