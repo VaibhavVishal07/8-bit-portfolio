@@ -2563,7 +2563,13 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 
 .prose b { color: var(--cream); font-weight: 700; }
 .prose a { color: var(--panel-edge); }
-.prose ul { padding-left: 1.4em; }
+.prose ul,
+.prose ol { padding-left: 1.4em; }
+
+.prose ol li::marker {
+  font-family: var(--font-display);
+  color: var(--panel-accent);
+}
 .prose li + li { margin-top: var(--s2); }
 
 .prose blockquote {

@@ -557,6 +557,17 @@
       })
     })
 
+    /* Cross-page links inside documents: "see the work", "say hello".
+       Same launch as the menu, so the windows swap properly. */
+    document.querySelectorAll('a[data-open-win]').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault()
+        const id = a.dataset.openWin
+        if (state.get(id) === 'min') goUp(id)
+        else launch(id)
+      })
+    })
+
     // and the desktop icons
     document.querySelectorAll('.dicon[data-open]').forEach((b) => {
       b.addEventListener('click', () => {
