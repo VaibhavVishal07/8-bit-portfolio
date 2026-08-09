@@ -3387,3 +3387,163 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 @media (prefers-reduced-motion: reduce) {
   .crt__glare { display: none; }
 }
+/* ==================================================================
+   PERSONALITY, NOT COMPETENCE
+
+   The stat bars are gone. A bar chart of your own craft and taste is
+   a claim about how good you are, and nobody was ever won over by
+   somebody else's self-assessment. What follows is the human version:
+   facts, opinions, and things that are true on a Sunday.
+   ================================================================== */
+
+/* ---- quick facts ----
+   A two-column ledger. Label small and quiet, answer loud - so the
+   eye runs down the answers and picks up the labels only where it
+   stops. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--s3) var(--s6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facts li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 2px solid var(--panel-bar);
+}
+
+.facts span {
+  flex: none;
+  width: 9em;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+
+.facts b {
+  font-size: var(--b2);
+  font-weight: 500;
+  color: var(--cream);
+}
+
+/* ---- hills to die on ----
+   Numbered, because an opinion with a number in front of it reads as
+   a position rather than as a passing remark. */
+.takes {
+  counter-reset: take;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 68ch;
+}
+
+.takes li {
+  counter-increment: take;
+  position: relative;
+  padding: var(--s3) 0 var(--s3) 3.2em;
+  border-bottom: 2px solid var(--panel-bar);
+  font-size: var(--b2);
+  color: var(--panel-text);
+}
+
+.takes li::before {
+  content: counter(take, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: var(--s3);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  color: var(--panel-accent);
+}
+
+/* ==================================================================
+   CONTACT
+
+   Five channels stacked in a column read as a form to be worked
+   through. Spread across a grid they read as a set of doors, all
+   equally open - which is the actual message.
+   ================================================================== */
+.wires {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: var(--s4);
+  margin: 0 0 var(--s7);
+  padding: 0;
+  list-style: none;
+}
+
+/* email is the one that actually gets answered, so it gets the room */
+.wire--wide { grid-column: 1 / -1; }
+
+.wire a {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  height: 100%;
+  padding: var(--s4);
+  border: 3px solid var(--panel-dim);
+  background: var(--panel-bar);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lit),
+    inset -1px -1px 0 var(--bevel-shade),
+    var(--cast);
+  text-decoration: none;
+  color: inherit;
+}
+
+.wire a:hover,
+.wire a:focus-visible {
+  border-color: var(--panel-accent);
+  outline: none;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
+}
+
+.wire a:active { transform: translate(0, 0); }
+
+.wire__k {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--gold);
+}
+
+.wire__v {
+  font-size: var(--b3);
+  font-weight: 500;
+  color: var(--cream);
+  overflow-wrap: anywhere;
+}
+
+.wire--wide .wire__v { font-size: var(--b4); }
+
+.wire__go {
+  margin-top: auto;
+  padding-top: var(--s3);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--panel-quiet);
+}
+
+.wire a:hover .wire__go,
+.wire a:focus-visible .wire__go { color: var(--panel-accent); }
+
+@media (max-width: 760px) {
+  .facts { grid-template-columns: minmax(0, 1fr); }
+  .facts span { width: 7.5em; }
+  .takes li { padding-left: 2.6em; }
+}
+/* The two-up was sized for a portrait beside text. Where BOTH sides
+   are text it should split evenly - otherwise the left column runs at
+   four words a line and reads like a newspaper gutter. */
+.grid-2:has(> .prose + .prose) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s6);
+}

@@ -403,29 +403,36 @@
     <div class="screen">
       <div class="scanlines" aria-hidden="true"></div>
       <div class="screen__inner screen__inner--doc">
-        <!-- ABOUT is a CHARACTER SHEET, not a bio. Stats, an inventory, and a
-             shelf of 8-bit posters for whatever is currently in rotation -
-             each poster opens its own card. Personality is specific things,
-             not adjectives about yourself. -->
+        <!-- ABOUT is not a competence audit. Nobody was ever won over by a
+             bar chart of somebody else's taste. This is the human version:
+             where he is from, what he is like on a Sunday, what he will
+             argue about, what is on the desk this month. -->
         <div class="deck" data-deck="about">
           <div class="sheet">
             <span class="sheet__pic card__art"><canvas data-poster="portrait" data-seed="5" aria-hidden="true"></canvas></span>
             <div class="sheet__body">
-              <p class="deck__eyebrow">PLAYER 1</p>
+              <p class="deck__eyebrow">HELLO</p>
               <h2 class="sheet__name">YOUR NAME</h2>
-              <p class="sheet__class">CLASS <span aria-hidden="true">*</span> YOUR ROLE</p>
+              <p class="sheet__class">YOUR ROLE <span aria-hidden="true">*</span> CITY</p>
               <div class="prose">
-                <p>One or two sentences in your own voice. Who you are, what
-                   you are for, and the thing you would rather be doing.</p>
+                <p class="lede">One honest line about who you are when you are
+                   not working. Replace me.</p>
+                <p>Two or three sentences in your own voice - where you grew up,
+                   where you landed, and the thing you would be doing if nobody
+                   were paying you to do anything.</p>
               </div>
-              <ul class="stats">
-                <li><span class="stats__k">CRAFT</span><span class="bar"><i style="width: 84%"></i></span><b>84</b></li>
-                <li><span class="stats__k">SPEED</span><span class="bar"><i style="width: 72%"></i></span><b>72</b></li>
-                <li><span class="stats__k">TASTE</span><span class="bar"><i style="width: 91%"></i></span><b>91</b></li>
-                <li><span class="stats__k">CHAOS</span><span class="bar"><i style="width: 46%"></i></span><b>46</b></li>
-              </ul>
             </div>
           </div>
+
+          <h3 class="deck__h">THE BASICS</h3>
+          <ul class="facts">
+            <li><span>FROM</span><b>Hometown</b></li>
+            <li><span>NOW IN</span><b>City, TZ</b></li>
+            <li><span>MORNINGS</span><b>Reluctant</b></li>
+            <li><span>FUELLED BY</span><b>Filter coffee</b></li>
+            <li><span>WEAKNESS</span><b>Stationery shops</b></li>
+            <li><span>ALWAYS ON</span><b>One podcast too many</b></li>
+          </ul>
 
           <h3 class="deck__h">IN ROTATION</h3>
           <p class="deck__sub">What is actually on the desk this month. Tap one.</p>
@@ -480,32 +487,61 @@
             </li>
           </ul>
 
-          <h3 class="deck__h">INVENTORY</h3>
-          <ul class="chips">
-            <li class="chip">TOOL</li><li class="chip">TOOL</li><li class="chip">TOOL</li>
-            <li class="chip">TOOL</li><li class="chip">TOOL</li><li class="chip">TOOL</li>
-            <li class="chip">TOOL</li><li class="chip">TOOL</li>
+          <h3 class="deck__h">HILLS I WILL DIE ON</h3>
+          <p class="deck__sub">Small opinions, held far too strongly.</p>
+          <ul class="takes">
+            <li>A strong opinion about food. Everyone has one.</li>
+            <li>The film everybody likes that you do not.</li>
+            <li>The film nobody likes that you do.</li>
+            <li>Something about how a city should work.</li>
+            <li>A hill so small it is embarrassing. Keep this one.</li>
           </ul>
+
+          <div class="grid-2">
+            <div class="prose">
+              <h3>A day off looks like</h3>
+              <p>Where you go, who you go with, what time you get out of bed and
+                 what you eat. Concrete beats charming - the specifics are the
+                 personality.</p>
+              <h3>Things I am bad at</h3>
+              <p>Two or three, honestly. This is the most likeable paragraph on
+                 any about page and almost nobody writes it.</p>
+            </div>
+            <div class="prose">
+              <h3>Ask me about</h3>
+              <ul>
+                <li>The thing you can talk about for an hour unprompted.</li>
+                <li>Another one.</li>
+                <li>The weird one. Always keep the weird one.</li>
+              </ul>
+              <h3>Do not ask me about</h3>
+              <p>One thing, said with a wink.</p>
+            </div>
+          </div>
 
           <h3 class="deck__h">SIDE QUESTS</h3>
           <div class="prose">
             <ul>
               <li>Something you do that has nothing to do with work.</li>
               <li>The hobby you are suspiciously serious about.</li>
-              <li>The weird one. Keep the weird one.</li>
+              <li>The one you are genuinely bad at and do anyway.</li>
             </ul>
           </div>
 
           <h3 class="deck__h">LOG</h3>
           <ul class="xp">
-            <li><b>2025</b> Placeholder - a thing that mattered this year <span>NOW</span></li>
-            <li><b>2024</b> Placeholder - shipped, moved, learned, started <span>+1</span></li>
-            <li><b>2022</b> Placeholder - the pivot, the leap, the first big one <span>+1</span></li>
-            <li><b>2020</b> Placeholder - where the story starts <span>START</span></li>
+            <li><b>2025</b> Something that actually happened to you <span>NOW</span></li>
+            <li><b>2024</b> Moved, learned, started, quit <span>+1</span></li>
+            <li><b>2022</b> The leap <span>+1</span></li>
+            <li><b>2020</b> Where the story starts <span>START</span></li>
           </ul>
+
+          <div class="prose">
+            <p>Still reading? <a href="#contact" data-open-win="contact">Come say hello &gt;</a></p>
+          </div>
         </div>
 
-        <article class="level" id="a1" hidden>
+<article class="level" id="a1" hidden>
           <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> BACK</button>
           <p class="level__no">READING</p>
           <h2 class="level__title">BOOK TITLE</h2>
@@ -591,80 +627,75 @@
     <div class="screen">
       <div class="scanlines" aria-hidden="true"></div>
       <div class="screen__inner screen__inner--doc">
-        <p class="doc__path">C:\PORTFOLIO\CONTACT</p>
-        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>PLAYER 2 WANTED</h2>
-        <p class="join__lead">The party has an open slot. Pick a channel:</p>
+        <div class="deck" data-deck="contact">
+          <header class="deck__head">
+            <p class="deck__eyebrow">C:\PORTFOLIO\CONTACT</p>
+            <h2 class="deck__title">SAY HELLO</h2>
+            <p class="deck__hint">Any of these reaches me. The first one reaches me fastest.</p>
+          </header>
 
-        <div class="contacts">
-          <a class="contact" href="#mail" data-say="EMAIL — the reliable route. The human checks it more often than the food bowl. Placeholder address.">
-            <span class="contact__glyph contact__glyph--mail" aria-hidden="true"></span>
-            <span class="contact__body">
-              <span class="contact__k">EMAIL</span>
-              <span class="contact__v">you@example.com</span>
-            </span>
-            <span class="contact__go">SEND <b aria-hidden="true">&gt;</b></span>
-          </a>
-          <a class="contact" href="#social" data-say="SOCIAL — shorter attention span, faster reply. Placeholder handle.">
-            <span class="contact__glyph contact__glyph--at" aria-hidden="true"></span>
-            <span class="contact__body">
-              <span class="contact__k">SOCIAL</span>
-              <span class="contact__v">@handle</span>
-            </span>
-            <span class="contact__go">OPEN <b aria-hidden="true">&gt;</b></span>
-          </a>
-          <a class="contact" href="#github" data-say="GITHUB — where the human argues with computers in public. Placeholder link.">
-            <span class="contact__glyph contact__glyph--doc" aria-hidden="true"></span>
-            <span class="contact__body">
-              <span class="contact__k">GITHUB</span>
-              <span class="contact__v">github.com/handle</span>
-            </span>
-            <span class="contact__go">OPEN <b aria-hidden="true">&gt;</b></span>
-          </a>
-          <a class="contact" href="#linkedin" data-say="LINKEDIN — the polite version of all of this. Placeholder link.">
-            <span class="contact__glyph contact__glyph--at" aria-hidden="true"></span>
-            <span class="contact__body">
-              <span class="contact__k">LINKEDIN</span>
-              <span class="contact__v">linkedin.com/in/handle</span>
-            </span>
-            <span class="contact__go">OPEN <b aria-hidden="true">&gt;</b></span>
-          </a>
-          <a class="contact" href="resume.pdf" download data-say="CV — the full save file, as a PDF. It downloads; no coins required.">
-            <span class="contact__glyph contact__glyph--doc" aria-hidden="true"></span>
-            <span class="contact__body">
-              <span class="contact__k">CV</span>
-              <span class="contact__v">resume.pdf</span>
-            </span>
-            <span class="contact__go">GET <b aria-hidden="true">&gt;</b></span>
-          </a>
-        </div>
-
-        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>STATUS</h2>
-        <div class="prose">
-          <p><b>Placeholder availability line</b> — open to full-time / freelance /
-             collaborations, whichever is true. Based in CITY (TZ), working
-             happily with anywhere.</p>
-        </div>
-
-        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>A GOOD FIRST MESSAGE</h2>
-        <div class="prose">
-          <ul>
-            <li>What you are building, in one line.</li>
-            <li>Where it is stuck, or where it wants to go.</li>
-            <li>Rough timeline. Honest is better than optimistic.</li>
+          <ul class="wires">
+            <li class="wire wire--wide">
+              <a href="mailto:you@example.com">
+                <span class="wire__k">EMAIL</span>
+                <span class="wire__v">you@example.com</span>
+                <span class="wire__go">SEND <b aria-hidden="true">&gt;</b></span>
+              </a>
+            </li>
+            <li class="wire">
+              <a href="#social">
+                <span class="wire__k">SOCIAL</span>
+                <span class="wire__v">@handle</span>
+                <span class="wire__go">OPEN <b aria-hidden="true">&gt;</b></span>
+              </a>
+            </li>
+            <li class="wire">
+              <a href="#github">
+                <span class="wire__k">GITHUB</span>
+                <span class="wire__v">github.com/handle</span>
+                <span class="wire__go">OPEN <b aria-hidden="true">&gt;</b></span>
+              </a>
+            </li>
+            <li class="wire">
+              <a href="#linkedin">
+                <span class="wire__k">LINKEDIN</span>
+                <span class="wire__v">in/handle</span>
+                <span class="wire__go">OPEN <b aria-hidden="true">&gt;</b></span>
+              </a>
+            </li>
+            <li class="wire">
+              <a href="resume.pdf" download>
+                <span class="wire__k">CV</span>
+                <span class="wire__v">resume.pdf</span>
+                <span class="wire__go">GET <b aria-hidden="true">&gt;</b></span>
+              </a>
+            </li>
           </ul>
-          <p>That is it. No brief required — a paragraph is plenty.</p>
-        </div>
 
-        <div class="talk" data-intro="Mrow. The human is friendly and answers faster than I do. Pick a channel — or just stay and watch the rain with me.">
-          <span class="talk__cat" aria-hidden="true"><i></i></span>
-          <div class="talk__box">
-            <span class="talk__name">CAT</span>
-            <p class="talk__text" aria-live="polite"></p>
+          <div class="grid-2">
+            <div class="prose">
+              <h3>Where I am</h3>
+              <p>CITY (TZ). Happy working with anywhere - I have done the
+                 six-hour-difference thing and it is fine.</p>
+              <h3>Right now</h3>
+              <p><b>Open to full-time / freelance / collaborations</b>, whichever
+                 is true. Replace this line when it stops being true.</p>
+            </div>
+            <div class="prose">
+              <h3>A good first message</h3>
+              <ul>
+                <li>What you are building, in one line.</li>
+                <li>Where it is stuck, or where it wants to go.</li>
+                <li>Rough timeline. Honest beats optimistic.</li>
+              </ul>
+              <p>That is it. No brief required - a paragraph is plenty.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="window__status"><span class="field field--grow">5 CHANNELS</span><span class="field">ONLINE</span><span class="field">C:\</span></div>
+
+<div class="window__status"><span class="field field--grow">5 CHANNELS</span><span class="field">ONLINE</span><span class="field">C:\</span></div>
 
   </section>
 </main>
