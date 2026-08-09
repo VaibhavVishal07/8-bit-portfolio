@@ -76,22 +76,11 @@
 
   const animating = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  /* Read before the first build — the builders branch on it.
-
-     A first-time visitor lands in RAIN: night, neon, wet streets is
-     this scene at its best, and the landing should open on the best.
-     The default only applies while both keys are unset — the moment a
-     visitor touches a weather button, their choice persists and wins. */
+  /* Every load opens the same way: night, rain, neon on wet streets.
+     The scene at its best is the scene you land on. The weather
+     buttons still work for the visit; the choice just does not follow
+     you home. A portfolio gets to insist on its opening shot. */
   let weather = 'rain'
-  try {
-    const r = localStorage.getItem('scene-rain')
-    const sn = localStorage.getItem('scene-snow')
-    if (sn === 'on') weather = 'snow'
-    else if (r === 'on') weather = 'rain'
-    else if (r !== null || sn !== null) weather = 'none'
-  } catch (e) {
-    /* storage unavailable — the default stands */
-  }
 
   /* ---- weather transitions ----
      Weather used to arrive all at once: press the button and two
@@ -4507,15 +4496,7 @@
     seedPanelPile()
   })
 
-  const saved = (function () {
-    try {
-      return localStorage.getItem('scene-theme')
-    } catch (e) {
-      return null
-    }
-  })()
-
-  setTheme(saved === 'day' ? 'day' : 'night')
+  setTheme('night')
 
   /* A reload straight into snow never passes through setWeather, so the
      ledges are seeded here too. */
@@ -4528,23 +4509,13 @@
      it, so the page does not open by fading in from an empty canvas. */
   ready = true
 
-  function persistWeather() {
-    try {
-      localStorage.setItem('scene-rain', target === 'rain' ? 'on' : 'off')
-      localStorage.setItem('scene-snow', target === 'snow' ? 'on' : 'off')
-    } catch (e) {
-      /* storage unavailable — the choice just won't persist */
-    }
-  }
+  /* Deliberately nothing persists: the landing is a directed shot,
+     not a saved state. */
+  function persistWeather() {}
 
   window.__scene = {
     setTheme(name) {
       setTheme(name)
-      try {
-        localStorage.setItem('scene-theme', name)
-      } catch (e) {
-        /* storage unavailable — the choice just won't persist */
-      }
     },
     current: () => (T === THEMES.day ? 'day' : 'night'),
 
