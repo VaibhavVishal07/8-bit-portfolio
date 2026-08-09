@@ -288,6 +288,10 @@
       contact: 'CONTACT.EXE',
     }
     const desk = document.querySelector('.desktop')
+    /* Declared up here because paint() - defined above travel() -
+       has to be able to ask whether the world exists yet. */
+    let world = null
+    let here = 0
     const state = new Map()
     wins.forEach((el, id) => state.set(id, el.hasAttribute('hidden') ? 'closed' : 'up'))
 
@@ -357,6 +361,13 @@
     }
 
     const paint = () => {
+      /* In world mode there is nothing to paint: no window is ever
+         hidden, shown, minimised or stacked, because they are places
+         standing side by side and travel() decides which one you are
+         looking at. Left running, this would keep hiding the three
+         places you are not currently standing in. */
+      if (world) return
+
       let live = 0
       let anyMin = false
 
@@ -412,7 +423,13 @@
     }
 
     function close(id) {
-      state.set(id, 'closed')
+      /* Nothing to close: the places are all still standing. The
+         control means "take me back to the start", which is the only
+         part of closing anybody actually wanted. */
+      if (world) {
+        travel(0)
+        return
+      }      state.set(id, 'closed')
       wins.get(id).classList.remove('is-max')
       // fall back to whatever is still alive, so the screen is never bare
       if (![...state.values()].includes('up')) {
@@ -530,23 +547,95 @@
        whatever was up drops to the bar while the new window comes up
        off it. If nothing was up — you are looking at the desktop — only
        the second half plays. */
+    /* ---- travel ----
+       The whole navigation model, in one function. Every place is
+       already on screen, side by side; going somewhere is a matter of
+       sliding the strip and telling the scene where to point its
+       camera. Nothing opens, nothing closes, nothing stacks. */
+    const ORDER = ['portfolio', 'work', 'about', 'contact']
+    const PLACE_LABEL = {
+      portfolio: ['HOME', 'THE ROOF'],
+      work: ['WORK', 'EAST SIDE'],
+      about: ['ABOUT', 'THE DEN'],
+      contact: ['CONTACT', 'THE MAST'],
+    }
+
+
+    function buildWorld() {
+      if (world) return
+      world = document.createElement('div')
+      world.className = 'world'
+      const stage = document.querySelector('.stage')
+      ORDER.forEach((id) => {
+        const el = wins.get(id)
+        if (!el) return
+        el.hidden = false
+        el.removeAttribute('hidden')
+        /* A slot exactly one viewport wide, with the window centred
+           inside it. The windows cannot be the strip's cells
+           themselves: they carry a max-width, and a cell allowed to
+           cap its own width is not a reliable unit of travel. */
+        const slot = document.createElement('div')
+        slot.className = 'place'
+        slot.appendChild(el)
+        world.appendChild(slot)
+      })
+      stage.appendChild(world)
+
+      // the compass replaces the taskbar: it is a place-list now
+      const nav = document.createElement('nav')
+      nav.className = 'compass'
+      nav.setAttribute('aria-label', 'Places')
+      ORDER.forEach((id, i) => {
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.className = 'compass__btn'
+        b.dataset.go = String(i)
+        b.innerHTML = PLACE_LABEL[id][0] + '<b>' + PLACE_LABEL[id][1] + '</b>'
+        nav.appendChild(b)
+      })
+      document.body.appendChild(nav)
+      nav.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-go]')
+        if (b) travel(Number(b.dataset.go))
+      })
+      if (bar) bar.hidden = true
+      travel(0, true)
+    }
+
+    function travel(i, silent) {
+      here = Math.max(0, Math.min(ORDER.length - 1, i))
+      world.style.transform = 'translateX(-' + here * 100 + 'vw)'
+      /* The city pans further than the strip does. Parallax means the
+         near deck slides most and the ridge barely stirs, which is
+         what sells the movement as distance rather than as a slide. */
+      if (window.__scene && window.__scene.panTo) window.__scene.panTo(here * 300)
+      document.querySelectorAll('.compass__btn').forEach((b, n) => {
+        b.setAttribute('aria-current', n === here ? 'true' : 'false')
+      })
+      ORDER.forEach((id, n) => {
+        const el = wins.get(id)
+        if (!el) return
+        // only the place you are standing in is reachable by tab
+        el.toggleAttribute('inert', n !== here)
+        if (n === here) el.setAttribute('data-active', '')
+        else el.removeAttribute('data-active')
+      })
+      if (!silent) {
+        const el = wins.get(ORDER[here])
+        const sc = el && el.querySelector('.screen__inner')
+        if (sc) sc.scrollTop = 0
+      }
+    }
+
+    /* Opening is travelling now. Every existing caller - the title
+       menu, the desktop icons, the in-document links - keeps working
+       untouched; what changed is only what "open" means. */
     function launch(id) {
-      // a window always opens on its deck, whatever was open last time
       const deckWin = document.querySelector('.window[data-win="' + id + '"]')
       if (deckWin) showDeck(deckWin)
-      if (!wins.has(id) || state.get(id) === 'up') return
-      const prev = [...state.keys()].find((k) => state.get(k) === 'up')
-      const fromPrev = prev ? rectOf(wins.get(prev)) : null
-      open(id)
-      paint()
-      if (prev) zoom(fromPrev, taskRect(prev))
-      const w = wins.get(id)
-      w.classList.add('is-zooming')
-      zoom(taskRect(id) || rectOf(w), rectOf(w), () => {
-        w.classList.remove('is-zooming')
-        const btn = w.querySelector('.winbtn--close')
-        if (btn) btn.focus()
-      })
+      const i = ORDER.indexOf(id)
+      if (i >= 0) travel(i)
     }
 
     // the title-screen menu
@@ -569,6 +658,8 @@
         else launch(id)
       })
     })
+
+    buildWorld()
 
     // and the desktop icons
     document.querySelectorAll('.dicon[data-open]').forEach((b) => {
@@ -629,6 +720,17 @@
         if (lastCard && win.contains(lastCard)) lastCard.focus()
       }
     })
+    /* The roof runs left to right, so the arrow keys walk it. On a
+       page that spent this long pretending to be a game, arrow keys
+       not working would be the tell. */
+    document.addEventListener('keydown', (e) => {
+      if (!world) return
+      // the target can be document itself, which has no closest()
+      const t = e.target
+      if (t && t.closest && t.closest('input, textarea')) return
+      if (e.key === 'ArrowRight') travel(here + 1)
+      else if (e.key === 'ArrowLeft') travel(here - 1)
+    })
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return
       /* One step at a time: escape out of a stage back to the select
@@ -641,12 +743,9 @@
         if (lastCard && lw.contains(lastCard)) lastCard.focus()
         return
       }
-      for (const [id, st] of state) {
-        if (st === 'up' && id !== 'portfolio') {
-          close(id)
-          paint()
-          return
-        }
+      if (world && here !== 0) {
+        travel(0)
+        return
       }
     })
 

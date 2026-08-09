@@ -332,7 +332,7 @@
       haze: '#7a1fb0',
       smog: '#5a1a8c',
       fog: '#3a1880',
-      fogAmt: [0.30, 0.16, 0.04],
+      fogAmt: [0.42, 0.20, 0.02],
       rainSky: '#0d0520',
       snowSky: '#241c48',
       snowWash: [0.10, 0.26], blanket: [0.85, 0.15], fogSnowBoost: 0.18,
@@ -346,11 +346,11 @@
       /* The ridge behind everything: a fourth silhouette plane pitched
          just below the haze, so the far city has something to be in
          front of. Depth is planes, and three was one short. */
-      cityFar: { fill: '#241247', lit: '#2f1a5c', dark: '#1a0c38', window: '#5a3fa0', warm: '#7a55b8' },
+      cityFar: { fill: '#3a2270', lit: '#4a2e88', dark: '#2a1655', window: '#6b50b0', warm: '#8a63c8' },
       city: [
-        { fill: '#150931', lit: '#22104c', dark: '#0a0420', window: '#7b4fd8', warm: '#ff2bb0' },
-        { fill: '#1c0d42', lit: '#2c1566', dark: '#0f0626', window: '#a86bff', warm: '#ff5cc4' },
-        { fill: '#0c0420', lit: '#170838', dark: '#04010e', window: '#c98cff', warm: '#ff7ad4' },
+        { fill: '#2a1461', lit: '#3d1f85', dark: '#1a0b3e', window: '#9b74e8', warm: '#ff5cc4' },
+        { fill: '#160a36', lit: '#241058', dark: '#0a0420', window: '#a86bff', warm: '#ff5cc4' },
+        { fill: '#07020f', lit: '#12052a', dark: '#020007', window: '#c98cff', warm: '#ff7ad4' },
       ],
       // hot pink, cyan, neon purple, electric yellow, neon green
       neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d'],
@@ -479,6 +479,16 @@
   let sky, clouds, roof, viaduct
   let city = []
   let ridge = null
+  /* ---- the camera ----
+     Sections are not windows stacked on top of each other any more,
+     they are PLACES further along the same rooftop. Travelling to one
+     slides this offset, and every parallax layer reads it, so the
+     whole city drifts past at its own depth-appropriate rate. That
+     drift is the entire reason the navigation feels like walking
+     rather than like tabbing. */
+  let panX = 0
+  let panTo = 0
+
   let roofLights = []
   let puddles = []
   /* Lighthouse lanterns. Their beams sweep, so they cannot be baked
@@ -4494,11 +4504,19 @@
     drawCameo()
     if (!T.stars) drawBirds()
 
+    /* The camera catches up in steps, never smoothly: this scene has
+       no easing anywhere else and would not survive it here. */
+    if (panX !== panTo) {
+      const d = panTo - panX
+      const step = Math.sign(d) * Math.max(6, Math.round(Math.abs(d) / 5))
+      panX = Math.abs(d) <= Math.abs(step) ? panTo : panX + step
+    }
+
     // Parallax: furthest layer slowest. The ridge barely moves at all.
-    if (ridge) blit(ridge.buf, -Math.floor(frame / 40))
-    const o0 = -Math.floor(frame / 26)
-    const o1 = -Math.floor(frame / 17)
-    const o2 = -Math.floor(frame / 11)
+    if (ridge) blit(ridge.buf, -Math.floor(frame / 40) - Math.round(panX * 0.10))
+    const o0 = -Math.floor(frame / 26) - Math.round(panX * 0.22)
+    const o1 = -Math.floor(frame / 17) - Math.round(panX * 0.42)
+    const o2 = -Math.floor(frame / 11) - Math.round(panX * 0.68)
 
     blit(city[0].buf, o0)
     flicker(city[0], o0)
@@ -4648,6 +4666,11 @@
   window.__scene = {
     setTheme(name) {
       setTheme(name)
+    },
+    /* Where the camera is looking, in scene pixels. The navigation
+       drives this; the scene does not care why. */
+    panTo(v) {
+      panTo = v
     },
     current: () => (T === THEMES.day ? 'day' : 'night'),
 
