@@ -92,6 +92,19 @@
       { bg: '#101828', ink: '#04070f', hi: '#ffd8a0', lo: '#5a6f9c' },
       { bg: '#241028', ink: '#0c0410', hi: '#ff9ec0', lo: '#7c5090' },
     ],
+    /* Four handhelds, not four copies of one. The shelf should read
+       like somebody's actual collection: the grey brick, the berry
+       and teal Colors, and the clear-plastic one everybody wanted. */
+    gb: [
+      { body: '#c8c4b0', dark: '#8e8b7c', light: '#e2dfcd', trim: '#5a5750',
+        screen: '#4a5a3c', pad: '#4a4458', btn: '#c02a5e', text: '#8e8b7c' },
+      { body: '#8e3f6e', dark: '#5f2849', light: '#b2618f', trim: '#3a1a2c',
+        screen: '#3c4a52', pad: '#2c1a24', btn: '#f0c040', text: '#5f2849' },
+      { body: '#2f7f86', dark: '#1e565c', light: '#4aa3aa', trim: '#143b40',
+        screen: '#40503a', pad: '#122c30', btn: '#e8683c', text: '#1e565c' },
+      { body: '#7a6f9c', dark: '#544a6e', light: '#9a8fc0', trim: '#332c46',
+        screen: '#44404f', pad: '#2a2338', btn: '#3ad0c8', text: '#544a6e' },
+    ],
     portrait: [
       { bg: '#241247', ink: '#0a0420', hi: '#19d7e8', lo: '#7b4fd8', skin: '#e8b08a' },
       { bg: '#1a2f4a', ink: '#050f1c', hi: '#ff3ea0', lo: '#3f6fa0', skin: '#c98f6a' },
@@ -384,6 +397,83 @@
     g.fillRect(cx - 12, top - 2, 24, 2)
   }
 
+  /* ---- the handheld ----
+     The project poster does not sit in a frame any more, it PLAYS on
+     a console: body, recessed screen, d-pad, two buttons, speaker
+     grille. The city art is drawn into the screen area by the same
+     function that draws the big covers, just handed a smaller canvas
+     - so the thing on the screen is a real generated game, not a
+     picture of one. */
+  function drawHandheld(g, W, H, rnd, p) {
+    g.fillStyle = p.body
+    g.fillRect(0, 0, W, H)
+
+    // moulded edges: light along the top-left, shadow bottom-right
+    g.fillStyle = p.light
+    g.fillRect(0, 0, W, 2)
+    g.fillRect(0, 0, 2, H)
+    g.fillStyle = p.dark
+    g.fillRect(0, H - 2, W, 2)
+    g.fillRect(W - 2, 0, 2, H)
+
+    /* the screen well, inset and darker than the shell */
+    const sx = 8
+    const sy = 9
+    const sw = W - 16
+    const sh = Math.round(H * 0.44)
+    g.fillStyle = p.trim
+    g.fillRect(sx - 4, sy - 4, sw + 8, sh + 10)
+    g.fillStyle = p.dark
+    g.fillRect(sx - 2, sy - 2, sw + 4, sh + 4)
+
+    // the game running on it
+    g.save()
+    g.beginPath()
+    g.rect(sx, sy, sw, sh)
+    g.clip()
+    g.translate(sx, sy)
+    drawWork(g, sw, sh, rnd, PAL.work[Math.floor(rnd() * PAL.work.length)])
+    g.restore()
+
+    // the power lamp, always on
+    g.fillStyle = '#e04a4a'
+    g.fillRect(3, sy + 6, 2, 2)
+
+    /* the wordmark, in the dot-matrix way the original set it */
+    const ly = sy + sh + 8
+    g.fillStyle = p.text
+    for (let i = 0; i < 7; i++) g.fillRect(sx + 6 + i * 5, ly, 3, 4)
+
+    /* controls. A d-pad is a plus sign and everybody knows it. */
+    const px = 14
+    const py = ly + 12
+    g.fillStyle = p.pad
+    g.fillRect(px - 4, py + 4, 20, 6)
+    g.fillRect(px + 3, py - 3, 6, 20)
+    g.fillStyle = p.trim
+    g.fillRect(px + 5, py + 6, 2, 2)
+
+    // A and B, offset on the diagonal the way they always were
+    g.fillStyle = p.btn
+    const bx = W - 26
+    for (const [ox, oy] of [[10, 0], [0, 7]]) {
+      for (let y = -3; y <= 3; y++) {
+        for (let x = -3; x <= 3; x++) {
+          if (x * x + y * y > 10) continue
+          g.fillRect(bx + ox + x, py + oy + y, 1, 1)
+        }
+      }
+    }
+
+    // speaker grille, on the diagonal in the bottom right corner
+    g.fillStyle = p.dark
+    for (let i = 0; i < 5; i++) {
+      for (let k = 0; k < 7; k++) {
+        g.fillRect(W - 22 + i * 3 + k, H - 16 + k, 2, 1)
+      }
+    }
+  }
+
   const KIND = {
     work: drawWork,
     book: drawBook,
@@ -391,6 +481,7 @@
     film: drawFilm,
     music: drawMusic,
     portrait: drawPortrait,
+    gb: drawHandheld,
   }
 
   /* Paint one canvas. The element carries its own instructions:
@@ -402,8 +493,8 @@
 
     // Internal resolution is fixed and small; CSS stretches it with
     // image-rendering: pixelated, so the art scales without softening.
-    const W = kind === 'work' ? 176 : 96
-    const H = kind === 'work' ? 99 : 132
+    const W = kind === 'work' ? 176 : kind === 'gb' ? 104 : 96
+    const H = kind === 'work' ? 99 : kind === 'gb' ? 150 : 132
     cv.width = W
     cv.height = H
 

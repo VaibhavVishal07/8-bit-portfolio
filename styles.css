@@ -3269,3 +3269,18 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   .window__menu { display: none; }
   .window__status .field:not(.field--grow) { display: none; }
 }
+/* A handheld is portrait and taller than a cover, and it wants air
+   around it: the shelf reads as consoles standing on it rather than
+   as tiles butted together. */
+.card__art canvas[data-poster='gb'] {
+  aspect-ratio: 104 / 150;
+  object-fit: contain;
+  padding: var(--s3);
+  background: transparent;
+}
+
+.card:has(canvas[data-poster='gb']) .card__art {
+  background: var(--panel);
+}
+
+.card:has(canvas[data-poster='gb']) .card__art::after { opacity: 0.35; }
