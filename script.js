@@ -531,6 +531,9 @@
        off it. If nothing was up — you are looking at the desktop — only
        the second half plays. */
     function launch(id) {
+      // a window always opens on its deck, whatever was open last time
+      const deckWin = document.querySelector('.window[data-win="' + id + '"]')
+      if (deckWin) showDeck(deckWin)
       if (!wins.has(id) || state.get(id) === 'up') return
       const prev = [...state.keys()].find((k) => state.get(k) === 'up')
       const fromPrev = prev ? rectOf(wins.get(prev)) : null
@@ -576,8 +579,68 @@
       })
     })
 
+    /* ---------------- deck <-> level ----------------
+
+       WORK and ABOUT are not documents; they are select screens. The
+       window holds two views - the .deck of cards and one .level per
+       card - and choosing a card swaps them. Nothing navigates away,
+       nothing opens another window: it is the same screen changing
+       what it is showing, which is how a game does it. */
+    let lastCard = null
+
+    function showDeck(win) {
+      const scope = win || doc
+      scope.querySelectorAll('.level').forEach((l) => (l.hidden = true))
+      scope.querySelectorAll('.deck').forEach((d) => (d.hidden = false))
+      const sc = scope.querySelector('.screen__inner')
+      if (sc) sc.scrollTop = 0
+    }
+
+    function showLevel(id) {
+      const lvl = document.getElementById(id)
+      if (!lvl) return
+      const win = lvl.closest('.window')
+      win.querySelectorAll('.deck').forEach((d) => (d.hidden = true))
+      win.querySelectorAll('.level').forEach((l) => (l.hidden = l.id !== id))
+      // posters inside a hidden pane could not size themselves; now
+      // that it is visible, let the generator have another go
+      if (window.Posters) window.Posters.paintAll(lvl)
+      const sc = win.querySelector('.screen__inner')
+      if (sc) sc.scrollTop = 0
+      const back = lvl.querySelector('[data-back]')
+      if (back) back.focus()
+    }
+
+    document.addEventListener('click', (e) => {
+      const go = e.target.closest('[data-goto]')
+      if (go) {
+        e.preventDefault()
+        if (go.classList.contains('card')) lastCard = go
+        showLevel(go.dataset.goto)
+        return
+      }
+      const back = e.target.closest('[data-back]')
+      if (back) {
+        e.preventDefault()
+        const win = back.closest('.window')
+        showDeck(win)
+        // hand focus back to the card they came from, so keyboard
+        // users are not dumped at the top of the list
+        if (lastCard && win.contains(lastCard)) lastCard.focus()
+      }
+    })
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return
+      /* One step at a time: escape out of a stage back to the select
+         screen first, and only close the window if you are already
+         there. Escape that skips a level feels like a trapdoor. */
+      const openLevel = document.querySelector('.window:not([hidden]) .level:not([hidden])')
+      if (openLevel) {
+        const lw = openLevel.closest('.window')
+        showDeck(lw)
+        if (lastCard && lw.contains(lastCard)) lastCard.focus()
+        return
+      }
       for (const [id, st] of state) {
         if (st === 'up' && id !== 'portfolio') {
           close(id)
@@ -668,7 +731,7 @@
   const talkFast = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   document.querySelectorAll('.screen__inner--doc').forEach((doc) => {
-    const talk = doc.querySelector('.talk')
+    const talk = document.querySelector('.talk')
     if (!talk) return
     const out = talk.querySelector('.talk__text')
     let timer = 0
@@ -696,24 +759,24 @@
     }
 
     // anything in this document that has something to say
-    doc.addEventListener('mouseover', (e) => {
+    document.addEventListener('mouseover', (e) => {
       const t = e.target.closest('[data-say]')
       if (t) say(t.dataset.say)
     })
-    doc.addEventListener('focusin', (e) => {
+    document.addEventListener('focusin', (e) => {
       const t = e.target.closest('[data-say]')
       if (t) say(t.dataset.say)
     })
     /* Touch has no hover, so a tap asks the cat directly. This also
        fires alongside a click that does something else (opening a
        stage), which is right: the cat comments on what you just did. */
-    doc.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
       const t = e.target.closest('[data-say]')
       if (t) say(t.dataset.say)
     })
 
     // the intro fires when the window first becomes visible
-    const win = doc.closest('.window')
+    const win = talk.closest('.window')
     if (win) {
       let greeted = false
       new MutationObserver(() => {
