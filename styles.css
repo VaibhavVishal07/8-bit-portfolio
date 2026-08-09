@@ -2747,7 +2747,9 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 /* ---- the rack ---- */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  /* Bigger. A cartridge is the object you are choosing between, so
+     it should be big enough to read the label on. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 560px), 1fr));
   gap: var(--s4);
   margin: 0;
   padding: 0;
@@ -3269,21 +3271,20 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   .window__menu { display: none; }
   .window__status .field:not(.field--grow) { display: none; }
 }
-/* A handheld is portrait and taller than a cover, and it wants air
-   around it: the shelf reads as consoles standing on it rather than
-   as tiles butted together. */
-.card__art canvas[data-poster='gb'] {
-  aspect-ratio: 104 / 150;
+/* A cartridge is landscape and wants air around it: the rack reads as
+   objects sitting on a shelf rather than tiles butted together. */
+.card__art canvas[data-poster='cart'] {
+  aspect-ratio: 152 / 112;
   object-fit: contain;
-  padding: var(--s3);
+  padding: var(--s4);
   background: transparent;
 }
 
-.card:has(canvas[data-poster='gb']) .card__art {
+.card:has(canvas[data-poster='cart']) .card__art {
   background: var(--panel);
 }
 
-.card:has(canvas[data-poster='gb']) .card__art::after { opacity: 0.35; }
+.card:has(canvas[data-poster='cart']) .card__art::after { opacity: 0.3; }
 /* ==================================================================
    THE TUBE
 

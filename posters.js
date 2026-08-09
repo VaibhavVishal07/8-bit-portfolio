@@ -95,6 +95,15 @@
     /* Four handhelds, not four copies of one. The shelf should read
        like somebody's actual collection: the grey brick, the berry
        and teal Colors, and the clear-plastic one everybody wanted. */
+    /* Famicom shells. The plastic is the loud part and the label is
+       where the game lives - which is the opposite of a modern box,
+       and the reason a shelf of these reads so well. */
+    cart: [
+      { shell: '#d8cfb4', light: '#eee7d2', dark: '#a89f86', label: '#f2ecdc', ink: '#2a2620', accent: '#c0392b' },
+      { shell: '#2f9aa8', light: '#4fbccb', dark: '#1d6f7a', label: '#f2ecdc', ink: '#10333a', accent: '#e8683c' },
+      { shell: '#c0392b', light: '#d9584a', dark: '#8c2820', label: '#f2ecdc', ink: '#3a1410', accent: '#f0c040' },
+      { shell: '#26242a', light: '#413e47', dark: '#131218', label: '#e8e2d2', ink: '#1a181e', accent: '#3ad0c8' },
+    ],
     gb: [
       { body: '#c8c4b0', dark: '#8e8b7c', light: '#e2dfcd', trim: '#5a5750',
         screen: '#4a5a3c', pad: '#4a4458', btn: '#c02a5e', text: '#8e8b7c' },
@@ -474,6 +483,75 @@
     }
   }
 
+  /* ---- the cartridge ----
+     Shell, paper label, ridged grip. The label carries the art and a
+     title block, the shell carries nothing but colour and mouldings -
+     which is exactly the split the real ones had, and why a shelf of
+     them reads as a collection at a glance. */
+  function drawCart(g, W, H, rnd, p) {
+    // shell, with the shoulder stepped in at the top like the real one
+    g.fillStyle = p.shell
+    g.fillRect(0, 4, W, H - 4)
+    g.fillRect(6, 0, W - 12, 6)
+
+    // mouldings
+    g.fillStyle = p.light
+    g.fillRect(6, 0, W - 12, 2)
+    g.fillRect(0, 4, 2, H - 4)
+    g.fillStyle = p.dark
+    g.fillRect(W - 2, 4, 2, H - 4)
+    g.fillRect(0, H - 2, W, 2)
+
+    /* the paper label: inset, lighter than the shell, and sitting
+       proud of it by one pixel of shadow */
+    const lx = 8
+    const ly = 9
+    const lw = W - 16
+    const lh = H - 34
+    g.fillStyle = p.dark
+    g.fillRect(lx - 1, ly - 1, lw + 2, lh + 2)
+    g.fillStyle = p.label
+    g.fillRect(lx, ly, lw, lh)
+
+    // the header strip every one of these had, in unreadable small type
+    g.fillStyle = p.ink
+    for (let i = 0; i < 9; i++) g.fillRect(lx + 3 + i * 4, ly + 3, 2, 2)
+    g.fillStyle = p.accent
+    g.fillRect(lx + lw - 12, ly + 3, 9, 2)
+
+    /* the art window - a real generated city, drawn by the same
+       function that draws the big covers */
+    const ax = lx + 3
+    const ay = ly + 8
+    const aw = lw - 6
+    const ah = lh - 22
+    g.save()
+    g.beginPath()
+    g.rect(ax, ay, aw, ah)
+    g.clip()
+    g.translate(ax, ay)
+    drawWork(g, aw, ah, rnd, PAL.work[Math.floor(rnd() * PAL.work.length)])
+    g.restore()
+    g.fillStyle = p.ink
+    g.fillRect(ax, ay, aw, 1)
+    g.fillRect(ax, ay + ah - 1, aw, 1)
+
+    // title block under the art: three weights of bar, like a logotype
+    g.fillStyle = p.ink
+    g.fillRect(ax, ay + ah + 3, Math.round(aw * 0.46), 4)
+    g.fillStyle = p.accent
+    g.fillRect(ax + Math.round(aw * 0.5), ay + ah + 3, Math.round(aw * 0.22), 4)
+    g.fillStyle = p.ink
+    for (let i = 0; i < 5; i++) g.fillRect(ax + i * 5, ay + ah + 9, 3, 1)
+
+    /* the grip: ridges moulded across the bottom lip, which is the
+       detail your thumb remembers */
+    g.fillStyle = p.dark
+    for (let x = 10; x < W - 10; x += 5) g.fillRect(x, H - 18, 3, 12)
+    g.fillStyle = p.light
+    for (let x = 10; x < W - 10; x += 5) g.fillRect(x, H - 18, 1, 12)
+  }
+
   const KIND = {
     work: drawWork,
     book: drawBook,
@@ -482,6 +560,7 @@
     music: drawMusic,
     portrait: drawPortrait,
     gb: drawHandheld,
+    cart: drawCart,
   }
 
   /* Paint one canvas. The element carries its own instructions:
@@ -493,8 +572,8 @@
 
     // Internal resolution is fixed and small; CSS stretches it with
     // image-rendering: pixelated, so the art scales without softening.
-    const W = kind === 'work' ? 176 : kind === 'gb' ? 104 : 96
-    const H = kind === 'work' ? 99 : kind === 'gb' ? 150 : 132
+    const W = kind === 'work' ? 176 : kind === 'gb' ? 104 : kind === 'cart' ? 152 : 96
+    const H = kind === 'work' ? 99 : kind === 'gb' ? 150 : kind === 'cart' ? 112 : 132
     cv.width = W
     cv.height = H
 
