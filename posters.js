@@ -103,6 +103,8 @@
       { shell: '#2f9aa8', light: '#4fbccb', dark: '#1d6f7a', label: '#f2ecdc', ink: '#10333a', accent: '#e8683c' },
       { shell: '#c0392b', light: '#d9584a', dark: '#8c2820', label: '#f2ecdc', ink: '#3a1410', accent: '#f0c040' },
       { shell: '#26242a', light: '#413e47', dark: '#131218', label: '#e8e2d2', ink: '#1a181e', accent: '#3ad0c8' },
+      { shell: '#e8a13c', light: '#f5bd63', dark: '#b57424', label: '#f7f1e0', ink: '#3d2a0e', accent: '#2f7f86' },
+      { shell: '#6b5ea8', light: '#8a7cc8', dark: '#4a3f7a', label: '#efe9f5', ink: '#241d40', accent: '#f0c040' },
     ],
     gb: [
       { body: '#c8c4b0', dark: '#8e8b7c', light: '#e2dfcd', trim: '#5a5750',
@@ -483,6 +485,97 @@
     }
   }
 
+  /* ---- what is ON the label ----
+     Six different games, not six photographs of the same city. Each
+     one is a single character sitting on a flat field with a couple of
+     props - which is exactly how cover art worked when the label was
+     four centimetres wide and the artist had eight colours. Cute is
+     the brief, so everything here has a face. */
+  let currentSeed = 0
+
+  const LABEL_ART = [
+    // 1. the cat, sitting, tail curled
+    (g, w, h, p) => {
+      g.fillStyle = '#2b6ea8'
+      g.fillRect(0, 0, w, h)
+      const s = [
+        '..k...k..', '.kkkkkkk.', 'kkwkkkwkk', 'kkkkkkkkk',
+        'kkkppkkkk', '.kkkkkkk.', '..kkkkk..', '..k...kt.',
+      ]
+      sprite(g, s, Math.floor(w / 2) - 4, Math.floor(h / 2) - 4,
+        { k: '#2a2436', w: '#8fe8ff', p: '#ff8fc0', t: '#2a2436' })
+      // whiskers
+      g.fillStyle = '#f4ecd8'
+      g.fillRect(Math.floor(w / 2) - 8, Math.floor(h / 2) - 1, 3, 1)
+      g.fillRect(Math.floor(w / 2) + 6, Math.floor(h / 2) - 1, 3, 1)
+    },
+    // 2. a little ghost, pleased with itself
+    (g, w, h, p) => {
+      g.fillStyle = '#241d40'
+      g.fillRect(0, 0, w, h)
+      const s = [
+        '..ggggg..', '.ggggggg.', 'gggggggpg', 'gbggggbgg',
+        'gggggggpg', 'ggwwwwwgg', 'ggggggggg', 'g.g.g.g.g',
+      ]
+      sprite(g, s, Math.floor(w / 2) - 4, Math.floor(h / 2) - 4,
+        { g: '#e8e2f5', b: '#241d40', w: '#241d40', p: '#ff9ec0' })
+    },
+    // 3. a rocket going up, with a flame
+    (g, w, h, p) => {
+      g.fillStyle = '#101a34'
+      g.fillRect(0, 0, w, h)
+      const s = [
+        '...r...', '..rrr..', '.rrwrr.', '.rrwrr.',
+        '.rrrrr.', 'ro.r.or', '..f.f..', '...y...',
+      ]
+      sprite(g, s, Math.floor(w / 2) - 3, Math.floor(h / 2) - 5,
+        { r: '#e8e2d2', w: '#3ad0c8', o: '#c0392b', f: '#e8683c', y: '#f0c040' })
+      // stars
+      for (let i = 0; i < 10; i++) {
+        g.fillStyle = '#8fa8d8'
+        g.fillRect((i * 13 + 5) % (w - 2), (i * 7 + 3) % (h - 2), 1, 1)
+      }
+    },
+    // 4. a mushroom, because of course
+    (g, w, h, p) => {
+      g.fillStyle = '#2f7f4a'
+      g.fillRect(0, 0, w, h)
+      const s = [
+        '..mmmmm..', '.mwmmmwm.', 'mmmmmmmmm', 'mwmmmmmwm',
+        '.sssssss.', '..sbsbs..', '..sssss..', '..sssss..',
+      ]
+      sprite(g, s, Math.floor(w / 2) - 4, Math.floor(h / 2) - 4,
+        { m: '#e05a5a', w: '#f7f1e0', s: '#f7f1e0', b: '#3d2a0e' })
+    },
+    // 5. a robot, waving
+    (g, w, h, p) => {
+      g.fillStyle = '#3a3550'
+      g.fillRect(0, 0, w, h)
+      const s = [
+        '...a.a...', '.bbbbbbb.', '.beebbeeb', '.bbbbbbb.',
+        '.bbmmmbb.', 'cbbbbbbbc', '.bbbbbbb.', '..b...b..',
+      ]
+      sprite(g, s, Math.floor(w / 2) - 4, Math.floor(h / 2) - 4,
+        { b: '#9aa8c8', e: '#3ad0c8', m: '#f0c040', a: '#e8683c', c: '#6b7590' })
+    },
+    // 6. a duck. It has been in this scene from the start.
+    (g, w, h, p) => {
+      g.fillStyle = '#3aa8c8'
+      g.fillRect(0, 0, w, h)
+      const s = [
+        '..yyyy...', '.yyyyyy..', 'yybyyyyoo', 'yyyyyyyy.',
+        '.yyyyyyy.', '..yyyyy..', '...yyy...',
+      ]
+      sprite(g, s, Math.floor(w / 2) - 4, Math.floor(h / 2) - 3,
+        { y: '#f0c83c', b: '#2a2620', o: '#e8683c' })
+      // water line
+      g.fillStyle = '#2a8aa8'
+      g.fillRect(0, Math.floor(h / 2) + 4, w, h)
+      g.fillStyle = '#6bc8e0'
+      for (let x = 0; x < w; x += 4) g.fillRect(x, Math.floor(h / 2) + 4, 2, 1)
+    },
+  ]
+
   /* ---- the cartridge ----
      Shell, paper label, ridged grip. The label carries the art and a
      title block, the shell carries nothing but colour and mouldings -
@@ -530,7 +623,7 @@
     g.rect(ax, ay, aw, ah)
     g.clip()
     g.translate(ax, ay)
-    drawWork(g, aw, ah, rnd, PAL.work[Math.floor(rnd() * PAL.work.length)])
+    LABEL_ART[currentSeed % LABEL_ART.length](g, aw, ah, p)
     g.restore()
     g.fillStyle = p.ink
     g.fillRect(ax, ay, aw, 1)
@@ -582,7 +675,11 @@
 
     const rnd = mulberry32(seed * 2654435761)
     const fam = PAL[kind] || PAL.work
-    const p = fam[Math.floor(rnd() * fam.length)]
+    /* Indexed by seed, not sampled: six carts drawn at random would
+       repeat a shell or a label about half the time, and walking the
+       list guarantees six out of six. */
+    currentSeed = seed
+    const p = fam[seed % fam.length]
 
     draw(g, W, H, rnd, p)
 
