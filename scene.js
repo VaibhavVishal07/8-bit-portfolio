@@ -1026,7 +1026,56 @@
           }
         }
 
-        if (kind < 0.3) {
+        /* ---- the big board ----
+           The thing the reference is really built around: a tall lit
+           hoarding bolted to a building face, bright frame, dark
+           field, rows of glyph blocks down it. At this size a sign
+           stops being decoration on a tower and becomes the reason
+           the tower is in frame at all. */
+        if (kind < 0.20 && h > 90 && w > 18) {
+          const bw = Math.min(w - 6, 12 + Math.floor(rnd() * 10))
+          const bh = Math.min(h - 30, 40 + Math.floor(rnd() * 60))
+          const bx = x + 2 + Math.floor(rnd() * Math.max(1, w - bw - 4))
+          const by = top + 8 + Math.floor(rnd() * 20)
+
+          halo(bx, by, bw, bh)
+          // the field, then the frame - the tube is the edge, and the
+          // panel inside it only catches what the tube throws
+          g.fillStyle = o.dark
+          g.fillRect(bx, by, bw, bh)
+          g.fillStyle = col
+          g.fillRect(bx, by, bw, 1)
+          g.fillRect(bx, by + bh - 1, bw, 1)
+          g.fillRect(bx, by, 1, bh)
+          g.fillRect(bx + bw - 1, by, 1, bh)
+
+          /* Glyph blocks running down it. Deliberately not letters:
+             invented signage reads as a city you do not have the
+             language for, which is exactly the note the reference
+             hits, and it never accidentally spells anything. */
+          const gs = 3 + Math.floor(rnd() * 2)
+          for (let gy = by + 4; gy < by + bh - gs - 2; gy += gs + 3) {
+            const inset = 2 + Math.floor(rnd() * 2)
+            const gw = bw - inset * 2
+            if (gw < 2) continue
+            g.fillStyle = col
+            // each glyph is a broken bar, not a solid one
+            for (let gx = bx + inset; gx < bx + inset + gw; gx++) {
+              if (rnd() < 0.24) continue
+              g.fillRect(gx, gy, 1, gs)
+            }
+          }
+
+          // the whole board is one tube, so it guts as a unit
+          tube(bx, by, bw, 1)
+          tube(bx, by + bh - 1, bw, 1)
+          if (rnd() < 0.5) {
+            // and a service light on the gantry holding it up
+            g.fillStyle = o.warm
+            g.fillRect(bx - 1, by + bh + 1, 1, 1)
+            g.fillRect(bx + bw, by + bh + 1, 1, 1)
+          }
+        } else if (kind < 0.3) {
           // vertical strip
           const sx = x + 2 + Math.floor(rnd() * Math.max(1, w - 5))
           const sy = top + 8
@@ -1647,7 +1696,7 @@
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
-      minW: 26, maxW: 60, minH: 18, maxH: 64,
+      minW: 34, maxW: 80, minH: 60, maxH: 190,
       step: 6, ww: 1, wh: 1, litChance: 0.1,
       neon: T.neon, neonChance: 0, halo: 0, fog: 0.46,
       ...T.cityFar,
@@ -1655,7 +1704,7 @@
 
     city = [
       buildCity(4411, {
-        minW: 12, maxW: 26, minH: 60, maxH: 150,
+        minW: 20, maxW: 48, minH: 130, maxH: 330,
         step: 4, ww: 2, wh: 2, litChance: 0.30,
         neon: T.neon, neonChance: 0.18, halo: T.halo, fog: T.fogAmt[0],
         ...T.city[0],
@@ -1666,7 +1715,7 @@
         },
       }),
       buildCity(881, {
-        minW: 16, maxW: 34, minH: 90, maxH: 205,
+        minW: 26, maxW: 64, minH: 190, maxH: 430,
         step: 5, ww: 2, wh: 3, litChance: 0.34,
         neon: T.neon, neonChance: 0.32, halo: T.halo, fog: T.fogAmt[1],
         ...T.city[1],
@@ -1684,7 +1733,7 @@
         },
       }),
       buildCity(2266, {
-        minW: 22, maxW: 46, minH: 50, maxH: 130,
+        minW: 34, maxW: 78, minH: 150, maxH: 330,
         step: 7, ww: 3, wh: 3, litChance: 0.3,
         neon: T.neon, neonChance: 0.36, halo: T.halo, fog: T.fogAmt[2],
         ...T.city[2],
