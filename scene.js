@@ -325,65 +325,52 @@
       /* Deep violet-black base so the neon has somewhere dark to burn
          against. The haze near the skyline is the only place the purple
          gets bright, and even that stays under the sign colours. */
-      /* Lifted off black. The reference sky is not dark - it is a
-         SATURATED mid-teal that still reads as night because the
-         foreground below it is nearly black. Value contrast does the
-         work that darkness was doing before, and the colour survives. */
       sky: [
-        '#0d1e29', '#112635', '#152e41', '#19374d', '#1e415a',
-        '#234c68', '#285776', '#2d6284', '#336e93',
+        '#05010a', '#090315', '#0e0522', '#150733', '#1d0a45',
+        '#260f57', '#301269', '#3a1880', '#4a1d92',
       ],
-      haze: '#3a9cb8',
-      smog: '#1d5670',
-      fog: '#245f7d',
-      /* The warm band the reference keeps low behind the skyline: a
-         city glows amber from underneath even when the sky above it
-         has gone cold. It is the one warm note in a teal picture, and
-         it is what stops the whole thing reading as monochrome. */
-      horizon: '#c9702e',
-      horizonAmt: 0.72,
+      haze: '#7a1fb0',
+      smog: '#5a1a8c',
+      fog: '#3a1880',
       fogAmt: [0.30, 0.16, 0.04],
-      rainSky: '#081820',
-      snowSky: '#1b3446',
+      rainSky: '#0d0520',
+      snowSky: '#241c48',
       snowWash: [0.10, 0.26], blanket: [0.85, 0.15], fogSnowBoost: 0.18,
-      lightning: '#9fe4f5', boltCore: '#ffffff',
+      lightning: '#c9b6ff', boltCore: '#ffffff',
 
-      orb: '#e4f4fa', orbShade: '#8fb8c8', orbGlow: '#1d6a88',
+      orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#6b1fa8',
       craters: true, orbShine: false,
-      cloud: '#1b2c39', cloudLit: '#2b4658', cloudDark: '#101c26',
-      star: '#ffffff', starDim: '#8fc4d6', starWarm: '#ffd0a0', stars: true,
+      cloud: '#2c1159', cloudLit: '#4d219a', cloudDark: '#170733',
+      star: '#ffffff', starDim: '#b98cf0', starWarm: '#ffd0a0', stars: true,
 
       /* The ridge behind everything: a fourth silhouette plane pitched
          just below the haze, so the far city has something to be in
          front of. Depth is planes, and three was one short. */
-      cityFar: { fill: '#1d4457', lit: '#255468', dark: '#163543', window: '#4a8ba0', warm: '#6ba2b5' },
-      /* Towers in teal, lit windows in WARM amber. That opposition -
-         cold structure, warm interior - is most of why the reference
-         reads as a city somebody lives in rather than a wallpaper. */
+      cityFar: { fill: '#241247', lit: '#2f1a5c', dark: '#1a0c38', window: '#5a3fa0', warm: '#7a55b8' },
       city: [
-        { fill: '#173c4e', lit: '#204f64', dark: '#0e2b39', window: '#f0b24a', warm: '#ff2d9b' },
-        { fill: '#1b4759', lit: '#265d73', dark: '#123340', window: '#ffc96b', warm: '#ff5cb8' },
-        { fill: '#0f2734', lit: '#183846', dark: '#07161e', window: '#3ad9e0', warm: '#ff7ad4' },
+        { fill: '#150931', lit: '#22104c', dark: '#0a0420', window: '#7b4fd8', warm: '#ff2bb0' },
+        { fill: '#1c0d42', lit: '#2c1566', dark: '#0f0626', window: '#a86bff', warm: '#ff5cc4' },
+        { fill: '#0c0420', lit: '#170838', dark: '#04010e', window: '#c98cff', warm: '#ff7ad4' },
       ],
-      // magenta, turquoise, violet, amber, cyan
-      neon: ['#ff2d9b', '#2ee6d6', '#a94ee8', '#f5a623', '#3ad9e0'],
+      // hot pink, cyan, neon purple, electric yellow, neon green
+      neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d'],
       halo: 0.9,
 
-      roof: '#08161e', roofLit: '#17394d', roofSpeck: '#0f2532', roofDark: '#030a0f',
-      rail: '#0c2230', railLit: '#3d92ab', railDark: '#03080b',
+      roof: '#090318', roofLit: '#2a0f5c', roofSpeck: '#150733', roofDark: '#03010c',
+      rail: '#150a32', railLit: '#7a4fd8', railDark: '#040108',
       /* `edge` is the foreground's silhouette line and is used for
          nothing else, so it can be pushed as dark as it needs to go
          without dragging any other surface down with it. `sep` is the
          haze the city is lifted with just behind that line. */
-      edge: '#010507', sep: '#2f88a4', sepDark: '#0c2532',
-      bounce: ['#ff2d9b', '#2ee6d6', '#a94ee8'],
-      wet: ['#ff2d9b', '#2ee6d6', '#f5a623'],
-      wetDeck: '#071e29', wetGloss: '#3d8299',
-      puddle: '#0b2734', puddleRim: '#3d92ab',
+      edge: '#020106', sep: '#6a2fb0', sepDark: '#150929',
+      bounce: ['#ff2bb0', '#00f0ff', '#b026ff'],
+      wet: ['#ff2bb0', '#00f0ff', '#b026ff'],
+      wetDeck: '#0d0526', wetGloss: '#5a3ba8',
+      puddle: '#1a0b3e', puddleRim: '#7a4fd8',
 
-      viaduct: '#112e3d', viaductLit: '#1e5066', viaductDark: '#05141d',
-      train: '#153847', trainLit: '#2b6f88', trainDark: '#040e15',
-      trainWin: '#d8f4ff', trainHead: '#fff3b0', trainStripe: '#2ee6d6',
+      viaduct: '#1a0f3e', viaductLit: '#331c72', viaductDark: '#080320',
+      train: '#26155c', trainLit: '#5230a8', trainDark: '#0b0524',
+      trainWin: '#c2e8ff', trainHead: '#fff3b0', trainStripe: '#00f0ff',
 
       /* The airship flies at about the mid skyline's distance, so its
          values are pitched to sit in that band. Anything as dark as the
@@ -572,19 +559,6 @@
     for (let y = SKYLINE - 160; y < SKYLINE; y++) {
       const t = 1 - (SKYLINE - y) / 160
       washRow(g, y, W, T.haze, t * t * 0.85)
-    }
-
-    /* Under that, a warm band hugging the rooftops. A city lights
-       itself from below in sodium and headlights, so the last forty
-       pixels before the skyline run amber while everything above them
-       stays cold — the one warm note that keeps a teal picture from
-       reading as monochrome. Tucked under the cool haze, never over
-       it, so the sky still resolves blue. */
-    if (T.horizon) {
-      for (let y = SKYLINE - 44; y < SKYLINE; y++) {
-        const t = 1 - (SKYLINE - y) / 44
-        washRow(g, y, W, T.horizon, t * t * t * (T.horizonAmt || 0.5))
-      }
     }
 
     /* Coloured pools in that haze. A single flat haze colour is what
@@ -1696,7 +1670,7 @@
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
-      minW: 34, maxW: 80, minH: 60, maxH: 190,
+      minW: 26, maxW: 60, minH: 18, maxH: 64,
       step: 6, ww: 1, wh: 1, litChance: 0.1,
       neon: T.neon, neonChance: 0, halo: 0, fog: 0.46,
       ...T.cityFar,
@@ -1704,7 +1678,7 @@
 
     city = [
       buildCity(4411, {
-        minW: 20, maxW: 48, minH: 130, maxH: 330,
+        minW: 12, maxW: 26, minH: 60, maxH: 150,
         step: 4, ww: 2, wh: 2, litChance: 0.30,
         neon: T.neon, neonChance: 0.18, halo: T.halo, fog: T.fogAmt[0],
         ...T.city[0],
@@ -1715,7 +1689,7 @@
         },
       }),
       buildCity(881, {
-        minW: 26, maxW: 64, minH: 190, maxH: 430,
+        minW: 16, maxW: 34, minH: 90, maxH: 205,
         step: 5, ww: 2, wh: 3, litChance: 0.34,
         neon: T.neon, neonChance: 0.32, halo: T.halo, fog: T.fogAmt[1],
         ...T.city[1],
@@ -1733,7 +1707,7 @@
         },
       }),
       buildCity(2266, {
-        minW: 34, maxW: 78, minH: 150, maxH: 330,
+        minW: 22, maxW: 46, minH: 50, maxH: 130,
         step: 7, ww: 3, wh: 3, litChance: 0.3,
         neon: T.neon, neonChance: 0.36, halo: T.halo, fog: T.fogAmt[2],
         ...T.city[2],
