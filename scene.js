@@ -354,7 +354,7 @@
       ],
       // hot pink, cyan, neon purple, electric yellow, neon green
       neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d'],
-      halo: 0.9,
+      halo: 0.38,
 
       roof: '#090318', roofLit: '#2a0f5c', roofSpeck: '#150733', roofDark: '#03010c',
       rail: '#150a32', railLit: '#7a4fd8', railDark: '#040108',
@@ -995,7 +995,10 @@
         }
 
         const halo = (hx, hy, hw, hh) => {
-          const reach = 8
+          // tighter, and it falls off faster: light this far from a
+          // tube is nearly gone, and the old cubic-free falloff kept
+          // it visible right out to the edge of the reach
+          const reach = 5
           for (let yy = hy - reach; yy < hy + hh + reach; yy++) {
             if (yy < top - 2 || yy > SKYLINE) continue
             for (let xx = hx - reach; xx < hx + hw + reach; xx++) {
@@ -1005,7 +1008,7 @@
               const d = Math.hypot(dx, dy)
               if (d === 0 || d > reach) continue
               const t = 1 - d / reach
-              dot(g, xx, yy, t * t * o.halo, col)
+              dot(g, xx, yy, t * t * t * o.halo, col)
             }
           }
         }

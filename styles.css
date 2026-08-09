@@ -541,8 +541,19 @@ svg { display: block; image-rendering: pixelated; }
   animation: blink 0.5s steps(1, end) infinite;
 }
 
-.menu:hover li:first-child a { color: var(--cream); }
-.menu:hover li:first-child a .menu__num { color: var(--cream); }
+/* Once the menu is in use, row one stops being the attract-mode
+   default and behaves like any other row - cream word, GREEN number,
+   matching every other unselected line.
+
+   Both of these have to stand down when row one is the row you are
+   actually on. They out-specify the ordinary hover styling (three
+   classes to its two), so left alone they would hold row one at its
+   resting colours while every other row lit up - which is exactly why
+   WORK appeared not to respond to hover. :not(:hover):not(:focus-visible)
+   makes them stop matching at that moment, and the normal hover rule
+   takes over. */
+.menu:hover li:first-child a:not(:hover):not(:focus-visible) { color: var(--cream); }
+.menu:hover li:first-child a:not(:hover):not(:focus-visible) .menu__num { color: var(--leaf); }
 
 .menu:hover li:first-child .cursor {
   visibility: hidden;
