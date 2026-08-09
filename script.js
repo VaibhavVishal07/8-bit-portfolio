@@ -24,8 +24,27 @@
     const skip = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     const cat = document.getElementById('bootCat')
+    const mouse = document.getElementById('bootMouse')
     const pct = document.getElementById('bootPct')
     const tipEl = document.getElementById('bootTip')
+    const statusEl = document.getElementById('bootStatus')
+
+    /* The now-loading line. None of these are true, which is the whole
+       genre — a loading screen has always been where a game admits it
+       is having fun. Stepped through in order, one every third of a
+       second. */
+    const STATUSES = [
+      'WARMING UP THE NEON',
+      'ORDERING RAIN (LARGE)',
+      'COUNTING WINDOWS... 14,203',
+      'DELAYING THE TRAIN',
+      'TEACHING CAT TO SIT',
+      'POLISHING THE MOON',
+      'UNTANGLING STRING LIGHTS',
+      'REHEARSING THE THUNDER',
+      'HIDING EASTER EGGS',
+      'LOSING THE RUBBER DUCK',
+    ]
 
     /* Build the attract screen: a starfield, and a skyline that the
        loader raises one tower at a time. Heights come from a fixed
@@ -82,9 +101,10 @@
     if (skip) {
       boot.hidden = true
     } else {
-      const TOTAL = 2100
-      const STEPS = 28
+      const TOTAL = 2400
+      const STEPS = 30
       let i = 0
+      let lastP = -1
 
       const tick = () => {
         i++
@@ -98,8 +118,22 @@
         const p = Math.min(100, Math.round(eased * 100))
 
         if (bootBar) bootBar.style.width = p + '%'
-        if (cat) cat.style.left = 'calc(' + p + '% - ' + (p / 100) * 22 + 'px)'
+        if (cat) {
+          cat.style.left = 'calc(' + p + '% - ' + (p / 100) * 22 + 'px)'
+          // the bar stalls on purpose; a cat that has stopped chasing
+          // sits still, which is what makes the stall read as a joke
+          // instead of a bug
+          cat.classList.toggle('is-idle', p === lastP)
+        }
+        if (mouse) {
+          // the mouse leads by a body-length and escapes off the end
+          const mp = Math.min(103, p + 11)
+          mouse.style.left = 'calc(' + mp + '% - ' + (mp / 100) * 14 + 'px)'
+          mouse.classList.toggle('is-idle', p === lastP)
+        }
+        lastP = p
         if (pct) pct.textContent = p
+        if (statusEl) statusEl.textContent = STATUSES[Math.min(STATUSES.length - 1, Math.floor(i / 3))]
 
         lines.forEach((li, n) => li.classList.toggle('is-on', n < Math.floor(t * lines.length * 1.6)))
 

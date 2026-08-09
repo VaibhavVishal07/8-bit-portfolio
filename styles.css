@@ -1008,6 +1008,35 @@ html[data-max='on'] .controls {
   animation: trot 0.24s steps(2, end) infinite;
 }
 
+/* The mouse the cat is chasing: body, ear, tail. It leads the whole
+   way and gets away at the end, because it always does. */
+.boot__mouse {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 14px;
+  height: 8px;
+  margin-bottom: 3px;
+  animation: trot 0.18s steps(2, end) infinite;
+}
+
+.boot__mouse::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  height: 5px;
+  background: var(--chrome-dark);
+  box-shadow:
+    6px -2px 0 -3px var(--chrome-dark),
+    -5px 1px 0 -1px var(--chrome-dark);
+}
+
+/* when the bar stalls the chase pauses — the mouse stops to taunt */
+.boot__cat.is-idle,
+.boot__mouse.is-idle { animation: none; }
+
 /* body and haunches */
 .boot__cat::before {
   content: '';
@@ -1058,6 +1087,8 @@ html[data-max='on'] .controls {
 .boot__lines span { color: var(--panel-edge); }
 .boot__lines i { color: var(--panel-dim); font-style: normal; }
 .boot__lines b { color: var(--leaf); font-weight: inherit; }
+.boot__lines b.warn { color: var(--gold); }
+.boot__lines b.err { color: var(--panel-accent); }
 
 .boot__barwrap {
   height: 22px;
@@ -1079,6 +1110,15 @@ html[data-max='on'] .controls {
 
 /* A percentage you can read across the room, which is most of what
    makes a loading screen feel like a game and not a spinner. */
+.boot__status {
+  margin: var(--s3) 0 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--panel-edge);
+  min-height: 1.4em;
+}
+
 .boot__pct {
   margin: 16px 0 0;
   font-family: var(--font-display);

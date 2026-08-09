@@ -40,19 +40,25 @@
 
     <ul class="boot__lines">
       <li><span>VIDEO</span><i>960 x 540, 64 LEVELS</i><b>OK</b></li>
-      <li><span>PARALLAX</span><i>5 LAYERS</i><b>OK</b></li>
       <li><span>WEATHER</span><i>RAIN, SNOW, LIGHTNING</i><b>OK</b></li>
       <li><span>CITY</span><i>14 LANDMARKS</i><b>OK</b></li>
+      <li><span>TRAIN</span><i>EXPRESS SERVICE</i><b class="warn">DELAYED</b></li>
+      <li><span>COFFEE</span><i>POT 1 OF 1</i><b class="err">NOT FOUND</b></li>
+      <li><span>BUGS</span><i>0 KNOWN</i><b class="warn">OPTIMISTIC</b></li>
       <li><span>ROOFTOP</span><i>1 CAT</i><b>PURRING</b></li>
     </ul>
 
-    <!-- The cat walks the bar as it fills. It is the only thing on this
-         screen anyone will actually watch. -->
+    <!-- The bar is a chase: a mouse runs ahead of the cat the whole
+         way, and gets away at the end. When the bar stalls, the cat
+         sits down and waits - watch for it. -->
     <div class="boot__track">
+      <span class="boot__mouse" id="bootMouse" aria-hidden="true"></span>
       <span class="boot__cat" id="bootCat" aria-hidden="true"></span>
       <div class="boot__barwrap"><span class="boot__bar" id="bootBar"></span></div>
       <p class="boot__pct"><span id="bootPct">0</span>%</p>
     </div>
+
+    <p class="boot__status" id="bootStatus">&nbsp;</p>
 
     <p class="boot__tip">TIP<b>&gt;</b> <span id="bootTip">&nbsp;</span></p>
   </div>

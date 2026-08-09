@@ -76,13 +76,21 @@
 
   const animating = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  /* Read before the first build — the builders branch on it. */
-  let weather = 'none' // 'none' | 'rain' | 'snow' — the state that is BUILT
+  /* Read before the first build — the builders branch on it.
+
+     A first-time visitor lands in RAIN: night, neon, wet streets is
+     this scene at its best, and the landing should open on the best.
+     The default only applies while both keys are unset — the moment a
+     visitor touches a weather button, their choice persists and wins. */
+  let weather = 'rain'
   try {
-    if (localStorage.getItem('scene-rain') === 'on') weather = 'rain'
-    else if (localStorage.getItem('scene-snow') === 'on') weather = 'snow'
+    const r = localStorage.getItem('scene-rain')
+    const sn = localStorage.getItem('scene-snow')
+    if (sn === 'on') weather = 'snow'
+    else if (r === 'on') weather = 'rain'
+    else if (r !== null || sn !== null) weather = 'none'
   } catch (e) {
-    /* storage unavailable */
+    /* storage unavailable — the default stands */
   }
 
   /* ---- weather transitions ----
