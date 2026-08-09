@@ -585,28 +585,55 @@
       })
       stage.appendChild(world)
 
-      // the compass replaces the taskbar: it is a place-list now
-      const nav = document.createElement('nav')
-      nav.className = 'compass'
-      nav.setAttribute('aria-label', 'Places')
-      ORDER.forEach((id, i) => {
-        const b = document.createElement('button')
-        b.type = 'button'
-        b.className = 'compass__btn'
-        b.dataset.go = String(i)
-        b.innerHTML = PLACE_LABEL[id][0] + '<b>' + PLACE_LABEL[id][1] + '</b>'
-        nav.appendChild(b)
+      /* No persistent bar. A console does not keep a navigation strip
+         stapled to the bottom of the television - the controls live on
+         the hardware, so these live on the screen's own bezel: shoulder
+         buttons to flip between channels, and EJECT to drop back to the
+         title screen. Nothing is pinned to the page. */
+      ORDER.forEach((id, n) => {
+        if (n === 0) return
+        const el = wins.get(id)
+        const btns = el && el.querySelector('.winbtns')
+        if (!btns) return
+
+        const mk = (cls, label, title, go) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'bezel ' + cls
+          b.innerHTML = label
+          b.title = title
+          b.setAttribute('aria-label', title)
+          b.addEventListener('click', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            go()
+          })
+          return b
+        }
+
+        // shoulder buttons, in the order a handheld has them
+        btns.insertBefore(
+          mk('bezel--l', 'L', 'Previous channel', () => travel(here - 1 < 1 ? ORDER.length - 1 : here - 1)),
+          btns.firstChild
+        )
+        btns.insertBefore(
+          mk('bezel--r', 'R', 'Next channel', () => travel(here + 1 > ORDER.length - 1 ? 1 : here + 1)),
+          btns.querySelector('.winbtn')
+        )
+        // and eject, where close used to be
+        const close = btns.querySelector('.winbtn--close')
+        if (close) {
+          close.classList.add('winbtn--eject')
+          close.setAttribute('aria-label', 'Eject to title screen')
+          close.title = 'Eject'
+        }
       })
+
       tune = document.createElement('div')
       tune.className = 'tune'
       tune.setAttribute('aria-hidden', 'true')
       document.querySelector('.stage').appendChild(tune)
 
-      document.body.appendChild(nav)
-      nav.addEventListener('click', (e) => {
-        const b = e.target.closest('[data-go]')
-        if (b) travel(Number(b.dataset.go))
-      })
       if (bar) bar.hidden = true
       travel(0, true)
     }
@@ -632,9 +659,6 @@
          whole pixels. That is the one layer allowed to travel, because
          it is drawn rather than laid out. */
       if (window.__scene && window.__scene.panTo) window.__scene.panTo(here * 190)
-      document.querySelectorAll('.compass__btn').forEach((b, n) => {
-        b.setAttribute('aria-current', n === here ? 'true' : 'false')
-      })
       ORDER.forEach((id, n) => {
         const el = wins.get(id)
         if (!el) return
