@@ -3283,47 +3283,48 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
    through it", which is the promise the rest of this page was already
    making and the navigation was the only part not keeping.
    ================================================================== */
-.stage {
-  /* the viewport. The strip inside is four screens wide. */
-  overflow: hidden;
-  /* The stage used to CENTRE its content, which quietly shoved a
-     12800px strip left by half its overflow and put every place
-     1600px off where the maths said it was. Travel starts at the
-     left edge. */
-  justify-content: flex-start;
-  padding-left: 0;
-  padding-right: 0;
-}
-
+/* ---- the set ----
+   The panel does not move. Ever. Sliding four viewports of layout
+   was the mistake: any stepped transform big enough to travel is
+   big enough to lurch, and a lurch reads as broken rather than as
+   retro. The places stack in the same spot and the picture CUTS
+   between them, the way a channel does. Nothing translates, so
+   there is nothing left to stutter. */
 .world {
-  display: flex;
-  align-items: center;
-  /* The stage is a flex container, so a plain width here gets shrunk
-     straight back to one screen and all four places render side by
-     side. The basis has to be pinned and shrinking refused. */
-  flex: 0 0 400vw;
-  width: 400vw;
-  /* Stepped, like everything else here. A smooth 400% slide would be
-     the only eased motion in the whole scene. */
-  transform: translateX(0%);
-  transition: transform 620ms steps(14, end) !important;
+  position: relative;
+  display: block;
+  width: 100%;
 }
 
-/* One slot per place, exactly one screen wide. None of them is ever
-   hidden - all four are standing there, you are simply not looking
-   at the other three. */
 .place {
-  flex: 0 0 100vw;
-  width: 100vw;
-  display: flex;
+  display: none;
+  width: 100%;
   align-items: center;
   justify-content: center;
-  padding: var(--s6) var(--s5);
 }
 
+.place.is-here { display: flex; }
+
+/* One frame, four channels. The panels used to be different heights,
+   so cutting between them moved the whole set - a jump as ugly as the
+   slide was. The screen is a fixed size now and the content scrolls
+   inside it, which is what a monitor has always done. */
 .place > .window {
   width: min(92vw, 1720px);
-  margin: 0;
+  height: min(80vh, 880px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.place > .window > .screen {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.place > .window > .screen > .screen__inner {
+  height: 100%;
+  overflow-y: auto;
 }
 
 /* Travelling replaces opening, so the window controls that only made
@@ -3396,3 +3397,64 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   .compass__btn { padding: 12px 4px; letter-spacing: 0; }
   .compass__btn b { display: none; }
 }
+/* ---- changing channel ----
+   Two things happen and both are over in a fifth of a second: the
+   signal breaks up into static bands, and the picture loses vertical
+   hold for one roll. Static is SUPPOSED to look like noise, which is
+   the trick - the roughness lands as the effect rather than as
+   jank, and the layout underneath never moves a pixel. */
+.tune {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.tune.is-on { display: block; }
+
+/* the static: hard bands, no blur, redrawn in six steps */
+.tune::before {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.16) 0 2px,
+    rgba(0, 0, 0, 0.55) 2px 4px,
+    rgba(255, 255, 255, 0.07) 4px 7px,
+    transparent 7px 11px
+  );
+  animation: hash 200ms steps(6, end) 1;
+}
+
+@keyframes hash {
+  0% { transform: translateY(0) scaleY(1); opacity: 1; }
+  50% { transform: translateY(-7px) scaleY(1.4); opacity: 0.9; }
+  100% { transform: translateY(5px) scaleY(1); opacity: 0; }
+}
+
+/* the roll bar: one bright band losing vertical hold, top to bottom */
+.tune::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 255, 255, 0.22),
+    transparent
+  );
+  animation: roll 200ms steps(7, end) 1;
+}
+
+@keyframes roll {
+  from { top: -14%; }
+  to { top: 100%; }
+}
+
+/* and the panel itself blinks out for a single step as it cuts */
+.place.is-cutting > .window { visibility: hidden; }

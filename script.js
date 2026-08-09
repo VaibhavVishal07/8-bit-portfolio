@@ -292,6 +292,9 @@
        has to be able to ask whether the world exists yet. */
     let world = null
     let here = 0
+    let tune = null
+    let tuneTimer = 0
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const state = new Map()
     wins.forEach((el, id) => state.set(id, el.hasAttribute('hidden') ? 'closed' : 'up'))
 
@@ -594,6 +597,11 @@
         b.innerHTML = PLACE_LABEL[id][0] + '<b>' + PLACE_LABEL[id][1] + '</b>'
         nav.appendChild(b)
       })
+      tune = document.createElement('div')
+      tune.className = 'tune'
+      tune.setAttribute('aria-hidden', 'true')
+      document.querySelector('.stage').appendChild(tune)
+
       document.body.appendChild(nav)
       nav.addEventListener('click', (e) => {
         const b = e.target.closest('[data-go]')
@@ -604,12 +612,26 @@
     }
 
     function travel(i, silent) {
+      const from = here
       here = Math.max(0, Math.min(ORDER.length - 1, i))
-      world.style.transform = 'translateX(-' + here * 100 + 'vw)'
-      /* The city pans further than the strip does. Parallax means the
-         near deck slides most and the ridge barely stirs, which is
-         what sells the movement as distance rather than as a slide. */
-      if (window.__scene && window.__scene.panTo) window.__scene.panTo(here * 300)
+
+      /* Cut, do not slide. The showing place simply changes; the
+         static covers the join. */
+      const slots = [...world.querySelectorAll('.place')]
+      slots.forEach((s, n) => s.classList.toggle('is-here', n === here))
+
+      if (from !== here && tune && !reduced) {
+        tune.classList.remove('is-on')
+        void tune.offsetWidth // reflow, so a rapid re-tune restarts it
+        tune.classList.add('is-on')
+        clearTimeout(tuneTimer)
+        tuneTimer = setTimeout(() => tune.classList.remove('is-on'), 210)
+      }
+
+      /* The city still moves, but in the canvas - at its own 12fps, in
+         whole pixels. That is the one layer allowed to travel, because
+         it is drawn rather than laid out. */
+      if (window.__scene && window.__scene.panTo) window.__scene.panTo(here * 190)
       document.querySelectorAll('.compass__btn').forEach((b, n) => {
         b.setAttribute('aria-current', n === here ? 'true' : 'false')
       })
