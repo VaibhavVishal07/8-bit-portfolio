@@ -41,7 +41,7 @@
       'TEACHING CAT TO SIT',
       'POLISHING THE MOON',
       'UNTANGLING STRING LIGHTS',
-      'REHEARSING THE THUNDER',
+      'FEEDING THE CAT',
       'HIDING EASTER EGGS',
       'LOSING THE RUBBER DUCK',
     ]
@@ -172,7 +172,6 @@
         if (beat === 3) boot.classList.add('boot--train')
         if (beat === 4 && cat) cat.classList.add('is-idle') // sit. good cat.
         if (beat === 5) boot.classList.add('boot--glint')
-        if (beat === 7) boot.classList.add('boot--thunder')
         if (beat === 9) boot.classList.add('boot--duck')
 
         lines.forEach((li, n) => li.classList.toggle('is-on', n < Math.floor(t * lines.length * 1.6)))

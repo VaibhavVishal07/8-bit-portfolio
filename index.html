@@ -6,7 +6,12 @@
 <title>Vaibhav Vishal — Portfolio</title>
 <meta name="description" content="An 8-bit game title screen, as a personal portfolio landing page." />
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link
+    href="https://api.fontshare.com/v2/css?f%5B%5D=satoshi@400,500,700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400..700&display=swap"
@@ -33,7 +38,6 @@
   <div class="boot__city boot__city--near" id="bootCityNear" aria-hidden="true"></div>
   <div class="boot__rain" id="bootRain" aria-hidden="true"></div>
   <span class="boot__duck" aria-hidden="true"></span>
-  <div class="boot__flash" aria-hidden="true"></div>
 
   <div class="boot__inner">
 
@@ -170,71 +174,50 @@
         <p class="doc__path">C:\PORTFOLIO\WORK</p>
 
         <div class="prose">
-          <p class="lede">Selected work, 2021 — now. One line here about the kind of problems you take on.</p>
-          <p>A short intro paragraph. What you build, who you build it for, and
-             the standard you hold it to. Two or three sentences, then let the
-             work talk.</p>
+          <p class="lede">Selected work, 2021 - now. One line here about the kind of problems you take on.</p>
         </div>
 
+        <!-- One template, repeated. Cover, name, what it was, pictures.
+             A case study that needs three headings to explain itself is
+             usually a case study that has not been edited. -->
         <article class="piece">
           <span class="slot media media--cover" aria-hidden="true"><i>IMG</i></span>
           <header class="piece__head">
             <h2 class="piece__title">PROJECT ONE</h2>
-            <p class="piece__meta">ROLE · CLIENT · 2025</p>
+            <p class="piece__meta">ROLE - CLIENT - 2025</p>
           </header>
           <div class="prose">
-            <p><b>The problem.</b> Placeholder — what was broken, and for whom.
-               A sentence or two of honest context beats a paragraph of setup.</p>
-            <p><b>What I did.</b> Placeholder — the approach, and what you chose
-               not to do. Decisions are more interesting than deliverables.</p>
-            <blockquote>A pull-quote from the client, a teammate, or the launch
-               tweet. One line that proves it landed.</blockquote>
-            <p><b>The outcome.</b> Placeholder — what changed, with a number in
-               it if you have one.</p>
+            <p>One or two sentences. What it was, and what you did on it.</p>
           </div>
           <div class="gallery">
             <span class="slot media" aria-hidden="true"><i>IMG</i></span>
             <span class="slot media" aria-hidden="true"><i>IMG</i></span>
           </div>
-          <ul class="chips">
-            <li class="chip">TAG</li><li class="chip">TAG</li><li class="chip">TAG</li><li class="chip">TAG</li>
-          </ul>
         </article>
 
         <article class="piece">
           <span class="slot media media--cover" aria-hidden="true"><i>IMG</i></span>
           <header class="piece__head">
             <h2 class="piece__title">PROJECT TWO</h2>
-            <p class="piece__meta">ROLE · CLIENT · 2024</p>
+            <p class="piece__meta">ROLE - CLIENT - 2024</p>
           </header>
           <div class="prose">
-            <p>Placeholder. Not every case study needs the full template — some
-               projects are one strong paragraph and three good screens.</p>
-            <ul>
-              <li>One thing you shipped, stated plainly.</li>
-              <li>One constraint you worked within.</li>
-              <li>One thing you would do differently.</li>
-            </ul>
+            <p>One or two sentences. What it was, and what you did on it.</p>
           </div>
           <div class="gallery">
             <span class="slot media" aria-hidden="true"><i>IMG</i></span>
             <span class="slot media" aria-hidden="true"><i>IMG</i></span>
-            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
           </div>
-          <ul class="chips">
-            <li class="chip">TAG</li><li class="chip">TAG</li><li class="chip">TAG</li>
-          </ul>
         </article>
 
         <article class="piece">
           <span class="slot media media--cover" aria-hidden="true"><i>IMG</i></span>
           <header class="piece__head">
             <h2 class="piece__title">PROJECT THREE</h2>
-            <p class="piece__meta">ROLE · CLIENT · 2023</p>
+            <p class="piece__meta">ROLE - CLIENT - 2023</p>
           </header>
           <div class="prose">
-            <p>Placeholder. What it was, what you did, how it went.</p>
-            <p>Second paragraph if it deserves one.</p>
+            <p>One or two sentences. What it was, and what you did on it.</p>
           </div>
           <div class="gallery">
             <span class="slot media" aria-hidden="true"><i>IMG</i></span>
@@ -246,47 +229,35 @@
           <span class="slot media media--cover" aria-hidden="true"><i>IMG</i></span>
           <header class="piece__head">
             <h2 class="piece__title">PROJECT FOUR</h2>
-            <p class="piece__meta">ROLE · CLIENT · 2022</p>
+            <p class="piece__meta">ROLE - CLIENT - 2022</p>
           </header>
           <div class="prose">
-            <p>Placeholder. Duplicate this whole article block for a fifth, a
-               sixth, a tenth — the page holds as many as you have.</p>
+            <p>One or two sentences. What it was, and what you did on it.</p>
           </div>
         </article>
 
-        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>WHAT I'M GOOD AT</h2>
+        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>WHAT I DO</h2>
         <div class="prose">
           <ul>
-            <li><b>Capability one</b> — a sentence on what this means in practice.</li>
-            <li><b>Capability two</b> — a sentence on what this means in practice.</li>
-            <li><b>Capability three</b> — a sentence on what this means in practice.</li>
-            <li><b>Capability four</b> — a sentence on what this means in practice.</li>
+            <li><b>Capability one</b> - one line on what this means in practice.</li>
+            <li><b>Capability two</b> - one line on what this means in practice.</li>
+            <li><b>Capability three</b> - one line on what this means in practice.</li>
+            <li><b>Capability four</b> - one line on what this means in practice.</li>
           </ul>
-        </div>
-
-        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>HOW I WORK</h2>
-        <div class="prose">
-          <ol>
-            <li><b>Understand.</b> Placeholder — how you start.</li>
-            <li><b>Decide.</b> Placeholder — how you choose what not to build.</li>
-            <li><b>Build.</b> Placeholder — how you ship.</li>
-            <li><b>Prove.</b> Placeholder — how you know it worked.</li>
-          </ol>
         </div>
 
         <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>EXPERIENCE</h2>
         <ul class="xp">
-          <li><b>COMPANY NAME</b> Your title <span>2024 — NOW</span></li>
-          <li><b>PREVIOUS COMPANY</b> Your title <span>2022 — 2024</span></li>
-          <li><b>THE ONE BEFORE</b> Your title <span>2021 — 2022</span></li>
-          <li><b>WHERE IT STARTED</b> Your title <span>2020 — 2021</span></li>
+          <li><b>COMPANY NAME</b> Your title <span>2024 - NOW</span></li>
+          <li><b>PREVIOUS COMPANY</b> Your title <span>2022 - 2024</span></li>
+          <li><b>THE ONE BEFORE</b> Your title <span>2021 - 2022</span></li>
+          <li><b>WHERE IT STARTED</b> Your title <span>2020 - 2021</span></li>
         </ul>
 
         <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>RECOGNITION</h2>
         <ul class="xp">
           <li><b>AWARD OR FEATURE</b> Publication or org <span>2025</span></li>
           <li><b>TALK OR ARTICLE</b> Where it ran <span>2024</span></li>
-          <li><b>SOMETHING ELSE</b> Placeholder <span>2023</span></li>
         </ul>
 
         <div class="prose">
