@@ -1,4 +1,4 @@
-# basic-portfolio
+# 8-bit portfolio
 
 An 8-bit game title screen, as a personal portfolio landing page. One screen,
 no build step, no dependencies.
