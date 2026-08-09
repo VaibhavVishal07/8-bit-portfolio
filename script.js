@@ -629,10 +629,14 @@
       rig.className = 'rig'
       rig.setAttribute('aria-hidden', 'true')
       rig.innerHTML =
+        '<div class="rig__set">' +
+        '<div class="rig__monitor"><span class="rig__screen"></span>' +
+        '<span class="rig__stand"></span></div>' +
         '<div class="rig__box">' +
         '<span class="rig__slot"></span>' +
         '<span class="rig__led"></span>' +
         '<span class="rig__vent"></span>' +
+        '</div>' +
         '</div>' +
         '<div class="rig__cart"></div>' +
         '<div class="rig__flash"></div>'
@@ -657,11 +661,35 @@
       holder.appendChild(clone)
       if (window.Posters) window.Posters.paint(clone)
 
-      // start it where it actually sits, then let CSS fly it home
+      /* Everything is measured, nothing is guessed. The cart starts at
+         the exact rectangle the card occupies, finishes at the exact
+         mouth of the slot, and the monitor zooms around the centre of
+         its own glass - so the screen you are watching grows into the
+         screen you end up reading. */
+      r.classList.add('is-measuring')
       const b = src.getBoundingClientRect()
-      holder.style.setProperty('--from-x', b.left + b.width / 2 - window.innerWidth / 2 + 'px')
-      holder.style.setProperty('--from-y', b.top + b.height / 2 - window.innerHeight / 2 + 'px')
+      const slot = r.querySelector('.rig__slot').getBoundingClientRect()
+      const glass = r.querySelector('.rig__screen').getBoundingClientRect()
+      r.classList.remove('is-measuring')
+
+      const cx = window.innerWidth / 2
+      const cy = window.innerHeight / 2
+
+      holder.style.setProperty('--from-x', b.left + b.width / 2 - cx + 'px')
+      holder.style.setProperty('--from-y', b.top + b.height / 2 - cy + 'px')
       holder.style.setProperty('--from-w', b.width + 'px')
+      // the mouth of the slot, which is where a cartridge goes
+      holder.style.setProperty('--slot-x', slot.left + slot.width / 2 - cx + 'px')
+      holder.style.setProperty('--slot-y', slot.top - cy + 'px')
+      holder.style.setProperty('--slot-w', slot.width * 0.92 + 'px')
+
+      /* How far the monitor has to grow for its glass to cover the
+         viewport, and where that glass sits relative to centre. */
+      const zoom = Math.max(window.innerWidth / glass.width, window.innerHeight / glass.height) * 1.08
+      const set = r.querySelector('.rig__set')
+      set.style.setProperty('--zoom', zoom.toFixed(2))
+      set.style.setProperty('--gx', glass.left + glass.width / 2 - cx + 'px')
+      set.style.setProperty('--gy', glass.top + glass.height / 2 - cy + 'px')
 
       r.classList.remove('is-running')
       void r.offsetWidth
@@ -669,8 +697,9 @@
 
       // the screen changes under the white-out, so the cut is unseen
       clearTimeout(rigTimer)
-      rigTimer = setTimeout(() => showLevel(id), 980)
-      setTimeout(() => r.classList.remove('is-running'), 1320)
+      // the project is revealed under the zoom's white-out
+      rigTimer = setTimeout(() => showLevel(id), 1500)
+      setTimeout(() => r.classList.remove('is-running'), 1760)
     }
 
     let rigTimer = 0
