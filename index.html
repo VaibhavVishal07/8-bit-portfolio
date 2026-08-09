@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Vaibhav Vishal — Portfolio</title>
 <meta name="description" content="An 8-bit game title screen, as a personal portfolio landing page." />
 
@@ -17,7 +17,48 @@
 </head>
 <body>
 
-<!-- The whole background is one 384x216 pixel canvas, drawn in
+<!-- Boot screen. A POST sequence, because the whole page is dressed as
+     a machine and this is what a machine does first. It also quietly
+     tells you what is in here: weather, a city, a cat. -->
+<div class="boot" id="boot">
+
+  <!-- Stars, then a skyline that builds itself one tower at a time as
+       the bar fills. The loading screen is the first thing anyone sees,
+       so it may as well be the scene assembling in front of them. -->
+  <div class="boot__stars" id="bootStars" aria-hidden="true"></div>
+  <div class="boot__city" id="bootCity" aria-hidden="true"></div>
+  <div class="boot__moon" aria-hidden="true"></div>
+
+  <div class="boot__inner">
+
+    <p class="boot__brand">PORTFOLIO<b>BIOS</b> v2.6</p>
+
+    <h1 class="boot__wm">
+      <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
+      <span class="wordmark__line wordmark__line--b">VISHAL</span>
+    </h1>
+
+    <ul class="boot__lines">
+      <li><span>VIDEO</span><i>960 x 540, 64 LEVELS</i><b>OK</b></li>
+      <li><span>PARALLAX</span><i>5 LAYERS</i><b>OK</b></li>
+      <li><span>WEATHER</span><i>RAIN, SNOW, LIGHTNING</i><b>OK</b></li>
+      <li><span>CITY</span><i>14 LANDMARKS</i><b>OK</b></li>
+      <li><span>ROOFTOP</span><i>1 CAT</i><b>PURRING</b></li>
+    </ul>
+
+    <!-- The cat walks the bar as it fills. It is the only thing on this
+         screen anyone will actually watch. -->
+    <div class="boot__track">
+      <span class="boot__cat" id="bootCat" aria-hidden="true"></span>
+      <div class="boot__barwrap"><span class="boot__bar" id="bootBar"></span></div>
+      <p class="boot__pct"><span id="bootPct">0</span>%</p>
+    </div>
+
+    <p class="boot__tip">TIP<b>&gt;</b> <span id="bootTip">&nbsp;</span></p>
+  </div>
+</div>
+
+<!-- The whole background is one 960x540 pixel canvas, drawn in
      scene.js and upscaled nearest-neighbour to fill the viewport. -->
 <canvas id="scene" aria-hidden="true"></canvas>
 
@@ -40,18 +81,20 @@
     <span class="btn__glyph btn__glyph--snow" aria-hidden="true"></span>
     <span class="btn__label">SNOW OFF</span>
   </button>
+
+
 </div>
 
 <main class="stage">
-  <div class="window">
+  <div class="window" data-win="portfolio">
 
     <div class="window__bar">
       <span class="window__icon" aria-hidden="true"></span>
       <p class="window__title">PORTFOLIO.EXE</p>
-      <span class="winbtns" aria-hidden="true">
-        <span class="winbtn winbtn--min"><i></i></span>
-        <span class="winbtn winbtn--max"><i></i></span>
-        <span class="winbtn winbtn--close"><i></i></span>
+      <span class="winbtns">
+        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
+        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
+        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
       </span>
     </div>
 
@@ -59,29 +102,29 @@
       <div class="scanlines" aria-hidden="true"></div>
 
       <div class="screen__inner">
-        <h1 class="wordmark">VAIBHAV<br />VISHAL</h1>
+        <!-- The lines are separate elements because each is set at its
+             own size: small on top, large on the bottom, so the block
+             reads as a trapezoid leaning away from the viewer. -->
+        <h1 class="wordmark">
+          <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
+          <span class="wordmark__line wordmark__line--b">VISHAL</span>
+        </h1>
 
         <p class="role">YOUR ROLE &middot; PORTFOLIO 2026</p>
 
         <nav class="menu" aria-label="Main">
           <ul>
             <li>
-              <a href="#work">
-                <svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg>
-                <span class="menu__num">1</span> WORK
-              </a>
+              <a href="#work"><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">1</span><span class="menu__label">WORK</span></a>
             </li>
             <li>
-              <a href="#about">
-                <svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg>
-                <span class="menu__num">2</span> ABOUT
-              </a>
+              <a href="#about"><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">2</span><span class="menu__label">ABOUT</span></a>
             </li>
             <li>
-              <a href="#contact">
-                <svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg>
-                <span class="menu__num">3</span> CONTACT
-              </a>
+              <a href="#contact"><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">3</span><span class="menu__label">CONTACT</span></a>
+            </li>
+            <li>
+              <a href="resume.pdf" download><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">4</span><span class="menu__label">RESUME</span></a>
             </li>
           </ul>
         </nav>
@@ -91,7 +134,253 @@
       </div>
     </div>
   </div>
+
+  <!-- WORK.EXE. Opens from the menu; the title screen minimises to the
+       taskbar to make room for it. Everything in it is placeholder copy
+       meant to be replaced. -->
+  <section class="window window--wide" data-win="work" hidden>
+
+    <div class="window__bar">
+      <span class="window__icon" aria-hidden="true"></span>
+      <p class="window__title">WORK.EXE</p>
+      <span class="winbtns">
+        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
+        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
+        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
+      </span>
+    </div>
+
+    <div class="screen">
+      <div class="scanlines" aria-hidden="true"></div>
+
+      <div class="screen__inner screen__inner--doc">
+
+        <p class="doc__path">C:\PORTFOLIO\WORK</p>
+
+        <!-- Freeform editorial. Everything below is ordinary blocks —
+             headings, paragraphs, image slots, galleries — add as many
+             as you like, in any order. Drop an <img> into any .slot. -->
+        <div class="prose">
+          <p class="lede">Selected work, 2021 — now. One line here about the kind of problems you take on.</p>
+        </div>
+
+        <article class="piece">
+          <span class="slot media media--cover" aria-hidden="true"><i>IMG</i></span>
+          <header class="piece__head">
+            <h2 class="piece__title">PROJECT ONE</h2>
+            <p class="piece__meta">ROLE · CLIENT · 2025</p>
+          </header>
+          <div class="prose">
+            <p>Placeholder. What it was, what you did, how it went. Write as
+               much or as little as the project deserves — the layout holds
+               any length.</p>
+            <p>Add more paragraphs, another image, a quote — anything.</p>
+          </div>
+          <div class="gallery">
+            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+          </div>
+        </article>
+
+        <article class="piece">
+          <span class="slot media media--cover" aria-hidden="true"><i>IMG</i></span>
+          <header class="piece__head">
+            <h2 class="piece__title">PROJECT TWO</h2>
+            <p class="piece__meta">ROLE · CLIENT · 2024</p>
+          </header>
+          <div class="prose">
+            <p>Placeholder. Same template — swap the words and pictures.</p>
+          </div>
+          <div class="gallery">
+            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+          </div>
+        </article>
+
+        <article class="piece">
+          <span class="slot media media--cover" aria-hidden="true"><i>IMG</i></span>
+          <header class="piece__head">
+            <h2 class="piece__title">PROJECT THREE</h2>
+            <p class="piece__meta">ROLE · CLIENT · 2023</p>
+          </header>
+          <div class="prose">
+            <p>Placeholder. Duplicate this whole article block for a fourth.</p>
+          </div>
+        </article>
+
+        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>EXPERIENCE</h2>
+        <ul class="xp">
+          <li><b>COMPANY NAME</b> Your title <span>2024 — NOW</span></li>
+          <li><b>PREVIOUS COMPANY</b> Your title <span>2022 — 2024</span></li>
+          <li><b>THE ONE BEFORE</b> Your title <span>2021 — 2022</span></li>
+        </ul>
+
+        <p class="doc__foot">3 WORLDS, 4 STAGES <span>·</span> ESC TO CLOSE</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="window window--wide" data-win="about" hidden>
+    <div class="window__bar">
+      <span class="window__icon" aria-hidden="true"></span>
+      <p class="window__title">ABOUT.EXE</p>
+      <span class="winbtns">
+        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
+        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
+        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
+      </span>
+    </div>
+    <div class="screen">
+      <div class="scanlines" aria-hidden="true"></div>
+      <div class="screen__inner screen__inner--doc">
+        <p class="doc__path">C:\PORTFOLIO\ABOUT</p>
+
+        <!-- Freeform editorial: a lede, a portrait beside the bio, then
+             whatever you want. Plain blocks, no game furniture — add
+             paragraphs, headings, images without fighting a layout. -->
+        <div class="prose">
+          <p class="lede">A one-line hook about you, set large. Replace me.</p>
+        </div>
+
+        <div class="grid-2">
+          <span class="slot media media--portrait" aria-hidden="true"><i>IMG</i></span>
+          <div class="prose">
+            <h3>Hello</h3>
+            <p>Placeholder. Two or three honest paragraphs: who you are, what
+               you are for, and the thing you would rather be doing. Write it
+               like a person, not a LinkedIn summary.</p>
+            <p>Second paragraph. The layout holds any length, any number of
+               paragraphs, any images you drop between them.</p>
+          </div>
+        </div>
+
+        <div class="prose">
+          <h3>What I do</h3>
+          <p>Placeholder — a short paragraph, or swap this for a list:</p>
+          <ul>
+            <li>Discipline one, in a sentence.</li>
+            <li>Discipline two, in a sentence.</li>
+            <li>Discipline three, in a sentence.</li>
+          </ul>
+
+          <h3>Now</h3>
+          <p>Reading <b>BOOK TITLE</b> · playing <b>GAME TITLE</b> · watching
+             <b>SHOW</b> · building <b>SIDE PROJECT</b>. One editable sentence,
+             not a wall of widgets.</p>
+
+          <h3>Off the clock</h3>
+          <p>Placeholder for hobbies, in plain words.</p>
+        </div>
+
+        <div class="gallery">
+          <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+          <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+        </div>
+
+        <p class="doc__foot">ABOUT <span>·</span> ESC TO CLOSE</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="window window--wide" data-win="contact" hidden>
+    <div class="window__bar">
+      <span class="window__icon" aria-hidden="true"></span>
+      <p class="window__title">CONTACT.EXE</p>
+      <span class="winbtns">
+        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
+        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
+        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
+      </span>
+    </div>
+    <div class="screen">
+      <div class="scanlines" aria-hidden="true"></div>
+      <div class="screen__inner screen__inner--doc">
+        <p class="doc__path">C:\PORTFOLIO\CONTACT</p>
+        <h2 class="doc__h"><span class="doc__h-mark" aria-hidden="true"></span>PLAYER 2 WANTED</h2>
+        <p class="join__lead">The party has an open slot. Pick a channel:</p>
+        <!-- Its own component. Reusing the case-study card meant an
+             email address arrived with a 16:9 screenshot slot that will
+             never be filled, and a big faint "01" above it. -->
+        <div class="contacts">
+          <a class="contact" href="#mail" data-say="EMAIL — the reliable route. The human checks it more often than the food bowl. Placeholder address.">
+            <span class="contact__glyph contact__glyph--mail" aria-hidden="true"></span>
+            <span class="contact__body">
+              <span class="contact__k">EMAIL</span>
+              <span class="contact__v">you@example.com</span>
+            </span>
+            <span class="contact__go">SEND <b aria-hidden="true">&gt;</b></span>
+          </a>
+          <a class="contact" href="#social" data-say="SOCIAL — shorter attention span, faster reply. Placeholder handle.">
+            <span class="contact__glyph contact__glyph--at" aria-hidden="true"></span>
+            <span class="contact__body">
+              <span class="contact__k">SOCIAL</span>
+              <span class="contact__v">@handle</span>
+            </span>
+            <span class="contact__go">OPEN <b aria-hidden="true">&gt;</b></span>
+          </a>
+          <a class="contact" href="#cv" data-say="CV — the full save file, as a PDF. Placeholder link.">
+            <span class="contact__glyph contact__glyph--doc" aria-hidden="true"></span>
+            <span class="contact__body">
+              <span class="contact__k">CV</span>
+              <span class="contact__v">placeholder.pdf</span>
+            </span>
+            <span class="contact__go">GET <b aria-hidden="true">&gt;</b></span>
+          </a>
+        </div>
+        <div class="talk" data-intro="Mrow. The human is friendly and answers faster than I do. Pick a channel — or just stay and watch the rain with me.">
+          <span class="talk__cat" aria-hidden="true"><i></i></span>
+          <div class="talk__box">
+            <span class="talk__name">CAT</span>
+            <p class="talk__text" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <p class="doc__foot">CONTINUE? <b id="continueN" class="doc__count">9</b> <span>·</span> ESC TO CLOSE</p>
+      </div>
+    </div>
+  </section>
 </main>
+
+<!-- Desktop icons. They come out when every window is down, which is
+     the only time there is a desktop to put them on. -->
+<ul class="desktop" hidden>
+  <li>
+    <button class="dicon" type="button" data-open="work">
+      <span class="dicon__art dicon__art--folder" aria-hidden="true"></span>
+      <span class="dicon__label">WORK</span>
+    </button>
+  </li>
+  <li>
+    <button class="dicon" type="button" data-open="about">
+      <span class="dicon__art dicon__art--doc" aria-hidden="true"></span>
+      <span class="dicon__label">ABOUT</span>
+    </button>
+  </li>
+  <li>
+    <button class="dicon" type="button" data-open="contact">
+      <span class="dicon__art dicon__art--mail" aria-hidden="true"></span>
+      <span class="dicon__label">CONTACT</span>
+    </button>
+  </li>
+  <li>
+    <button class="dicon" type="button" data-open="portfolio">
+      <span class="dicon__art dicon__art--app" aria-hidden="true"></span>
+      <span class="dicon__label">HOME</span>
+    </button>
+  </li>
+</ul>
+
+<!-- The taskbar only exists once there is more than one window in play.
+     On the bare title screen it would just be covering the rooftop. -->
+<div class="taskbar" hidden>
+  <span class="taskbar__brand" aria-hidden="true">
+    <b class="taskbar__logo"></b>PORTFOLIO
+  </span>
+  <div class="taskbar__tasks"></div>
+  <div class="taskbar__tray">
+    <span class="taskbar__clock" id="clock">--:--</span>
+  </div>
+</div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>

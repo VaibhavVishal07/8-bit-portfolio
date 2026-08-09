@@ -1,7 +1,7 @@
 /* ==================================================================
    8-BIT TITLE SCREEN
    ------------------------------------------------------------------
-   The background is a 384x216 canvas drawn in scene.js and upscaled
+   The background is a 960x540 canvas drawn in scene.js and upscaled
    nearest-neighbour. Everything in this file is the UI on top of it.
 
    Two rules govern the UI:
@@ -43,8 +43,101 @@
   --panel-dim: #6b4fa8;
   --panel-text: #d8c8ff;
 
+  /* Elevation. There is no blur anywhere in this project, so height has
+     to be expressed the way a tile engine would: a lit edge along the
+     top-left, a shadowed one along the bottom-right, and a cast shadow
+     that steps away from the window in two hard jumps rather than
+     fading. Four flat colours doing the job of one blur. */
+  --panel-lift: rgba(62, 240, 255, 0.32);
+  --panel-sink: rgba(0, 0, 0, 0.5);
+  --panel-cast-1: rgba(255, 62, 165, 0.4);
+  --panel-cast-2: rgba(2, 1, 6, 0.55);
+
+  /* ---- the cast shadow ----
+     It used to be `var(--panel)`, which works at night (darker than the
+     card) and is a no-op in day (lighter than the card, and all but
+     identical to the screen behind it). The whole hard-offset elevation
+     system existed only in one theme. It gets its own token now. */
+  --cast: #0d0520;
+
+  /* De-emphasised TEXT. --panel-dim is a border colour and every use of
+     it as type failed contrast — the 44px numeral on each case card was
+     simultaneously the biggest and the faintest thing in it. --panel-dim
+     is now for 2-3px rules only. */
+  --panel-quiet: #a68fd8;
+
+  /* ==================================================================
+     TYPE SCALE
+
+     Press Start 2P is drawn on an 8px em. At 12.8px — which is exactly
+     what `clamp(9px, 0.8vw, 14px)` resolves to on a 1600px viewport —
+     every stroke straddles a pixel boundary and the browser antialiases
+     it. Continuous scaling and a pixel face are incompatible, and the
+     old sizing broke the project's first rule on nearly every element.
+
+     So the display face steps between fixed multiples of 8 at
+     breakpoints. It never interpolates. The body face (Pixelify Sans)
+     is more forgiving and only needs whole integers.
+     ================================================================== */
+  --d1: 8px;    /* micro labels, paths, footers */
+  --d2: 16px;   /* meta, chips, buttons, card titles */
+  --d3: 24px;   /* section headings */
+  --d4: 32px;   /* numerals */
+  --wm: 40px;   /* wordmark, lower line */
+  --wm-a: 24px; /* wordmark, upper line */
+  --wmo: 2px;   /* one step of the extrusion */
+
+  --b1: 13px;
+  --b2: 15px;
+  --b3: 17px;
+
+  /* ---- spacing ----
+     Seventeen distinct one-off values were in use, several of them odd,
+     in a design whose entire premise is a grid. Multiples of four, and
+     nothing else. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  --taskbar-h: 52px;
+
   --font-display: 'Press Start 2P', 'Courier New', monospace;
   --font-body: 'Pixelify Sans', 'Press Start 2P', monospace;
+}
+
+@media (min-width: 1500px) {
+  :root {
+    --d1: 8px;
+    --d2: 16px;
+    --d3: 24px;
+    --d4: 40px;
+    --wm: 56px;
+    --wm-a: 32px;
+    --wmo: 3px;
+    --b1: 15px;
+    --b2: 17px;
+    --b3: 19px;
+  }
+}
+
+@media (min-width: 2400px) {
+  :root {
+    --d1: 16px;
+    --d2: 24px;
+    --d3: 32px;
+    --d4: 48px;
+    --wm: 72px;
+    --wm-a: 48px;
+    --wmo: 4px;
+    --b1: 17px;
+    --b2: 20px;
+    --b3: 24px;
+    --taskbar-h: 62px;
+  }
 }
 
 *,
@@ -75,7 +168,7 @@ svg { display: block; image-rendering: pixelated; }
 
 /* ==================================================================
    THE SCENE CANVAS
-   Nearest-neighbour upscale is the whole point — the canvas is 384px
+   Nearest-neighbour upscale is the whole point — the canvas is 960px
    wide and every pixel is blown up as a hard square.
    ================================================================== */
 #scene,
@@ -85,6 +178,12 @@ svg { display: block; image-rendering: pixelated; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Anchored low rather than centred. `cover` on a viewport wider than
+     16:9 crops top and bottom, and the two are not worth the same: the
+     sky is mostly gradient and repeats, while the rooftop is the
+     closest, most detailed thing in the scene and the only part you can
+     read individual objects in. So the crop is taken out of the sky. */
+  object-position: 50% 72%;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -104,8 +203,15 @@ svg { display: block; image-rendering: pixelated; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
+  padding: var(--s7) var(--s5);
 }
+
+/* The window used to lose the composition to the moon — largest,
+   brightest, highest-contrast thing on screen. A dimming scrim behind
+   it fixed that and introduced something worse: a hard horizontal edge
+   cutting straight across the moon. So the window earns its presence
+   instead, with a heavier frame (below) and more size. Nothing is
+   allowed to damage the artwork to prop up the UI. */
 
 /* ---- HUD panel.
    Beveled desktop chrome fought the neon city behind it, so the window
@@ -114,14 +220,22 @@ svg { display: block; image-rendering: pixelated; }
    no radius, no blur. ---- */
 .window {
   position: relative;
-  width: min(88vw, 1120px);
+  width: min(84vw, 1400px);
   padding: 3px;
   background: var(--panel);
   border: 2px solid var(--panel-edge);
+  /* Read outward: the raised edge catching light along the top-left,
+     the same edge falling away bottom-right, the keyline, then the cast
+     shadow stepping off the backdrop in two hard jumps. Nothing here is
+     blurred — the height is entirely in the offsets, which is the only
+     way this scene is allowed to express it. */
   box-shadow:
+    inset 2px 2px 0 0 var(--panel-lift),
+    inset -2px -2px 0 0 var(--panel-sink),
     0 0 0 2px var(--ink),
-    10px 10px 0 rgba(255, 62, 165, 0.45),
-    inset 0 0 0 1px rgba(62, 240, 255, 0.22);
+    0 0 0 6px var(--panel-accent),
+    0 0 0 8px var(--ink),
+    var(--s3) var(--s3) 0 var(--panel-cast-2);
 }
 
 /* Corner brackets, drawn from two L-shaped pseudo-elements */
@@ -153,6 +267,8 @@ svg { display: block; image-rendering: pixelated; }
   align-items: center;
   gap: 10px;
   padding: 7px 8px;
+  cursor: move;
+  user-select: none;
   background: var(--panel-bar);
   border-bottom: 2px solid var(--panel-edge);
   margin-bottom: 3px;
@@ -168,38 +284,80 @@ svg { display: block; image-rendering: pixelated; }
 
 .window__title {
   flex: 1 1 auto;
+  /* min-width: 0 lets the title SHRINK — its default content minimum
+     is what was shoving the close button out of the window on narrow
+     screens. It truncates with an ellipsis instead. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(9px, 0.8vw, 14px);
+  font-size: var(--d2);
   letter-spacing: 2px;
   color: var(--panel-edge);
   text-align: left;
 }
 
 /* ---- Title-bar indicators ---- */
+/* ---- title-bar buttons ----
+   They were 16x14 with a flat coloured square inside — too small to hit
+   and no indication of which was which. They are proper targets now,
+   and each draws its actual glyph. */
 .winbtns {
   display: flex;
-  gap: 5px;
+  gap: 7px;
   flex: none;
 }
 
 .winbtn {
   position: relative;
-  width: 16px;
-  height: 14px;
-  background: transparent;
+  width: 32px;
+  height: 26px;
+  background: var(--panel);
   border: 2px solid var(--panel-dim);
 }
 
 .winbtn i {
   position: absolute;
   display: block;
-  inset: 2px;
+  left: 50%;
+  top: 50%;
 }
 
-.winbtn--min i { background: var(--panel-edge); }
-.winbtn--max i { background: #ffd93e; }
-.winbtn--close i { background: var(--panel-accent); }
+/* minimise: a bar sitting low, the way the real one did */
+.winbtn--min i {
+  width: 14px;
+  height: 3px;
+  margin: 3px 0 0 -7px;
+  background: var(--panel-dim);
+}
+
+/* maximise: a hollow box with a heavy title bar on it */
+.winbtn--max i {
+  width: 15px;
+  height: 13px;
+  margin: -7px 0 0 -8px;
+  border: 2px solid var(--panel-dim);
+  border-top-width: 4px;
+}
+
+/* close: an X built from two stepped diagonals, two pixels at a time.
+   A rotated rule would be one line of CSS and would also be the only
+   antialiased edge in the entire project. */
+.winbtn--close i {
+  width: 2px;
+  height: 2px;
+  margin: -6px 0 0 -6px;
+  background: var(--panel-accent);
+  box-shadow:
+    2px 2px 0 var(--panel-accent), 4px 4px 0 var(--panel-accent),
+    6px 6px 0 var(--panel-accent), 8px 8px 0 var(--panel-accent),
+    10px 10px 0 var(--panel-accent), 10px 0 0 var(--panel-accent),
+    8px 2px 0 var(--panel-accent), 6px 4px 0 var(--panel-accent),
+    4px 6px 0 var(--panel-accent), 2px 8px 0 var(--panel-accent),
+    0 10px 0 var(--panel-accent);
+}
 
 /* ---- The screen ---- */
 .screen {
@@ -212,19 +370,20 @@ svg { display: block; image-rendering: pixelated; }
 .scanlines {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  /* Behind the content, not over it. */
+  z-index: 1;
   pointer-events: none;
   background: repeating-linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.15) 0 2px,
     transparent 2px 4px
   );
-  animation: scanroll 8s steps(8, end) infinite;
+  animation: scanroll 1.2s steps(4, end) infinite;
 }
 
 @keyframes scanroll {
   from { transform: translateY(0); }
-  to   { transform: translateY(32px); }
+  to   { transform: translateY(4px); }
 }
 
 .screen__inner {
@@ -243,25 +402,62 @@ svg { display: block; image-rendering: pixelated; }
   position: relative;
   margin: 0 0 clamp(20px, 2.4vw, 40px);
   font-family: var(--font-display);
-  font-size: clamp(20px, 3.6vw, 62px);
-  line-height: 1.5;
-  letter-spacing: 3px;
+  font-size: var(--wm);
+  line-height: 1.14;
   color: var(--wm-face);
-  text-shadow:
-    /* chromatic fringe — the misregistered colour channels that read
-       as a bad signal, and the whole reason this looks cyberpunk */
-    0.035em 0 0 var(--wm-fringe-r),
-    -0.035em 0 0 var(--wm-fringe-l),
-    /* violet extrusion, down-and-left */
-    -0.03em 0.05em 0 var(--wm-ext-1),
-    -0.06em 0.10em 0 var(--wm-ext-1),
-    -0.09em 0.15em 0 var(--wm-ext-2),
-    -0.12em 0.20em 0 var(--wm-ext-2),
-    -0.15em 0.25em 0 var(--wm-ext-3),
-    -0.18em 0.30em 0 var(--wm-outline);
   /* The logotype holds still — only its colour snaps. An idle hop and a
      glitch jolt both read as the title shaking, which it should not. */
   animation: title-flash 2.4s steps(1, end) infinite;
+}
+
+/* ---- The perspective stack ----
+   Arcade title screens sat the name in a trapezoid: the top line small,
+   each line below it larger, so the block appears to lean away from the
+   viewer. It is done here with per-line font-size rather than a
+   transform, because a rotateX would resample the glyphs off the pixel
+   grid and soften every edge — the one thing this file will not do.
+
+   --wm-step is the ratio between the two lines. Everything else follows
+   from it: the extrusion and the fringe are declared on the lines
+   themselves in em, so the deeper line automatically gets the deeper
+   extrusion, which is what sells the recession. */
+.wordmark__line {
+  line-height: 1;
+  display: block;
+  text-shadow:
+    /* chromatic fringe — the misregistered colour channels that read
+       as a bad signal, and the whole reason this looks cyberpunk */
+    var(--wmo) 0 0 var(--wm-fringe-r),
+    calc(var(--wmo) * -1) 0 0 var(--wm-fringe-l),
+    /* extrusion, down-and-left, every offset a whole pixel */
+    calc(var(--wmo) * -1) var(--wmo) 0 var(--wm-ext-1),
+    calc(var(--wmo) * -2) calc(var(--wmo) * 2) 0 var(--wm-ext-1),
+    calc(var(--wmo) * -3) calc(var(--wmo) * 3) 0 var(--wm-ext-2),
+    calc(var(--wmo) * -4) calc(var(--wmo) * 4) 0 var(--wm-ext-2),
+    calc(var(--wmo) * -5) calc(var(--wmo) * 5) 0 var(--wm-ext-3),
+    calc(var(--wmo) * -6) calc(var(--wmo) * 6) 0 var(--wm-outline);
+}
+
+/* The narrower line also gets the wider tracking, so the two lines end
+   closer in width than their point sizes alone would put them — that is
+   what keeps the silhouette a trapezoid rather than a wedge. */
+/* text-indent is half the tracking on each line. Letter-spacing is added
+   after the last glyph too, so a centred line sits half a space to the
+   left of true centre — and with two different trackings the two lines
+   would sit off centre by different amounts, which on a symmetrical
+   trapezoid is the one error the eye catches immediately. */
+.wordmark__line--a {
+  font-size: var(--wm-a);
+  letter-spacing: 0.06em;
+  text-indent: 0.03em;
+  /* clears the extrusion, which descends twelve steps */
+  margin-bottom: var(--s1);
+}
+
+.wordmark__line--b {
+  font-size: 1em;
+  letter-spacing: 0.04em;
+  text-indent: 0.02em;
 }
 
 @keyframes title-flash {
@@ -280,7 +476,13 @@ svg { display: block; image-rendering: pixelated; }
 
 /* ---- Menu ---- */
 .menu ul {
+  /* Every other line on this panel centres itself, so the menu rows do
+     too — each row shrink-wraps and centres on its own text, and the
+     heart cursor hangs OFF the row's left edge instead of reserving a
+     gutter inside it. A reserved gutter is why the text kept drifting
+     right of centre no matter which side the counterweight went. */
   margin: 0;
+  align-items: center;
   padding: 0;
   list-style: none;
   display: inline-flex;
@@ -291,8 +493,8 @@ svg { display: block; image-rendering: pixelated; }
 
 .menu a {
   position: relative;
-  display: block;
-  padding-left: clamp(32px, 3vw, 52px);
+  display: inline-block;
+  padding-left: 0;
   font-family: var(--font-display);
   font-size: clamp(13px, 1.25vw, 22px);
   letter-spacing: 1px;
@@ -300,11 +502,19 @@ svg { display: block; image-rendering: pixelated; }
   text-decoration: none;
 }
 
-.menu__num { color: var(--leaf); }
+/* The number is a MARKER, not part of the word. In flow it made every
+   row read as "1 WORK" and the eye centres on the word — so the word
+   always sat right of the axis by half the prefix. Both ornaments hang
+   in the margin now and the word owns the centre. */
+.menu__num {
+  position: absolute;
+  left: -1.7em;
+  color: var(--leaf);
+}
 
 .cursor {
   position: absolute;
-  left: 0;
+  left: -3.4em;
   top: 50%;
   transform: translateY(-50%);
   width: clamp(16px, 1.5vw, 26px);
@@ -323,7 +533,15 @@ svg { display: block; image-rendering: pixelated; }
 }
 
 .menu:hover li:first-child a { color: var(--cream); }
-.menu:hover li:first-child a .menu__num { color: var(--leaf); }
+.menu:hover li:first-child a /* The number is a MARKER, not part of the word. In flow it made every
+   row read as "1 WORK" and the eye centres on the word — so the word
+   always sat right of the axis by half the prefix. Both ornaments hang
+   in the margin now and the word owns the centre. */
+.menu__num {
+  position: absolute;
+  left: -1.7em;
+  color: var(--leaf);
+}
 
 .menu:hover li:first-child .cursor {
   visibility: hidden;
@@ -371,94 +589,1079 @@ svg { display: block; image-rendering: pixelated; }
 .accent { color: var(--gold); }
 
 /* ==================================================================
+   WINDOWS, AND THE TASKBAR
+
+   The panel already had a title bar with minimise, maximise and close
+   on it. They did nothing. Now they do, and there is a second window
+   for the work — so the title screen behaves like the desktop it has
+   been dressed as since the beginning.
+
+   None of it is Windows 98 in *appearance*: beveled grey fought the
+   neon city, which is the whole reason the panel became a terminal HUD.
+   It is Windows 98 in *behaviour* — one window at a time, minimise to a
+   bar along the bottom, click the task to bring it back.
+   ================================================================== */
+
+/* The wide window. min() rather than a breakpoint, so it is as big as
+   it can be without ever touching the edges. The cap is deliberately
+   enormous — on a wide display the vw term never binds and the window
+   would otherwise sit at a third of the screen looking like a dialog
+   box rather than the thing you came to read. */
+.window--wide { width: min(94vw, 2360px); }
+
+.window[hidden] { display: none; }
+
+/* Dragged out of the centre. The stage centres a window until you touch
+   its title bar; the first drag pins it exactly where it already was
+   and moves it from there, so it never jumps on the first pixel. */
+.window.is-free {
+  position: fixed;
+  margin: 0;
+  z-index: 5;
+}
+
+/* Maximised: it gives up being a window and becomes the screen. It also
+   has to become a flex column, or the screen keeps its natural height
+   and the window ends up mostly empty below it. */
+.window.is-max {
+  position: fixed;
+  inset: var(--s2) var(--s2) calc(var(--taskbar-h) + var(--s2));
+  width: auto;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-desktop='off'] .window.is-max { inset: 8px; }
+
+.window.is-max .screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.window.is-max .screen__inner--doc {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* The scene controls live above the stage, so a maximised window cannot
+   cover them — which would be fine except that its own close button
+   ends up underneath them. They step down out of the way instead of
+   the window being raised over them, because losing the weather
+   toggles behind a full-screen window would be worse. */
+html[data-max='on'] .controls {
+  top: auto;
+  bottom: calc(var(--taskbar-h) + var(--s3));
+}
+
+/* The title-bar buttons are buttons now, so they need the reset. */
+.winbtn {
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+}
+
+.winbtn:hover { border-color: var(--panel-edge); }
+.winbtn:focus-visible { outline: 2px solid var(--panel-edge); outline-offset: 2px; }
+
+/* ---- the document view ---- */
+.screen__inner--doc {
+  text-align: left;
+  padding: clamp(24px, 2.4vw, 52px) clamp(20px, 2.6vw, 60px) clamp(22px, 2vw, 48px);
+  max-height: min(78vh, 1280px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A chunky scrollbar with hard edges. The default one is a rounded
+   grey capsule and it is the only thing on screen that would be. */
+.screen__inner--doc::-webkit-scrollbar { width: 14px; }
+.screen__inner--doc::-webkit-scrollbar-track { background: var(--panel-bar); }
+.screen__inner--doc::-webkit-scrollbar-thumb {
+  background: var(--panel-dim);
+  border: 3px solid var(--panel-bar);
+}
+.screen__inner--doc::-webkit-scrollbar-thumb:hover { background: var(--panel-edge); }
+.screen__inner--doc { scrollbar-color: var(--panel-dim) var(--panel-bar); }
+
+.doc__path {
+  margin: 0 0 clamp(16px, 1.8vw, 28px);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+
+.doc__h {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin: var(--s7) 0 var(--s5);
+  padding-bottom: var(--s3);
+  border-bottom: 2px solid var(--panel-dim);
+  font-family: var(--font-display);
+  font-size: var(--d3);
+  letter-spacing: 3px;
+  color: var(--panel-edge);
+}
+
+.doc__h:first-of-type { margin-top: 0; }
+
+.doc__h-mark {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  background: var(--panel-accent);
+}
+
+.doc__foot {
+  margin: clamp(22px, 2.4vw, 36px) 0 0;
+  padding-top: 12px;
+  border-top: 2px solid var(--panel-dim);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+
+.doc__foot span { color: var(--panel-accent); }
+
+/* ---- experience ----
+   Named .job, not .role. The title screen already has a `.role`
+   paragraph — "YOUR ROLE · PORTFOLIO 2026" — and a class name reused
+   across two unrelated components is not a style question, it is a
+   bug: this rule made that line a flex container and knocked it out of
+   centre on a screen that has nothing to do with this one. */
+/* ---- case studies ---- */
+/* Case studies are entry points, not footnotes. They were sized like
+   list rows and read as an afterthought under the experience; they are
+   the thing you actually want clicked, so they get a thumbnail, a
+   number you can read across the room, and a border thick enough to
+   make them objects rather than boxes. */
+/* Two by two. Four across was a row of thumbnails; two across gives
+   each project enough room to be a project. */
+.cases {
+  display: grid;
+  gap: clamp(14px, 1.4vw, 26px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* And at that width the card lies down: thumbnail on the left, the
+   words on the right. Stacked, a 16:9 still on a card this wide was
+   taller than everything under it put together. */
+.case {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: clamp(16px, 1.4vw, 30px);
+  align-items: center;
+  padding: clamp(18px, 1.6vw, 30px);
+  background: var(--panel-bar);
+  border: 3px solid var(--panel-dim);
+  box-shadow: var(--s2) var(--s2) 0 var(--cast);
+  text-decoration: none;
+}
+
+.case:hover,
+.case:focus-visible {
+  border-color: var(--panel-edge);
+  box-shadow: var(--s2) var(--s2) 0 var(--panel-accent);
+  outline: none;
+}
+
+/* Where the thumbnail goes. Vertical bars rather than the usual
+   diagonal hatch, because a diagonal edge is the one thing on this
+   page that would have to be antialiased. */
+.case__body { display: block; min-width: 0; }
+
+.case__thumb {
+  display: block;
+  aspect-ratio: 16 / 9;
+  border: 2px solid var(--panel-dim);
+  background: var(--panel);
+  border-style: dashed;
+}
+
+.case:hover .case__thumb,
+.case:focus-visible .case__thumb { border-color: var(--panel-edge); }
+
+.case__no {
+  display: block;
+  margin-bottom: clamp(10px, 1vw, 16px);
+  font-family: var(--font-display);
+  font-size: var(--d3);
+  line-height: 1;
+  color: var(--panel-dim);
+}
+
+.case:hover .case__no,
+.case:focus-visible .case__no { color: var(--panel-accent); }
+
+.case__title {
+  display: block;
+  margin: 0 0 clamp(9px, 0.8vw, 14px);
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  letter-spacing: 1px;
+  line-height: 1.6;
+  color: var(--cream);
+}
+
+.case__sub {
+  display: block;
+  margin: 0 0 clamp(18px, 1.6vw, 28px);
+  font-size: var(--b2);
+  line-height: 1.6;
+  color: var(--panel-quiet);
+}
+
+.case__go {
+  display: inline-block;
+  margin-top: var(--s2);
+  padding: var(--s2) var(--s3);
+  border: 2px solid var(--panel-edge);
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  letter-spacing: 2px;
+  color: var(--panel-edge);
+}
+
+.case__go b { color: var(--panel-accent); }
+
+/* ==================================================================
+   BOOT SCREEN
+   ================================================================== */
+/* The boot screen is a CRT before the OS paints, so it does not follow
+   the theme — it forces the night palette locally. It used to inherit
+   day mode, where --ink is never redefined but --panel-text is: a black
+   screen painted with a light-background palette, and the tip line
+   measured 1.25:1. The theme also collapsed two colour pairs, fusing
+   PORTFOLIO/BIOS into one word and the labels into the OK column. */
+.boot {
+  --panel-text: #d8c8ff;
+  --moon: #cfd8f5;
+  --panel-dim: #8f7ab8;
+  --panel-quiet: #a68fd8;
+  --panel-edge: #3ef0ff;
+  --panel-accent: #ff3ea5;
+  --wm-face: #7dfcff;
+  --leaf: #6fc44e;
+
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: #05070f;
+  padding: var(--s7);
+}
+
+.boot[hidden] { display: none; }
+
+/* Anchored top-left and wide. A BIOS is not a centred dialog. */
+.boot__inner {
+  position: relative;
+  z-index: 2;
+  width: min(92vw, 1100px);
+}
+
+/* ---- the attract screen ----
+   A text readout in a black void is a loading screen you resent. This
+   one puts the scene behind it and builds it while you wait: stars,
+   then a skyline that raises one tower at a time as the bar fills, with
+   the moon coming up last. By the time it clears you have already been
+   shown what the site is. */
+.boot__stars,
+.boot__city,
+.boot__moon {
+  position: absolute;
+  pointer-events: none;
+}
+
+.boot__stars {
+  inset: 0;
+  z-index: 0;
+}
+
+.boot__stars span {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--wm-face);
+  animation: twinkle 1.4s steps(2, end) infinite;
+}
+
+@keyframes twinkle {
+  from { opacity: 1; }
+  to { opacity: 0.25; }
+}
+
+.boot__moon {
+  z-index: 0;
+  right: 12%;
+  top: 12%;
+  width: 88px;
+  height: 88px;
+  background: var(--moon);
+  box-shadow:
+    /* craters, as blocks */
+    -18px -14px 0 -32px var(--wm-fringe-l),
+    14px 10px 0 -30px var(--wm-fringe-l),
+    0 0 0 4px var(--ink);
+  /* an octagon, not a circle: eight straight cuts, no antialiasing */
+  clip-path: polygon(36% 0, 64% 0, 100% 36%, 100% 64%, 64% 100%, 36% 100%, 0 64%, 0 36%);
+}
+
+.boot__city {
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42vh;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+/* Each tower is hidden until the loader raises it. No transition — it
+   pops, one frame, like a tile being written. */
+/* A dark tower with a sparse grid of lit windows. Two layers: vertical
+   stripes of window colour, then the body colour painted back over most
+   of each row, which leaves dots. A full grid of magenta read as graph
+   paper — buildings are mostly dark, with a few lights on. */
+.boot__city span {
+  flex: 1 1 0;
+  visibility: hidden;
+  background-color: #150931;
+  background-image:
+    repeating-linear-gradient(to bottom, transparent 0 3px, #150931 3px 16px),
+    repeating-linear-gradient(to right, #8a4bbf 0 3px, transparent 3px 13px);
+  border-top: 2px solid #2c1566;
+}
+
+.boot__city span.is-up { visibility: visible; }
+.boot__city span:nth-child(3n) { background-color: #0c0420; }
+.boot__city span:nth-child(4n) { border-top-color: var(--panel-edge); }
+.boot__city span:nth-child(5n) {
+  background-image:
+    repeating-linear-gradient(to bottom, transparent 0 3px, #150931 3px 16px),
+    repeating-linear-gradient(to right, #b8557f 0 3px, transparent 3px 13px);
+}
+
+.boot__wm {
+  margin: var(--s5) 0 var(--s6);
+  font-family: var(--font-display);
+  font-size: var(--wm);
+  line-height: 1.02;
+  color: var(--wm-face);
+  animation: title-flash 2.4s steps(1, end) infinite;
+}
+
+.boot__brand {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  letter-spacing: 2px;
+  color: var(--wm-face);
+}
+
+.boot__brand b { color: var(--panel-accent); font-weight: inherit; }
+
+.boot__rule {
+  height: 2px;
+  margin: 0;
+  border: 0;
+  background: var(--panel-dim);
+}
+
+.boot__lines {
+  margin: 0;
+  padding: 20px 0 28px;
+  list-style: none;
+  font-family: var(--font-display);
+  font-size: clamp(8px, 0.72vw, 12px);
+  line-height: 2.4;
+  letter-spacing: 1px;
+  color: var(--panel-text);
+}
+
+/* ---- the walker ----
+   A cat, side on, built from four blocks and a stepped bob. It is
+   parked on top of the bar and moves with the fill, which turns a
+   progress bar into something worth looking at for two seconds. */
+.boot__track { position: relative; padding-top: 26px; }
+
+.boot__cat {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 22px;
+  height: 20px;
+  margin-bottom: 3px;
+  animation: trot 0.24s steps(2, end) infinite;
+}
+
+/* body and haunches */
+.boot__cat::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  width: 15px;
+  height: 8px;
+  background: var(--wm-face);
+  box-shadow:
+    /* head */
+    13px -4px 0 0 var(--wm-face),
+    /* ear */
+    15px -7px 0 -2px var(--wm-face),
+    /* front leg, back leg */
+    2px 8px 0 -3px var(--wm-face),
+    11px 8px 0 -3px var(--wm-face);
+}
+
+/* tail, curling up behind */
+.boot__cat::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  bottom: 8px;
+  width: 3px;
+  height: 3px;
+  background: var(--wm-face);
+  box-shadow: -3px -3px 0 var(--wm-face), -3px -6px 0 var(--wm-face);
+}
+
+@keyframes trot {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2px); }
+}
+
+/* Each line is revealed by the script, one at a time. */
+.boot__lines li {
+  display: grid;
+  /* 10em, not 8: PARALLAX is eight characters and Press Start 2P is
+     wider than one em a glyph once tracking is added. */
+  grid-template-columns: 10em 1fr auto;
+  gap: 14px;
+  visibility: hidden;
+}
+
+.boot__lines li.is-on { visibility: visible; }
+.boot__lines span { color: var(--panel-edge); }
+.boot__lines i { color: var(--panel-dim); font-style: normal; }
+.boot__lines b { color: var(--leaf); font-weight: inherit; }
+
+.boot__barwrap {
+  height: 22px;
+  border: 3px solid var(--panel-edge);
+  padding: 3px;
+}
+
+/* Whole cells, filling left to right. */
+.boot__bar {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--panel-accent) 0 10px,
+    transparent 10px 14px
+  );
+}
+
+/* A percentage you can read across the room, which is most of what
+   makes a loading screen feel like a game and not a spinner. */
+.boot__pct {
+  margin: 16px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 52px);
+  line-height: 1;
+  letter-spacing: 2px;
+  color: var(--panel-accent);
+  text-shadow: 0 4px 0 var(--wm-ext-3);
+}
+
+/* Rotating tips, the way a game does while it loads. These do real
+   work: they are where you find out the cat is clickable. */
+.boot__tip {
+  margin: 22px 0 0;
+  min-height: 2.4em;
+  font-family: var(--font-display);
+  font-size: clamp(8px, 0.7vw, 12px);
+  line-height: 2;
+  letter-spacing: 1px;
+  color: var(--panel-text);
+}
+
+.boot__tip b { color: var(--leaf); font-weight: inherit; }
+
+/* The caret at the end of the typed line. */
+.boot__tip span::after {
+  content: '_';
+  color: var(--panel-accent);
+  animation: blink 0.5s steps(1, end) infinite;
+}
+/* ==================================================================
+   ABOUT: BIO, NOW PLAYING, STATS, CHIPS
+   ================================================================== */
+.bio {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: clamp(18px, 1.8vw, 34px);
+  align-items: start;
+  margin-bottom: clamp(24px, 2.2vw, 40px);
+}
+
+/* Portrait slot. Blocks until there is a picture. */
+.bio__portrait {
+  width: clamp(96px, 9vw, 168px);
+  aspect-ratio: 1;
+  background: var(--panel);
+  border-style: dashed;
+  border: 3px solid var(--panel-dim);
+  box-shadow: var(--s2) var(--s2) 0 var(--cast);
+}
+
+.bio__lead {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  line-height: 1.8;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+.bio__text {
+  margin: 0 0 var(--s4);
+  max-width: 68ch;
+  font-size: var(--b3);
+  line-height: 1.7;
+  color: var(--panel-text);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 6px 10px;
+  background: var(--panel);
+  border: 2px solid var(--panel-dim);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-edge);
+}
+
+/* ==================================================================
+   CONTACT
+
+   Its own component. It used to borrow the case-study card, which gave
+   an email address a 16:9 screenshot slot and a giant faint numeral —
+   two links occupying a 2360px window to say four lines. A contact is
+   a glyph, a label, a value and a verb, at a sane measure.
+   ================================================================== */
+.contacts {
+  display: grid;
+  gap: var(--s4);
+  max-width: 720px;
+}
+
+.contact {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--s5);
+  align-items: center;
+  padding: var(--s5);
+  background: var(--panel-bar);
+  border: 3px solid var(--panel-dim);
+  box-shadow: var(--s2) var(--s2) 0 var(--cast);
+  text-decoration: none;
+}
+
+.contact:hover,
+.contact:focus-visible {
+  border-color: var(--panel-edge);
+  box-shadow: var(--s2) var(--s2) 0 var(--panel-accent);
+  outline: none;
+}
+
+/* Blocks, in the same language as the desktop icons. */
+.contact__glyph {
+  position: relative;
+  width: 38px;
+  height: 30px;
+  border: 2px solid var(--ink);
+  background: var(--panel-edge);
+}
+
+.contact__glyph--mail::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 5px;
+  width: 3px;
+  height: 3px;
+  background: var(--ink);
+  box-shadow:
+    3px 3px 0 var(--ink), 6px 6px 0 var(--ink), 9px 6px 0 var(--ink),
+    12px 3px 0 var(--ink), 15px 0 0 var(--ink), 18px 0 0 var(--ink);
+}
+
+.contact__glyph--at { background: var(--gold); box-shadow: inset 0 0 0 6px var(--ink), inset 0 0 0 9px var(--gold); }
+.contact__glyph--doc { background: var(--cream); box-shadow: inset 0 6px 0 var(--ink), inset 0 12px 0 var(--cream), inset 0 18px 0 var(--ink); }
+
+.contact__k {
+  display: block;
+  margin-bottom: var(--s2);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--panel-quiet);
+}
+
+.contact__v {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  line-height: 1.5;
+  color: var(--cream);
+  word-break: break-all;
+}
+
+.contact__go {
+  flex: none;
+  padding: var(--s2) var(--s3);
+  border: 2px solid var(--panel-edge);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--panel-edge);
+}
+
+.contact__go b { color: var(--panel-accent); }
+
+/* ==================================================================
+   WORK: EXPANDING CASE STUDIES
+   ================================================================== */
+.cell { min-width: 0; }
+
+/* An open case takes the full width of the grid, so its detail has
+   somewhere to go — and the thumbnail is capped once it does, or a
+   16:9 still at four-tenths of the full width becomes taller than
+   everything it was opened to show. */
+.cell.is-open { grid-column: 1 / -1; }
+.cell.is-open .case { grid-template-columns: minmax(0, 260px) minmax(0, 1fr); }
+
+/* One shadow for the opened assembly, not a magenta L sticking 9px
+   past the panel it is joined to. */
+.cell.is-open .case { box-shadow: none; }
+.cell.is-open { box-shadow: var(--s2) var(--s2) 0 var(--cast); }
+
+.case { width: 100%; text-align: left; cursor: pointer; appearance: none; }
+
+.case[aria-expanded='true'] {
+  border-color: var(--panel-edge);
+  box-shadow: var(--s2) var(--s2) 0 var(--panel-accent);
+}
+
+.detail {
+  padding: clamp(18px, 1.6vw, 30px);
+  margin-top: -3px;
+  background: var(--panel);
+  border: 3px solid var(--panel-edge);
+}
+
+
+.detail__h {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  letter-spacing: 2px;
+  color: var(--panel-accent);
+}
+
+.detail__p {
+  margin: 0 0 var(--s5);
+  max-width: 68ch;
+  font-size: var(--b3);
+  line-height: 1.7;
+  color: var(--panel-text);
+}
+
+/* A strip of stills, in the same placeholder bars as the card. */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+  max-width: 720px;
+}
+
+.strip span {
+  aspect-ratio: 4 / 3;
+  border: 2px solid var(--panel-dim);
+  background: var(--panel);
+  border-style: dashed;
+}
+
+/* ==================================================================
+   DESKTOP ICONS
+
+   They come out when every window is down, which is the only moment
+   there is a desktop to put them on. Left-hand side, top-down, one
+   column — where they have always gone.
+
+   Each glyph is built from blocks and hard offsets, like everything
+   else here. A folder is a slab with a tab on it; a document is a slab
+   with three lines; an envelope is a slab with a stepped chevron. None
+   of them needs to be more than that at this size.
+   ================================================================== */
+.desktop {
+  position: fixed;
+  top: clamp(20px, 2vw, 34px);
+  left: clamp(20px, 2vw, 34px);
+  z-index: 4;
+  display: grid;
+  gap: clamp(10px, 1vw, 18px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.desktop[hidden] { display: none; }
+
+.dicon {
+  display: grid;
+  justify-items: center;
+  /* A label wider than the cell used to grow the implicit column and
+     drag the icon off centre with it. The column may never exceed the
+     cell. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+  /* PORTFOLIO is nine characters and did not fit 106px. */
+  width: clamp(104px, 8vw, 140px);
+  padding: var(--s3) var(--s2);
+  background: transparent;
+  border: 2px solid transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.dicon:hover,
+.dicon:focus-visible {
+  border-color: var(--panel-edge);
+  background: var(--panel);
+  outline: none;
+}
+
+.dicon__label {
+  font-family: var(--font-display);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  line-height: 1.5;
+  color: var(--cream);
+  text-shadow: 2px 2px 0 var(--ink);
+}
+
+html[data-mode='day'] .dicon__label { text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.7); }
+
+.dicon__art {
+  position: relative;
+  display: block;
+  /* It was a hardcoded 38x32 inside a cell that scales to 118px, so
+     on a wide display it was a speck in a box. */
+  width: clamp(38px, 3vw, 54px);
+  height: clamp(32px, 2.5vw, 46px);
+  border: 2px solid var(--ink);
+  box-shadow: var(--s1) var(--s1) 0 var(--cast);
+}
+
+/* folder: a slab with a tab standing on its top-left corner */
+.dicon__art--folder { background: var(--gold); }
+
+.dicon__art--folder::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: -12px;
+  width: 46%;
+  height: 12px;
+  background: #c99a20;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+}
+
+/* document: a slab with lines on it and a clipped corner */
+.dicon__art--doc { background: #f4f0ff; }
+
+.dicon__art--doc::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 7px;
+  width: 18px;
+  height: 3px;
+  background: var(--panel-dim);
+  box-shadow: 0 7px 0 var(--panel-dim), 0 14px 0 var(--panel-dim);
+}
+
+/* envelope: a slab with a stepped chevron for the flap */
+.dicon__art--mail { background: var(--panel-edge); }
+
+.dicon__art--mail::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  width: 3px;
+  height: 3px;
+  background: var(--ink);
+  box-shadow:
+    3px 3px 0 var(--ink), 6px 6px 0 var(--ink), 9px 9px 0 var(--ink),
+    12px 9px 0 var(--ink), 15px 6px 0 var(--ink), 18px 3px 0 var(--ink),
+    21px 0 0 var(--ink);
+}
+
+/* the app itself: a little window */
+.dicon__art--app { background: #f4f0ff; }
+
+.dicon__art--app::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 7px;
+  background: var(--panel-accent);
+}
+/* ==================================================================
+   THE TASKBAR
+   ================================================================== */
+/* The bar was set at nine pixels of Press Start 2P, which on a wide
+   display is smaller than anything else on screen — you could not tell
+   at a glance which window was up and which was down, which is the only
+   job it has. Everything in it is now sized off the same clamp as the
+   window titles, and then some. */
+.taskbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 7;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  height: var(--taskbar-h);
+  padding: 5px;
+  background: var(--panel-bar);
+  border-top: 3px solid var(--panel-edge);
+  box-shadow: 0 -5px 0 rgba(0, 0, 0, 0.35);
+}
+
+.taskbar[hidden] { display: none; }
+
+.taskbar__brand,
+.taskbar__task,
+.taskbar__tray {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 clamp(12px, 1vw, 20px);
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  letter-spacing: 1px;
+  color: var(--panel-text);
+  border: 2px solid var(--panel-dim);
+  background: var(--panel);
+}
+
+.taskbar__brand { flex: none; color: var(--panel-edge); }
+
+.taskbar__logo {
+  width: clamp(11px, 0.9vw, 16px);
+  height: clamp(11px, 0.9vw, 16px);
+  background: var(--panel-accent);
+}
+
+.taskbar__tasks {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.taskbar__task {
+  flex: 0 1 clamp(200px, 22vw, 460px);
+  min-width: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  appearance: none;
+}
+
+/* The window that is up gets the accent bar; the minimised ones do not.
+   Same trick a real taskbar uses, minus the bevel. */
+.taskbar__task[aria-pressed='true'] {
+  border-color: var(--panel-edge);
+  color: var(--panel-edge);
+  box-shadow: inset 5px 0 0 var(--panel-accent);
+}
+
+.taskbar__task:focus-visible,
+.taskbar__brand:focus-visible {
+  outline: 2px solid var(--panel-edge);
+  outline-offset: -4px;
+}
+
+.taskbar__tray { flex: none; color: var(--panel-dim); }
+
+/* The stage keeps clear of the bar when it is up. */
+html[data-desktop='on'] .stage { padding-bottom: calc(var(--taskbar-h) + var(--s5)); }
+
+/* ---- the zoom rectangle ----
+   What Windows 98 did between a window and its taskbar button: an
+   outline that walks the gap in a handful of discrete jumps and is gone
+   before you have finished registering it. It is the right idiom here
+   for the same reason everything else in this file is stepped — it does
+   not tween, it steps, because the machine it is pretending to be could
+   not tween. Eight frames, about a sixth of a second.
+
+   The window it is travelling to hides while the outline is in flight,
+   so the rectangle arrives and the window appears, rather than the two
+   of them being on screen at once. */
+.zoombox {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  border: 3px dashed var(--panel-edge);
+  box-shadow: 0 0 0 2px var(--ink), inset 0 0 0 2px var(--ink);
+}
+
+.window.is-zooming { visibility: hidden; }
+
+/* ==================================================================
    DAY MODE
    The scene repaints itself from its own palette; the window has to
    follow, or a bright landscape ends up framing a black screen.
+
+   Day is not the cyberpunk switched off — it is the same city at noon
+   under smog. So nothing here reverts to a neutral, tasteful light
+   theme: the panel goes pale lilac, the accents stay hot magenta and
+   deep teal, and the wordmark keeps its chromatic fringe. Only the
+   *values* flip. Neon on white is still neon.
    ================================================================== */
 html[data-mode='day'] {
-  --panel: #e6eef8;
-  --panel-bar: #cfdcec;
-  --panel-edge: #2f6f9e;
-  --panel-accent: #d05a7a;
-  --panel-dim: #90a4bc;
-  --panel-text: #1b2b3e;
+  --panel: #f2e7f2;
+  --panel-bar: #ded0e6;
+  --panel-edge: #0d7f96;
+  --panel-accent: #e01a72;
+  --panel-dim: #9d8cab;
+  --panel-text: #2a1b33;
+
+  --gold: #e01a72;
+  --leaf: #0d7f96;
+  --moon: #6b3a72;
+  /* The default ink has to flip too. It is fine on the title screen,
+     where everything sets its own colour, but the work document leans
+     on it for headings — and near-white headings on a near-white screen
+     is not a subtle bug, it is an invisible one. */
+  --cream: #241428;
+
+  /* The cast shadow has to survive a pale backdrop, so it goes cooler
+     and weaker rather than simply lighter — and it must stay DARKER
+     than the card it falls from, which the old `var(--panel)` was not. */
+  --panel-lift: rgba(255, 255, 255, 0.8);
+  --panel-sink: rgba(58, 40, 68, 0.28);
+  --panel-cast-1: rgba(224, 26, 114, 0.3);
+  --panel-cast-2: rgba(46, 28, 54, 0.26);
+  --cast: #b9a5c6;
+  --panel-quiet: #5c4a6b;
+
+  /* Cards need to sit off the screen behind them, which at #ded0e6 on
+     #fbf2f8 they did not. */
+  --panel-bar: #d3c2de;
+  --panel-dim: #8a7799;
+
+  /* The wordmark keeps its whole construction and only swaps palette —
+     a magenta face, teal and amber misregistration either side, and a
+     plum extrusion darkening into near-black. */
+  --wm-face: #e01a72;
+  --wm-face-b: #ffb020;
+  --wm-fringe-r: #0d7f96;
+  --wm-fringe-l: #ffb020;
+  --wm-ext-1: #b8156a;
+  --wm-ext-2: #6d1050;
+  --wm-ext-3: #3a0a33;
+  --wm-outline: #1a0518;
 }
 
 html[data-mode='day'] .screen {
-  background: #f4f8fd;
+  background: #fbf2f8;
 }
 
 /* Scanlines have to invert: dark lines over a light screen read as
    dirt, so in day mode they lighten instead. */
 html[data-mode='day'] .scanlines {
+  /* Light lines on a pale card deleted whole rows of the letterforms.
+     A light screen still scans DARK. */
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.5) 0 2px,
+    rgba(90, 60, 110, 0.1) 0 2px,
     transparent 2px 4px
   );
 }
 
-html[data-mode='day'] .role { color: #2f5480; }
-html[data-mode='day'] .menu a { color: #17203a; }
-html[data-mode='day'] .menu__num { color: #2d7a34; }
-html[data-mode='day'] .press { color: #10182e; }
-html[data-mode='day'] .copyright { color: #55647d; }
-
-html[data-mode='day'] .menu li:first-child a,
-html[data-mode='day'] .menu a:hover,
-html[data-mode='day'] .menu a:focus-visible { color: #b06f00; }
-
-html[data-mode='day'] .menu li:first-child a .menu__num,
-html[data-mode='day'] .menu a:hover .menu__num,
-html[data-mode='day'] .menu a:focus-visible .menu__num { color: #b06f00; }
-
-/* Day drops the cyberpunk treatment entirely: no chromatic fringe, no
-   glitch, no neon. Just a solid dark face over a cool grey-blue
-   extrusion — the same block construction, read straight. */
-html[data-mode='day'] .wordmark {
-  left: 0;
-  /* Saturated indigo rather than a grey navy — on a pale screen a
-     desaturated face just sits there. The extrusion runs light to dark
-     so the block still has depth. */
-  color: #1d2a86;
-  text-shadow:
-    -0.022em 0 0 #0d1240,
-    0.022em 0 0 #0d1240,
-    0 -0.022em 0 #0d1240,
-    0 0.022em 0 #0d1240,
-    -0.03em 0.05em 0 #93a3e2,
-    -0.06em 0.10em 0 #93a3e2,
-    -0.09em 0.15em 0 #5c6cbe,
-    -0.12em 0.20em 0 #5c6cbe,
-    -0.15em 0.25em 0 #333f92,
-    -0.18em 0.30em 0 #0d1240;
-  animation: none;
-}
+/* Everything else follows from the swapped custom properties above —
+   the role, the menu numerals and the selected row already read from
+   --moon, --leaf and --gold. Only what was hard-coded pale needs a
+   value here. */
+html[data-mode='day'] .menu a { color: #241428; }
+html[data-mode='day'] .press { color: #1a0e20; }
+html[data-mode='day'] .copyright { color: #7c6a86; }
 
 /* ==================================================================
    CONTROLS — same HUD language as the window
    ================================================================== */
 .controls {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: var(--s5);
+  right: var(--s5);
   z-index: 4;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
+  gap: var(--s2);
+  /* stretch, not flex-end: three different label lengths gave a
+     ragged left edge on the one control cluster that matters */
+  align-items: stretch;
+  min-width: 15ch;
 }
 
 .btn {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 12px;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
   background: var(--panel);
   border: 2px solid var(--panel-dim);
-  box-shadow: 4px 4px 0 rgba(255, 62, 165, 0.4);
+  box-shadow: var(--s1) var(--s1) 0 var(--panel-cast-1);
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: var(--d1);
   letter-spacing: 1px;
   color: var(--panel-text);
   cursor: pointer;
@@ -579,30 +1782,117 @@ html[data-mode='day'] .wordmark {
   background: var(--panel-edge);
   box-shadow: 4px 2px 0 var(--panel-edge), 8px 0 0 var(--panel-edge);
 }
-
 /* ==================================================================
    RESPONSIVE
    ================================================================== */
-@media (max-width: 900px) {
-  .stage { padding: 24px 14px; }
-  .window { width: 100%; }
-  .screen__inner { padding: 30px 18px 26px; }
+/* ==================================================================
+   MOBILE
 
-  /* Shorter extrusion so two lines of the wordmark still clear each
-     other at small sizes. */
-  .wordmark {
-    line-height: 1.42;
-    text-shadow:
-      0 -0.045em 0 var(--gold-hi),
-      -0.02em 0.04em 0 var(--gold-mid),
-      -0.04em 0.08em 0 var(--gold-mid),
-      -0.06em 0.12em 0 var(--gold-deep),
-      -0.08em 0.16em 0 var(--gold-deep),
-      -0.10em 0.20em 0 var(--gold-edge),
-      -0.12em 0.24em 0 var(--ink);
+   Not a squeeze — a re-block. The scene becomes a tall window into the
+   city (anchored so the cat stays in frame), the world map turns into
+   a vertical quest chain, the shelf wraps, the controls drop their
+   labels, and everything narrated answers to a tap because hover does
+   not exist here.
+   ================================================================== */
+@media (max-width: 760px) {
+  .stage { padding: var(--s5) var(--s3); }
+  .window { width: 100%; }
+  .screen__inner { padding: var(--s6) var(--s4) var(--s5); }
+
+  /* Bigger touch rows on the title menu. */
+  .menu a { font-size: 16px; padding: var(--s1) 0; }
+
+  /* One column for everything, and the case card stands back up. */
+  .cases { grid-template-columns: minmax(0, 1fr); }
+  .case { grid-template-columns: minmax(0, 1fr); }
+  .desktop { top: var(--s3); left: var(--s3); }
+
+  /* Editorial columns stack. */
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .media--portrait { max-width: 280px; }
+
+  /* ---- the world map goes vertical ----
+     Three columns cannot hold three company names on a phone, and a
+     downward path is the older idiom anyway: a quest chain. The nodes
+     stay on the line; the words hang off each node. */
+  .worlds { grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+
+  .worlds::before {
+    left: 13px;
+    right: auto;
+    top: 15px;
+    bottom: 15px;
+    width: 4px;
+    height: auto;
+    background: repeating-linear-gradient(180deg, var(--panel-dim) 0 10px, transparent 10px 20px);
+  }
+
+  /* ---- the shelf wraps ----
+     Six 96px objects cannot share one board on a phone. */
+  .den__board {
+    flex-wrap: wrap;
+    gap: var(--s4);
+    justify-content: space-around;
+  }
+
+  .obj__art { margin: 48px var(--s3) 0; }
+
+  /* ---- controls drop their labels ----
+     Three labelled buttons cover a third of a phone screen. The glyphs
+     carry the meaning; pressed-state colour carries the state. */
+  .controls { top: var(--s3); right: var(--s3); min-width: 0; gap: var(--s1); }
+  .btn { padding: var(--s2); }
+  .btn__label { display: none; }
+
+  /* The taskbar keeps tasks and the clock; the brand is decoration. */
+  .taskbar__brand { display: none; }
+  .taskbar__task { flex: 1 1 0; }
+
+  /* ---- the title bar, simplified ----
+     The icon is decoration and maximise means nothing when the window
+     is already effectively the screen. Two buttons remain, both grown
+     to thumb size, and the title truncates before anything overflows. */
+  .window__icon { display: none; }
+  .winbtn--max { display: none; }
+  .winbtn { width: 40px; height: 34px; }
+
+  /* ---- a phone window is a tall window ----
+     The desktop proportion carried over as a squat box. The title
+     screen now stretches to phone-game proportions and centres its
+     menu in the extra room. */
+  .window[data-win='portfolio'] .screen__inner {
+    min-height: 64vh;
+    min-height: 64dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Boot: the tip is the most useful line on the screen — it does not
+     get to be the smallest. */
+  .boot { padding: var(--s5); }
+  .boot__inner { width: 100%; }
+  .boot__tip { font-size: 12px; }
+  .boot__pct { font-size: 32px; }
+}
+
+/* Portrait crops the 960-wide scene to a slice a quarter wide. The
+   default centre slice contains neither the moon nor the cat — so the
+   anchor slides right, where the cat, the tree, the chess game and the
+   string lights live. The one interactive thing in the scene stays on
+   screen. */
+@media (orientation: portrait) {
+  #scene,
+  #weather {
+    object-position: 72% 72%;
   }
 }
 
+/* Mobile browser chrome collapses and 100vh lies about it; dvh does
+   not, where it exists. And the taskbar clears the home-bar area. */
+.stage { min-height: 100dvh; }
+
+.taskbar { padding-bottom: env(safe-area-inset-bottom, 0px); }
 /* ==================================================================
    REDUCED MOTION
    scene.js holds its first frame; these hold theirs.
@@ -617,4 +1907,602 @@ html[data-mode='day'] .wordmark {
     animation: none !important;
   }
   .press { opacity: 1; }
+}
+
+/* ==================================================================
+   THE GAME LAYER
+
+   The L2 pages stopped being documents. A retro game never shows you a
+   document — it shows you a place, objects in it, and something that
+   talks. So: a shelf of belongings instead of cards, a world map
+   instead of a CV list, stages instead of case studies, a join screen
+   instead of a contact form — and a cat in the corner of every page
+   narrating whatever you point at.
+   ================================================================== */
+
+/* ---- the image slot convention ----
+   Every dashed rectangle in the site is a drop target: put an <img>
+   inside it and the styling does the rest. The corner tag says so. */
+.slot { position: relative; }
+
+.slot > i {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 2px 5px;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  font-style: normal;
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+  background: var(--panel);
+}
+
+.slot > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+/* ---- character sheet ---- */
+.bio__name {
+  margin: 0 0 var(--s2);
+  font-family: var(--font-display);
+  font-size: var(--d3);
+  line-height: 1.3;
+  color: var(--cream);
+}
+
+/* ---- the shelf ----
+   Two boards with objects standing on them. Each object is a pixel
+   thing built from blocks, it lifts when pointed at, and the cat
+   describes it. One per board fidgets on its own, because a shelf
+   where nothing ever moves is a photograph of a shelf. */
+.den { display: grid; gap: var(--s6); }
+
+.den__board {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(var(--s5), 4vw, 64px);
+  padding: 0 var(--s5) var(--s4);
+  border-bottom: 10px solid var(--panel-dim);
+  box-shadow: 0 12px 0 -2px var(--cast);
+}
+
+.obj {
+  display: grid;
+  justify-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s2) 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  appearance: none;
+}
+
+.obj:focus-visible { outline: 2px solid var(--panel-edge); outline-offset: 2px; }
+
+.obj__art {
+  position: relative;
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 48px 24px 0;
+  transform: scale(2);
+  transform-origin: 50% 100%;
+}
+
+/* pointing at an object lifts it off the board — a snap, not a tween */
+.obj:hover .obj__art,
+.obj:focus-visible .obj__art { transform: scale(2) translateY(-2px); }
+
+.obj__k {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+
+.obj:hover .obj__k,
+.obj:focus-visible .obj__k { color: var(--panel-edge); }
+
+.obj__art::before,
+.obj__art::after { content: ''; position: absolute; }
+
+/* a standing book: spine, pages, title band */
+.obj__art--book::before {
+  left: 12px; bottom: 0; width: 22px; height: 46px;
+  background: var(--panel-accent);
+  border: 2px solid var(--ink);
+  box-shadow: inset 0 -8px 0 var(--ink), inset 0 4px 0 rgba(255, 255, 255, 0.35);
+}
+.obj__art--book::after {
+  left: 16px; bottom: 18px; width: 14px; height: 10px;
+  background: var(--gold);
+  border: 2px solid var(--ink);
+}
+
+/* a game cartridge: shell, grip, label window */
+.obj__art--cart::before {
+  left: 4px; bottom: 4px; width: 40px; height: 34px;
+  background: var(--chrome-dark);
+  border: 2px solid var(--ink);
+  box-shadow: inset 0 -6px 0 var(--ink);
+}
+.obj__art--cart::after {
+  left: 12px; bottom: 16px; width: 24px; height: 16px;
+  background: var(--panel-edge);
+  border: 2px solid var(--ink);
+}
+
+/* a VHS tape: slab, two spool windows, label stripe */
+.obj__art--tape::before {
+  left: 2px; bottom: 6px; width: 44px; height: 28px;
+  background: var(--ink);
+  border: 2px solid var(--panel-quiet);
+  box-shadow: inset 0 6px 0 var(--panel-accent);
+}
+.obj__art--tape::after {
+  left: 10px; bottom: 12px; width: 8px; height: 8px;
+  background: var(--cream);
+  border: 2px solid var(--panel-quiet);
+  box-shadow: 20px 0 0 -2px var(--cream), 18px -2px 0 0 var(--panel-quiet);
+}
+
+/* a record half out of its sleeve */
+.obj__art--disc::before {
+  left: 2px; bottom: 0; width: 38px; height: 38px;
+  background: var(--wm-fringe-l);
+  border: 2px solid var(--ink);
+  box-shadow: inset -6px 6px 0 rgba(0, 0, 0, 0.35);
+}
+.obj__art--disc::after {
+  right: 0; top: 0; width: 20px; height: 20px;
+  background: var(--ink);
+  border: 2px solid var(--chrome-dark);
+  box-shadow: inset 6px 6px 0 -2px var(--gold);
+}
+
+/* a toolbox, handle up */
+.obj__art--tool::before {
+  left: 2px; bottom: 2px; width: 44px; height: 26px;
+  background: var(--gold);
+  border: 2px solid var(--ink);
+  box-shadow: inset 0 10px 0 -8px var(--ink);
+}
+.obj__art--tool::after {
+  left: 16px; bottom: 24px; width: 16px; height: 10px;
+  background: transparent;
+  border: 3px solid var(--panel-quiet);
+  border-bottom: 0;
+}
+
+/* the cat's yarn ball, strand trailing off the board */
+.obj__art--yarn::before {
+  left: 10px; bottom: 4px; width: 26px; height: 26px;
+  background: var(--panel-accent);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 6px 0 0 -2px rgba(255, 255, 255, 0.4),
+    inset 0 -8px 0 -4px rgba(0, 0, 0, 0.35);
+}
+.obj__art--yarn::after {
+  left: 32px; bottom: 0; width: 14px; height: 3px;
+  background: var(--panel-accent);
+}
+
+.den__board:first-child .obj:nth-child(2) .obj__art { animation: fidget 7s steps(2, end) infinite; }
+.den__board:last-child .obj:nth-child(3) .obj__art { animation: fidget 9s steps(2, end) infinite 3s; }
+
+@keyframes fidget {
+  0%, 92% { transform: scale(2) translateY(0); }
+  93%, 100% { transform: scale(2) translateY(-1px); }
+}
+
+.obj:hover .obj__art { animation: none; }
+
+/* ---- quest log ---- */
+.quests {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: var(--s2) var(--s6);
+}
+
+.quest {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  color: var(--panel-text);
+  cursor: default;
+}
+
+.quest:focus-visible,
+.world:focus-visible { outline: 2px solid var(--panel-edge); outline-offset: 4px; }
+
+.quest b { color: var(--panel-accent); font-weight: inherit; }
+.quest:hover b { color: var(--panel-edge); }
+
+.quest__st {
+  margin-left: auto;
+  padding: 3px 8px;
+  border: 2px solid var(--panel-dim);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+
+.quest__st--done { color: var(--leaf); border-color: var(--leaf); }
+.quest__st--new {
+  color: var(--gold);
+  border-color: var(--gold);
+  animation: blink 1.1s steps(1, end) infinite;
+}
+
+/* ---- the world map ---- */
+.worlds {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* the dotted path the run follows, behind the nodes */
+.worlds::before {
+  content: '';
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 13px;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--panel-dim) 0 10px, transparent 10px 20px);
+}
+
+.world { position: relative; cursor: default; }
+
+.world__node {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 30px;
+  margin-bottom: var(--s3);
+  background: var(--panel-bar);
+  border: 3px solid var(--panel-dim);
+  box-shadow: var(--s1) var(--s1) 0 var(--cast);
+}
+
+.world:hover .world__node { border-color: var(--panel-edge); }
+
+.world--here .world__node {
+  background: var(--panel-accent);
+  border-color: var(--panel-edge);
+}
+
+.world__tag {
+  display: block;
+  margin-bottom: var(--s2);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--panel-quiet);
+}
+
+.world__tag b { color: var(--panel-accent); font-weight: inherit; }
+
+.world__co {
+  margin: 0 0 var(--s2);
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  line-height: 1.5;
+  color: var(--cream);
+}
+
+.world__meta {
+  margin: 0 0 var(--s2);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+.world__meta span { color: var(--panel-quiet); }
+
+.world__desc {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--b2);
+  line-height: 1.6;
+  color: var(--panel-text);
+}
+
+/* ---- the dialogue box ----
+   The rooftop cat, indoors. Types an intro when the window opens and
+   re-types whenever anything with data-say is pointed at. Typing is
+   the one animation that is stepped by its very nature. */
+.talk {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: end;
+  margin-top: var(--s7);
+  padding-top: var(--s2);
+  /* the document scrolls in behind it, so it needs its own ground */
+  background: var(--screen);
+}
+
+.talk__cat {
+  position: relative;
+  width: 44px;
+  height: 46px;
+}
+
+/* sitting cat: a bordered body and a bordered head, solid ears, a
+   tail curled round the front */
+.talk__cat::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 32px;
+  height: 24px;
+  background: var(--panel);
+  border: 2px solid var(--panel-quiet);
+  box-shadow: 26px 18px 0 -8px var(--panel-quiet);
+}
+
+.talk__cat::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 24px;
+  height: 18px;
+  background: var(--panel);
+  border: 2px solid var(--panel-quiet);
+  box-shadow:
+    -2px -6px 0 -7px var(--panel-quiet),
+    10px -6px 0 -7px var(--panel-quiet);
+}
+
+.talk__cat i {
+  position: absolute;
+  z-index: 1;
+  left: 15px;
+  top: 11px;
+  width: 3px;
+  height: 3px;
+  background: var(--panel-edge);
+  box-shadow: 8px 0 0 var(--panel-edge);
+  animation: catblink 5s steps(1, end) infinite;
+}
+
+@keyframes catblink {
+  0%, 94% { opacity: 1; }
+  95%, 100% { opacity: 0; }
+}
+
+.talk__box {
+  position: relative;
+  padding: var(--s4) var(--s5);
+  background: var(--panel);
+  border: 3px solid var(--panel-edge);
+  box-shadow: var(--s1) var(--s1) 0 var(--cast);
+}
+
+.talk__name {
+  position: absolute;
+  top: -12px;
+  left: var(--s4);
+  padding: 2px 8px;
+  background: var(--panel-accent);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--ink);
+}
+
+.talk__text {
+  margin: 0;
+  min-height: 2.6em;
+  font-size: var(--b3);
+  line-height: 1.6;
+  color: var(--panel-text);
+}
+
+.talk__text::after {
+  content: '_';
+  color: var(--panel-accent);
+  animation: blink 0.6s steps(1, end) infinite;
+}
+
+/* ---- the join screen ---- */
+.join__lead {
+  margin: calc(var(--s5) * -1) 0 var(--s5);
+  font-size: var(--b3);
+  color: var(--panel-text);
+}
+
+.doc__count { color: var(--panel-accent); font-weight: inherit; }
+
+/* stills in a stage detail are numbered like screenshots */
+.strip { counter-reset: shot; }
+
+.strip span { position: relative; }
+
+.strip span::after {
+  counter-increment: shot;
+  content: 'SCREEN ' counter(shot);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+/* ==================================================================
+   EDITORIAL
+
+   The freedom layer. ABOUT and WORK stopped being game screens — the
+   retro chrome stays on the window, but inside it this is an ordinary
+   editorial document: headings, paragraphs, images, galleries, in any
+   order and any quantity. Nothing here needs the theme's permission.
+   ================================================================== */
+.prose {
+  max-width: 72ch;
+  font-size: var(--b3);
+  line-height: 1.7;
+  color: var(--panel-text);
+}
+
+.prose > * + * { margin-top: var(--s4); }
+
+.prose h3 {
+  margin-top: var(--s6);
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--panel-edge);
+}
+
+.prose b { color: var(--cream); font-weight: 700; }
+.prose a { color: var(--panel-edge); }
+.prose ul { padding-left: 1.4em; }
+.prose li + li { margin-top: var(--s2); }
+
+.prose blockquote {
+  margin: var(--s5) 0;
+  padding-left: var(--s4);
+  border-left: 4px solid var(--panel-accent);
+  color: var(--cream);
+}
+
+/* The opening line, set large — in the BODY face, because the pixel
+   face at this size would shout. */
+.lede {
+  font-size: var(--d3);
+  line-height: 1.45;
+  color: var(--cream);
+}
+
+/* ---- images ----
+   .media is any content image frame; drop an <img> in and it fills.
+   Content photography renders NORMALLY — the scene is pixel art, the
+   work is not, and pixelating someone's real screenshots would be
+   the theme overreaching. */
+.media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 520px;
+  background: var(--panel);
+  border: 3px solid var(--panel-dim);
+}
+
+.media--cover {
+  aspect-ratio: 21 / 9;
+  /* on a very wide document an uncapped cover is a wall — the title
+     must stay in the same viewport as its image */
+  max-height: 420px;
+}
+.media--portrait { aspect-ratio: 4 / 5; }
+
+.media > img { image-rendering: auto; }
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: var(--s6);
+  align-items: start;
+  margin: var(--s6) 0;
+}
+
+/* ---- a work piece ---- */
+.piece {
+  margin-top: var(--s7);
+  padding-top: var(--s6);
+  border-top: 2px solid var(--panel-dim);
+}
+
+.piece__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s3) var(--s5);
+  margin: var(--s4) 0;
+}
+
+.piece__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--d3);
+  color: var(--cream);
+}
+
+.piece__meta {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--panel-quiet);
+}
+
+.piece > .gallery { max-width: 100%; }
+
+/* ---- experience, one line each ---- */
+.xp {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 72ch;
+}
+
+.xp li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 2px solid var(--panel-bar);
+  font-size: var(--b2);
+  color: var(--panel-text);
+}
+
+.xp b {
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  font-weight: 400;
+  color: var(--cream);
+}
+
+.xp span {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--gold);
 }
