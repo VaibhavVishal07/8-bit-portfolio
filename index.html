@@ -700,30 +700,31 @@
   </section>
 </main>
 
-<!-- Desktop icons. They come out when every window is down, which is
-     the only time there is a desktop to put them on. -->
-<ul class="desktop" hidden>
+<!-- Desktop icons. Always out, the way icons on a desktop are: they sit
+     under the windows rather than waiting for one to be minimised. The
+     sprites are in the defs block at the foot of this file. -->
+<ul class="desktop">
   <li>
     <button class="dicon" type="button" data-open="work">
-      <span class="dicon__art dicon__art--folder" aria-hidden="true"></span>
+      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-work" /></svg>
       <span class="dicon__label">WORK</span>
     </button>
   </li>
   <li>
     <button class="dicon" type="button" data-open="about">
-      <span class="dicon__art dicon__art--doc" aria-hidden="true"></span>
+      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-about" /></svg>
       <span class="dicon__label">ABOUT</span>
     </button>
   </li>
   <li>
     <button class="dicon" type="button" data-open="contact">
-      <span class="dicon__art dicon__art--mail" aria-hidden="true"></span>
+      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-contact" /></svg>
       <span class="dicon__label">CONTACT</span>
     </button>
   </li>
   <li>
     <button class="dicon" type="button" data-open="portfolio">
-      <span class="dicon__art dicon__art--app" aria-hidden="true"></span>
+      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-home" /></svg>
       <span class="dicon__label">HOME</span>
     </button>
   </li>
@@ -745,6 +746,166 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <!-- ------------------------------------------------------------
+         DESKTOP ICONS
+
+         Four sprites, all on the same 16x16 grid, all built the same
+         way: a one-pixel ink outline round the silhouette, a lit plane
+         top-left, a shaded one bottom-right, and one accent colour out
+         of the page palette each. They used to be CSS slabs with
+         pseudo-element decoration bolted on -- a folder, a document, an
+         envelope and a bare rectangle, at four different sizes, with
+         nothing in common but a drop shadow.
+
+         Each one now says what it opens:
+
+           HOME     the CRT running the title screen
+           WORK     a cartridge, because WORK.EXE is a rack of them
+           ABOUT    player one, because ABOUT.EXE says PLAYER 1 / READY
+           CONTACT  an envelope, sealed
+         ------------------------------------------------------------ -->
+
+    <g id="ico-home">
+      <rect x=" 0" y=" 0" width="16" height=" 1" fill="#05070f" />
+      <rect x=" 0" y=" 1" width=" 1" height=" 9" fill="#05070f" />
+      <rect x=" 1" y=" 1" width="13" height=" 1" fill="#4a2f8f" />
+      <rect x="14" y=" 1" width=" 1" height=" 8" fill="#2a1a5c" />
+      <rect x="15" y=" 1" width=" 1" height=" 9" fill="#05070f" />
+      <rect x=" 1" y=" 2" width=" 1" height=" 7" fill="#4a2f8f" />
+      <rect x=" 2" y=" 2" width="12" height=" 1" fill="#05070f" />
+      <rect x=" 2" y=" 3" width=" 1" height=" 5" fill="#05070f" />
+      <rect x=" 3" y=" 3" width="10" height=" 1" fill="#0a1030" />
+      <rect x="13" y=" 3" width=" 1" height=" 5" fill="#05070f" />
+      <rect x=" 3" y=" 4" width=" 1" height=" 1" fill="#0a1030" />
+      <rect x=" 4" y=" 4" width=" 8" height=" 1" fill="#3ef0ff" />
+      <rect x="12" y=" 4" width=" 1" height=" 1" fill="#0a1030" />
+      <rect x=" 3" y=" 5" width="10" height=" 1" fill="#0a1030" />
+      <rect x=" 3" y=" 6" width=" 2" height=" 1" fill="#0a1030" />
+      <rect x=" 5" y=" 6" width=" 6" height=" 1" fill="#ff3ea5" />
+      <rect x="11" y=" 6" width=" 2" height=" 1" fill="#0a1030" />
+      <rect x=" 3" y=" 7" width="10" height=" 1" fill="#0a1030" />
+      <rect x=" 2" y=" 8" width="12" height=" 1" fill="#05070f" />
+      <rect x=" 1" y=" 9" width="14" height=" 1" fill="#2a1a5c" />
+      <rect x=" 0" y="10" width="16" height=" 1" fill="#05070f" />
+      <rect x=" 6" y="11" width=" 4" height=" 1" fill="#05070f" />
+      <rect x=" 6" y="12" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 7" y="12" width=" 2" height=" 1" fill="#2a1a5c" />
+      <rect x=" 9" y="12" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 2" y="13" width="12" height=" 1" fill="#05070f" />
+      <rect x=" 2" y="14" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 3" y="14" width="10" height=" 1" fill="#4a2f8f" />
+      <rect x="13" y="14" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 2" y="15" width="12" height=" 1" fill="#05070f" />
+    </g>
+
+    <g id="ico-work">
+      <rect x=" 2" y=" 0" width="12" height=" 1" fill="#05070f" />
+      <rect x=" 2" y=" 1" width=" 1" height=" 9" fill="#05070f" />
+      <rect x=" 3" y=" 1" width="10" height=" 1" fill="#f8c838" />
+      <rect x="13" y=" 1" width=" 1" height=" 9" fill="#05070f" />
+      <rect x=" 3" y=" 2" width=" 1" height=" 6" fill="#f8c838" />
+      <rect x=" 4" y=" 2" width=" 8" height=" 1" fill="#05070f" />
+      <rect x="12" y=" 2" width=" 1" height=" 6" fill="#f8c838" />
+      <rect x=" 4" y=" 3" width=" 1" height=" 4" fill="#05070f" />
+      <rect x=" 5" y=" 3" width=" 6" height=" 1" fill="#eaf0ff" />
+      <rect x="11" y=" 3" width=" 1" height=" 4" fill="#05070f" />
+      <rect x=" 5" y=" 4" width=" 1" height=" 2" fill="#eaf0ff" />
+      <rect x=" 6" y=" 4" width=" 4" height=" 2" fill="#170a34" />
+      <rect x="10" y=" 4" width=" 1" height=" 2" fill="#eaf0ff" />
+      <rect x=" 5" y=" 6" width=" 6" height=" 1" fill="#eaf0ff" />
+      <rect x=" 4" y=" 7" width=" 8" height=" 1" fill="#05070f" />
+      <rect x=" 3" y=" 8" width="10" height=" 2" fill="#f8c838" />
+      <rect x=" 2" y="10" width="12" height=" 1" fill="#05070f" />
+      <rect x=" 2" y="11" width=" 1" height=" 3" fill="#05070f" />
+      <rect x=" 3" y="11" width="10" height=" 1" fill="#c99a20" />
+      <rect x="13" y="11" width=" 1" height=" 3" fill="#05070f" />
+      <rect x=" 3" y="12" width=" 1" height=" 2" fill="#c99a20" />
+      <rect x=" 4" y="12" width=" 1" height=" 2" fill="#05070f" />
+      <rect x=" 5" y="12" width=" 1" height=" 2" fill="#c99a20" />
+      <rect x=" 6" y="12" width=" 1" height=" 2" fill="#05070f" />
+      <rect x=" 7" y="12" width=" 1" height=" 2" fill="#c99a20" />
+      <rect x=" 8" y="12" width=" 1" height=" 2" fill="#05070f" />
+      <rect x=" 9" y="12" width=" 1" height=" 2" fill="#c99a20" />
+      <rect x="10" y="12" width=" 1" height=" 2" fill="#05070f" />
+      <rect x="11" y="12" width=" 2" height=" 2" fill="#c99a20" />
+      <rect x=" 2" y="14" width="12" height=" 1" fill="#05070f" />
+    </g>
+
+    <g id="ico-about">
+      <rect x=" 3" y=" 0" width="10" height=" 1" fill="#05070f" />
+      <rect x=" 3" y=" 1" width=" 1" height=" 8" fill="#05070f" />
+      <rect x=" 4" y=" 1" width=" 8" height=" 1" fill="#8a1fb8" />
+      <rect x="12" y=" 1" width=" 1" height=" 8" fill="#05070f" />
+      <rect x=" 4" y=" 2" width=" 1" height=" 1" fill="#8a1fb8" />
+      <rect x=" 5" y=" 2" width=" 7" height=" 1" fill="#5c1280" />
+      <rect x=" 4" y=" 3" width=" 1" height=" 1" fill="#5c1280" />
+      <rect x=" 5" y=" 3" width=" 6" height=" 1" fill="#f2c39a" />
+      <rect x="11" y=" 3" width=" 1" height=" 1" fill="#5c1280" />
+      <rect x=" 4" y=" 4" width=" 7" height=" 1" fill="#f2c39a" />
+      <rect x="11" y=" 4" width=" 1" height=" 5" fill="#d49a70" />
+      <rect x=" 4" y=" 5" width=" 2" height=" 1" fill="#f2c39a" />
+      <rect x=" 6" y=" 5" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 7" y=" 5" width=" 2" height=" 1" fill="#f2c39a" />
+      <rect x=" 9" y=" 5" width=" 1" height=" 1" fill="#05070f" />
+      <rect x="10" y=" 5" width=" 1" height=" 1" fill="#f2c39a" />
+      <rect x=" 4" y=" 6" width=" 7" height=" 1" fill="#f2c39a" />
+      <rect x=" 4" y=" 7" width=" 3" height=" 1" fill="#f2c39a" />
+      <rect x=" 7" y=" 7" width=" 2" height=" 1" fill="#05070f" />
+      <rect x=" 9" y=" 7" width=" 2" height=" 1" fill="#f2c39a" />
+      <rect x=" 4" y=" 8" width=" 7" height=" 1" fill="#f2c39a" />
+      <rect x=" 3" y=" 9" width="10" height=" 1" fill="#05070f" />
+      <rect x=" 5" y="10" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 6" y="10" width=" 4" height=" 1" fill="#f2c39a" />
+      <rect x="10" y="10" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 1" y="11" width="14" height=" 1" fill="#05070f" />
+      <rect x=" 1" y="12" width=" 1" height=" 3" fill="#05070f" />
+      <rect x=" 2" y="12" width=" 4" height=" 1" fill="#3ef0ff" />
+      <rect x=" 6" y="12" width=" 4" height=" 1" fill="#f2c39a" />
+      <rect x="10" y="12" width=" 3" height=" 1" fill="#3ef0ff" />
+      <rect x="13" y="12" width=" 1" height=" 3" fill="#1aa8bf" />
+      <rect x="14" y="12" width=" 1" height=" 3" fill="#05070f" />
+      <rect x=" 2" y="13" width=" 5" height=" 1" fill="#3ef0ff" />
+      <rect x=" 7" y="13" width=" 2" height=" 1" fill="#05070f" />
+      <rect x=" 9" y="13" width=" 4" height=" 1" fill="#3ef0ff" />
+      <rect x=" 2" y="14" width="11" height=" 1" fill="#3ef0ff" />
+      <rect x=" 1" y="15" width="14" height=" 1" fill="#05070f" />
+    </g>
+
+    <g id="ico-contact">
+      <rect x=" 1" y=" 2" width="14" height=" 1" fill="#05070f" />
+      <rect x=" 1" y=" 3" width=" 2" height=" 1" fill="#05070f" />
+      <rect x=" 3" y=" 3" width="10" height=" 1" fill="#eaf0ff" />
+      <rect x="13" y=" 3" width=" 2" height=" 1" fill="#05070f" />
+      <rect x=" 1" y=" 4" width=" 1" height=" 9" fill="#05070f" />
+      <rect x=" 2" y=" 4" width=" 1" height=" 1" fill="#c9d4f5" />
+      <rect x=" 3" y=" 4" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 4" y=" 4" width=" 8" height=" 1" fill="#eaf0ff" />
+      <rect x="12" y=" 4" width=" 1" height=" 1" fill="#05070f" />
+      <rect x="13" y=" 4" width=" 1" height=" 1" fill="#c9d4f5" />
+      <rect x="14" y=" 4" width=" 1" height=" 9" fill="#05070f" />
+      <rect x=" 2" y=" 5" width=" 2" height=" 1" fill="#c9d4f5" />
+      <rect x=" 4" y=" 5" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 5" y=" 5" width=" 6" height=" 1" fill="#eaf0ff" />
+      <rect x="11" y=" 5" width=" 1" height=" 1" fill="#05070f" />
+      <rect x="12" y=" 5" width=" 2" height=" 1" fill="#c9d4f5" />
+      <rect x=" 2" y=" 6" width=" 3" height=" 1" fill="#c9d4f5" />
+      <rect x=" 5" y=" 6" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 6" y=" 6" width=" 4" height=" 1" fill="#eaf0ff" />
+      <rect x="10" y=" 6" width=" 1" height=" 1" fill="#05070f" />
+      <rect x="11" y=" 6" width=" 3" height=" 1" fill="#c9d4f5" />
+      <rect x=" 2" y=" 7" width=" 4" height=" 1" fill="#c9d4f5" />
+      <rect x=" 6" y=" 7" width=" 1" height=" 1" fill="#05070f" />
+      <rect x=" 7" y=" 7" width=" 2" height=" 1" fill="#eaf0ff" />
+      <rect x=" 9" y=" 7" width=" 1" height=" 1" fill="#05070f" />
+      <rect x="10" y=" 7" width=" 4" height=" 1" fill="#c9d4f5" />
+      <rect x=" 2" y=" 8" width=" 5" height=" 3" fill="#c9d4f5" />
+      <rect x=" 7" y=" 8" width=" 2" height=" 1" fill="#05070f" />
+      <rect x=" 9" y=" 8" width=" 5" height=" 3" fill="#c9d4f5" />
+      <rect x=" 7" y=" 9" width=" 2" height=" 2" fill="#ff3ea5" />
+      <rect x=" 2" y="11" width="12" height=" 2" fill="#c9d4f5" />
+      <rect x=" 1" y="13" width="14" height=" 1" fill="#05070f" />
+    </g>
+
     <!-- 12x11 heart, used as the menu cursor -->
     <g id="heart-shape">
       <rect x="2" y="0"  width="3"  height="1" fill="#7a1520" />

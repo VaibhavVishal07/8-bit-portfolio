@@ -287,7 +287,9 @@
       about: 'ABOUT.EXE',
       contact: 'CONTACT.EXE',
     }
-    const desk = document.querySelector('.desktop')
+    /* The desktop icons are not state — they are up the whole time and
+       the windows layer over them, so nothing here touches them. They
+       used to be revealed only when every window was down. */
     const state = new Map()
     wins.forEach((el, id) => state.set(id, el.hasAttribute('hidden') ? 'closed' : 'up'))
 
@@ -376,12 +378,6 @@
       const desktop = live > 1 || anyMin
       bar.hidden = !desktop
       document.documentElement.dataset.desktop = desktop ? 'on' : 'off'
-
-      /* The icons come out only when every window is down. That is the
-         one moment there is actually a desktop to look at, and it is
-         also the one moment you have no other way back in. */
-      const bare = ![...state.values()].includes('up')
-      if (desk) desk.hidden = !bare
 
       taskHost.textContent = ''
       wins.forEach((el, id) => {

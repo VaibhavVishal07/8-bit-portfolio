@@ -95,7 +95,7 @@ with a neon over its door and a tag on its flank, a water tank on legs with a
 ladder, air handlers with fan grills and louvers, ducting on brackets, crates,
 a satellite dish with a feed arm, **string lights** sagging in catenaries between
 four poles with a bulb every few pixels guttering on its own cycle, a steam vent
-whose plume widens as it rises, and a brazier whose flame is generated per frame
+whose plume widens as it rises, and a campfire whose flame is generated per frame
 rather than being a fixed sprite — each row tapers toward the tip, is displaced
 by two out-of-phase sines, and is filled in four bands from a dark red rim to a
 near-white core.
@@ -107,7 +107,7 @@ density, not count. The tar seams are straight runs with one deliberate step in
 each rather than random walks: a seam is laid by a person, so a wobbling line
 reads as a mistake.
 
-**The rooftop layer does not scroll.** The cat and the brazier stand on it, so
+**The rooftop layer does not scroll.** The cat and the campfire stand on it, so
 if it moved they would appear to slide across the ground.
 
 **The parapet is drawn with a hard, near-black rim along the top of its
@@ -116,6 +116,52 @@ railing shares values with the lit city behind and the two collapse into one
 flat plane. The rest of its depth comes from the same idea applied smaller — a
 lit top face, a shadowed front face, a dark undercut, and balusters lit on one
 side and shadowed on the other.
+
+## Where the colour comes from
+
+The scene used to be a violet monochrome with neon accents. Read as a palette
+that is correct — one hue, one contrast, the signage carrying all the saturation
+— and read as a picture it was flat, because three of the four things filling
+the frame were the same colour. Four changes, no new machinery:
+
+**The sky ramp rotates as it descends.** Nine stops that used to walk straight up
+the violet axis now start blue-black at the zenith, where there is no city light
+left to reach, pass through indigo, and land on magenta-violet at the skyline
+where there is nothing else. That rotation is what light pollution actually
+looks like, and it costs the same nine entries it always did.
+
+**High pools.** The top third of the frame had the ramp in it and nothing else —
+the smog strata sit lower, the city glow pools at the skyline, and there is no
+signage within two hundred pixels. It now carries the same dithered pools the
+city glow uses, moved up and cooled off: cold teal, deep indigo, one thin rose,
+all very sparse. Note what they are not — the galactic band that used to run
+across here was cut because a broad soft diagonal is a shape this scene has no
+vocabulary for. A dithered pool is a shape it already speaks.
+
+**Every building is made of something.** A layer used to be three colours, so it
+read as one shape with a texture on it rather than as three hundred buildings
+standing near each other. Each tower now takes one of six small shifts along a
+warm/cool axis — brick, glass, pale concrete, in shadow, sodium-stained — applied
+to its body values. How far the shift travels scales with how bright the layer
+is, because the same delta that separates two mid-grey towers turns two
+near-black ones into different colours entirely.
+
+**A city at night is not one colour of lit window.** It is mostly the building's
+own cold glass, with sodium, fluorescent, a screen and the odd late kitchen
+scattered through it, and that scatter is where nearly all the apparent detail
+in a skyline comes from. Each depth now has an eight-entry glass palette
+weighted so the cold base still wins most draws and the saturated ones stay rare
+enough that the neon is still the loudest thing at that distance. Nearer layers
+get more of them, because that is where you could actually see in.
+
+Two smaller ones: clouds are lit from **below**, in magenta, because there is no
+moon doing that work — the city is. And stars run four temperatures instead of
+three, the new blue-white tier cut out of a brightness value every star already
+carried, so it costs no extra random draw.
+
+Both themes keep the same number of random draws per building whether or not the
+result is used, which is the rule the signage geometry already followed: the
+city must never rearrange itself when you toggle day and night.
 
 ## The train
 
@@ -323,12 +369,65 @@ is mostly deciding not to draw something.
 | Paper plane | glides in | — | — |
 | Moths | round the lights | — | — |
 | Rat | runs the parapet | runs the parapet | — |
-| Brazier | normal | **guttering**, short reach | **banked right up**, twice the light |
+| Campfire | normal | **guttering**, short reach | **banked right up**, twice the light |
 | Steam vent | thirty puffs | **sixteen** | **fifty-two** |
 
-The brazier reads it hardest, because a fire is the one object on the roof whose
-whole purpose changes with the weather. Same twenty-eight rows of flame; three
+The campfire reads it hardest, because a fire is the one object on the roof whose
+whole purpose changes with the weather. Same forty-four rows of flame; three
 numbers different.
+
+### The campfire needs the window
+
+The window sits directly over the fire, and the rain already treats the window
+as a surface — a drop in that column lands on its lip instead of the roof. Which
+meant the fire had survived every storm this scene has ever run, as the one
+object on the roof still drawn as though none of that mattered.
+
+It depends on the window now. **Take the panel out of the column above the fire
+while it is raining or snowing — drag it aside, minimise it, close it — and the
+flame drops, guts, and is out in about two and a half seconds.** The hot bands
+go first: it loses its white heart, then its yellow, and the last thing burning
+is the dull red that was always at the rim, because a dying fire does not shrink
+evenly. What is left is a charred stack over coals and a thread of smoke coming
+off it — smoke is thickest just *after* a fire is out, which is when a real one
+smokes hardest, the fuel still hot and no flame left to burn the smoke off.
+
+Put cover back and it catches again over about four seconds. Slower than it
+died, because nothing relights as fast as it goes out.
+
+### Why it stopped being an oil drum
+
+It used to be a brazier: twenty-six pixels across, eighteen tall, a flame you
+could cover with a thumb. Fine while it was scenery, wrong the moment it became
+something that can go out — **an event you cannot see is not an event.**
+
+So it is a campfire. Four logs over a bed of embers inside a ring of stones,
+with a flame half again as tall over twice the footprint, which is enough that
+losing it registers from across the frame. Three things make it read:
+
+- **Draw order is back to front** — back log, embers, flame, the two leaners,
+  front log, stones. The leaners started out behind the flame and were
+  completely invisible, because a dark log inside a bright flame is nothing. In
+  front they are silhouettes crossing the light, which is the single strongest
+  read a campfire has.
+- **The flame is a teepee, not a cone.** It narrows on a power curve rather than
+  linearly and pinches back in at the very bottom, because a flame is thinnest
+  where it meets the fuel — the old straight taper made the base wider than the
+  logs it was supposed to be sitting in.
+- **The colour bands are a fraction of the width, not a fixed inset.** At eight
+  pixels across, insetting one and two pixels put the yellow and the white at
+  three quarters of the flame and looked right. At twelve it made the whole
+  thing a white column with a red edge.
+
+The logs char from the middle outward and the ends stay wood-coloured — both
+what a log in a fire looks like and the only reason four dark bars are still
+legible against the light. The char does not clear when the fire dies; having it
+lighten looked like the logs were healing.
+
+The life value is ticked against real elapsed time on the 60fps side, so "a
+couple of seconds" is a couple of seconds and not a count of 12fps frames that a
+slow machine would stretch. In clear weather the fire is never in danger, and a
+maximised window counts as cover — it is covering the whole roof.
 
 Both settings persist in `localStorage`.
 
@@ -342,7 +441,7 @@ layers and nothing else; the choice persists in `localStorage`.
 | Sky | Violet-black up to a purple haze | Teal zenith down into an amber smog band |
 | Orb | Moon, bare — maria and lit western rims, no glow | Sun, with corona and halo |
 | City | Hot neon over a dark base | Cool desaturated towers, neon still burning |
-| Extras | Brazier, stars, satellites, craft | Birds, craft, steam |
+| Extras | Campfire, stars, satellites, craft | Birds, craft, steam |
 | Panel | Neon on deep violet | Magenta and teal on pale lilac |
 
 The night base is deliberately kept very dark — violet-black rather than a rich
@@ -457,7 +556,7 @@ Placed by hand, none of it overlapping anything else: a **water tank** on legs
 with a ladder and a **weathervane**, a **stairwell hutch** with a neon over the
 door, a **tag** on its flank and an **antenna array** on its roof, a **washing
 line** with four garments, a **bike** leaning where somebody left it, a
-**brazier**, **crates**, a **telescope** on a tripod pointed up and to the left
+**campfire**, **crates**, a **telescope** on a tripod pointed up and to the left
 — at the moon, which is up and to the left — a striped **deck chair**, a
 **planter run** with five tomato plants on canes, a **skateboard**, a
 **boombox** with a mug of coffee going cold on it, a **chess game** on a crate
@@ -690,12 +789,26 @@ antialiased edge in the entire project.
 
 ### Desktop icons
 
-When every window is down there is finally a desktop to look at — and no other
-way back in — so that is when the icons come out: **WORK**, **ABOUT**,
-**CONTACT** and **PORTFOLIO**, top-left, one column, where they have always
-gone. Each glyph is blocks and hard offsets like everything else: a folder is a
-slab with a tab on it, a document is a slab with three lines, an envelope is a
-slab with a stepped chevron.
+**WORK**, **ABOUT**, **CONTACT** and **HOME**, top-left, one column, where they
+have always gone — and out the whole time, not only when every window is down.
+A desktop with nothing on it until you put every window away is not a desktop,
+it is an easter egg. They sit *under* the windows, which is where desktop icons
+have always sat, so nothing has to move out of anything's way; on a viewport
+narrow enough for the window to reach them the window simply covers them, the
+same as a maximised window covers the real thing.
+
+Each is a **16x16 sprite** rather than a CSS slab with pseudo-element decoration
+bolted on. The old set was a folder with a tab, a document with three lines, an
+envelope with a stepped chevron and a bare rectangle — four silhouettes at four
+sizes with nothing in common but a drop shadow, and only the envelope really
+said what it opened. The new four are drawn on one grid with one ink outline and
+one accent colour each, and every one of them says what is behind it: a
+**cartridge** for WORK.EXE, which is a rack of them; **player one** for
+ABOUT.EXE, which says PLAYER 1 / READY; a sealed **envelope**; and the **CRT**
+running the title screen. They live in the `<defs>` block at the foot of
+`index.html` next to the heart, and they are sized in whole multiples of
+sixteen — 64, 80, 96 at the three breakpoints — because a pixel sprite on a
+`clamp()` comes out with some pixels five wide and some six.
 
 ABOUT.EXE and CONTACT.EXE exist as windows now too, with placeholder copy. The
 title-screen menu, the desktop icons and the taskbar all go through the same

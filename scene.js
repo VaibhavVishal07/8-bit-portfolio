@@ -313,6 +313,58 @@
   }
 
   /* ==================================================================
+     COLOUR SHIFT
+
+     Every colour in the palettes below is authored as a flat hex, which
+     is right for a fixed palette and wrong the moment you want three
+     hundred buildings not to all be the same building. Rather than
+     grow a variant of every entry, a colour can be nudged a few points
+     per channel at draw time.
+
+     Results are cached, and there are only a few dozen distinct
+     (colour, delta) pairs in the whole scene, so the parsing happens
+     once per palette per theme and never again.
+     ================================================================== */
+  const clamp255 = (v) => (v < 0 ? 0 : v > 255 ? 255 : v)
+  const shiftCache = new Map()
+
+  function shift(hex, d, amt) {
+    if (!d) return hex
+    const key = hex + '|' + d + '|' + amt
+    let out = shiftCache.get(key)
+    if (out) return out
+    const n = parseInt(hex.slice(1), 16)
+    const r = clamp255(((n >> 16) & 255) + Math.round(d[0] * amt))
+    const gg = clamp255(((n >> 8) & 255) + Math.round(d[1] * amt))
+    const b = clamp255((n & 255) + Math.round(d[2] * amt))
+    out = '#' + (((1 << 24) | (r << 16) | (gg << 8) | b).toString(16).slice(1))
+    shiftCache.set(key, out)
+    return out
+  }
+
+  const luma = (hex) => {
+    const n = parseInt(hex.slice(1), 16)
+    return 0.3 * ((n >> 16) & 255) + 0.6 * ((n >> 8) & 255) + 0.1 * (n & 255)
+  }
+
+  /* ---- what a building is made of ----
+     Concrete, brick, glass, something in shadow, something the sodium
+     lamps have stained. Six small shifts along a warm/cool axis,
+     applied to a layer's three body values.
+
+     Small on purpose. Two towers that touch have to separate; the layer
+     as a whole still has to read as one distance, because that is the
+     job aerial perspective is doing over the top of it. */
+  const MATERIAL = [
+    null,             // the layer exactly as authored
+    [16, 4, -6],      // brick
+    [-8, 0, 18],      // glass
+    [12, 10, 4],      // pale concrete
+    [-14, -8, 0],     // in shadow
+    [20, 8, -10],     // sodium-stained
+  ]
+
+  /* ==================================================================
      PALETTES
 
      Night is neon cyberpunk. Day is *also* cyberpunk — not a flat blue
@@ -324,13 +376,22 @@
     night: {
       /* Deep violet-black base so the neon has somewhere dark to burn
          against. The haze near the skyline is the only place the purple
-         gets bright, and even that stays under the sign colours. */
+         gets bright, and even that stays under the sign colours.
+
+         The ramp used to run straight up the violet axis — nine steps
+         of the same hue getting lighter — which is why the top half of
+         the frame had nothing happening in it. It now rotates as it
+         descends: blue-black at the zenith, where there is no city
+         light left to reach, through indigo, into a magenta-violet at
+         the skyline where there is nothing but. That rotation is what
+         light pollution actually looks like, and it costs the same
+         nine entries. */
       sky: [
-        '#05010a', '#090315', '#0e0522', '#150733', '#1d0a45',
-        '#260f57', '#301269', '#3a1880', '#4a1d92',
+        '#03040f', '#06061c', '#0c0729', '#150936', '#200b48',
+        '#2d0f5a', '#3c126c', '#4d1782', '#651d94',
       ],
-      haze: '#7a1fb0',
-      smog: '#5a1a8c',
+      haze: '#8a21ab',
+      smog: '#6a1a86',
       fog: '#3a1880',
       fogAmt: [0.42, 0.20, 0.02],
       rainSky: '#0d0520',
@@ -340,20 +401,57 @@
 
       orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#6b1fa8',
       craters: true, orbShine: false,
-      cloud: '#2c1159', cloudLit: '#4d219a', cloudDark: '#170733',
-      star: '#ffffff', starDim: '#b98cf0', starWarm: '#ffd0a0', stars: true,
+      /* Cloud is lit from BELOW here. There is no moon doing this work
+         — the city is, and a city throws magenta up at its own weather.
+         The underside was the same violet as the body, which made every
+         cloud a flat cut-out. */
+      cloud: '#2e1257', cloudLit: '#66259b', cloudDark: '#180835',
+      // cold teal, deep indigo, one thin rose — see the high pools
+      high: ['#123a63', '#241a66', '#54184e'],
+      /* Four tiers, not three. A sky of white dots and a few amber ones
+         is a texture; adding a blue-white tier between them is what
+         makes it read as stars at different temperatures. No extra
+         random draw — the tiers are cut out of `bright`, which every
+         star already carries. */
+      star: '#ffffff', starDim: '#b98cf0', starCool: '#9fd8ff', starWarm: '#ffd0a0', stars: true,
 
       /* The ridge behind everything: a fourth silhouette plane pitched
          just below the haze, so the far city has something to be in
          front of. Depth is planes, and three was one short. */
-      cityFar: { fill: '#3a2270', lit: '#4a2e88', dark: '#2a1655', window: '#6b50b0', warm: '#8a63c8' },
+      /* ---- glass ----
+         A city at night is not one colour of lit window. It is mostly
+         the building's own cold glass, with sodium, fluorescent, a
+         screen and the odd late kitchen scattered through it — and
+         that scatter is where nearly all the apparent detail in a
+         skyline comes from. One window colour per layer is why the
+         towers read as texture rather than as buildings full of
+         people.
+
+         Weighted by repetition: the cold base wins most draws, so the
+         saturated ones stay rare enough that the neon signs are still
+         the loudest thing at each depth. Nearer layers get more of
+         them, because that is where you could actually see in. */
+      cityFar: {
+        fill: '#3a2270', lit: '#4a2e88', dark: '#2a1655', window: '#6b50b0', warm: '#8a63c8',
+        glass: ['#6b50b0', '#6b50b0', '#6b50b0', '#7a5cc0', '#5f46a0', '#8a6bb8', '#9a7ac0', '#6b50b0'],
+      },
       city: [
-        { fill: '#2a1461', lit: '#3d1f85', dark: '#1a0b3e', window: '#9b74e8', warm: '#ff5cc4' },
-        { fill: '#160a36', lit: '#241058', dark: '#0a0420', window: '#a86bff', warm: '#ff5cc4' },
-        { fill: '#07020f', lit: '#12052a', dark: '#020007', window: '#c98cff', warm: '#ff7ad4' },
+        {
+          fill: '#2a1461', lit: '#3d1f85', dark: '#1a0b3e', window: '#9b74e8', warm: '#ff5cc4',
+          glass: ['#9b74e8', '#9b74e8', '#9b74e8', '#b79bff', '#ffc27a', '#7fe8ff', '#8affc8', '#d98cff'],
+        },
+        {
+          fill: '#160a36', lit: '#241058', dark: '#0a0420', window: '#a86bff', warm: '#ff5cc4',
+          glass: ['#a86bff', '#a86bff', '#c7a5ff', '#ffb85c', '#7dfcff', '#a6ffd8', '#ff8ad4', '#e0d0ff'],
+        },
+        {
+          fill: '#07020f', lit: '#12052a', dark: '#020007', window: '#c98cff', warm: '#ff7ad4',
+          glass: ['#c98cff', '#c98cff', '#e0c0ff', '#ffc06a', '#8affff', '#b8ffe0', '#ff9ad8', '#fff0d0'],
+        },
       ],
-      // hot pink, cyan, neon purple, electric yellow, neon green
-      neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d'],
+      // hot pink, cyan, neon purple, electric yellow, neon green,
+      // sodium orange, and a red that only ever means BAR
+      neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d', '#ff7a1a', '#ff2d55'],
       halo: 0.38,
 
       roof: '#090318', roofLit: '#2a0f5c', roofSpeck: '#150733', roofDark: '#03010c',
@@ -412,21 +510,40 @@
       orb: '#fff8d2', orbShade: '#ffe6a0', orbGlow: '#ffd08a',
       craters: false, orbShine: true,
       cloud: '#c9b4c4', cloudLit: '#f6e6e0', cloudDark: '#9c8a9e',
-      star: '#ffffff', starDim: '#cfe4f6', starWarm: '#ffe0b8', stars: false,
+      // daylight pools are close in value to the ramp they sit on — the
+      // point here is a sky that is not one flat sheet, not colour
+      high: ['#3f7fae', '#a894b4', '#d9ae8e'],
+      star: '#ffffff', starDim: '#cfe4f6', starCool: '#dceaff', starWarm: '#ffe0b8', stars: false,
 
       /* Buildings stay cool and desaturated so the signage on them is
          the only saturated thing at this depth — daylight neon only
          reads if nothing else is competing for the colour. */
-      cityFar: { fill: '#a9b3cb', lit: '#b8c1d5', dark: '#9aa4be', window: '#c6cede', warm: '#d4c8b8' },
+      /* Daylight glass is not lit rooms, it is reflected sky, so the
+         spread here is much tighter than at night — a few degrees of
+         blue either side of the layer's own value. Same eight entries
+         so the two themes stay symmetrical. */
+      cityFar: {
+        fill: '#a9b3cb', lit: '#b8c1d5', dark: '#9aa4be', window: '#c6cede', warm: '#d4c8b8',
+        glass: ['#c6cede', '#c6cede', '#c6cede', '#cfd6e4', '#bcc5d8', '#d2d8e6', '#c0c9dc', '#c6cede'],
+      },
       city: [
-        { fill: '#8d9cc0', lit: '#a9b6d4', dark: '#7685ab', window: '#c6cfe6', warm: '#ffd7a4' },
-        { fill: '#6c7aa6', lit: '#8894c0', dark: '#56638d', window: '#b0bada', warm: '#ffc78c' },
-        { fill: '#49527e', lit: '#646d9c', dark: '#343b60', window: '#959fca', warm: '#ffb478' },
+        {
+          fill: '#8d9cc0', lit: '#a9b6d4', dark: '#7685ab', window: '#c6cfe6', warm: '#ffd7a4',
+          glass: ['#c6cfe6', '#c6cfe6', '#c6cfe6', '#d4dcee', '#cdd0d8', '#bcc8e2', '#c9d4e0', '#d0d6e8'],
+        },
+        {
+          fill: '#6c7aa6', lit: '#8894c0', dark: '#56638d', window: '#b0bada', warm: '#ffc78c',
+          glass: ['#b0bada', '#b0bada', '#bfc8e4', '#a9b2d0', '#b6bed6', '#c2cae6', '#aab6d8', '#b8c0dc'],
+        },
+        {
+          fill: '#49527e', lit: '#646d9c', dark: '#343b60', window: '#959fca', warm: '#ffb478',
+          glass: ['#959fca', '#959fca', '#a4aed8', '#8b95c0', '#9ba5d0', '#a8b0d6', '#8f9ac4', '#9da7d2'],
+        },
       ],
       /* Daylight neon is OFF. The signs keep their exact geometry — same
          random draws, so the city never rearranges between themes — but
          they render in unlit greys with no halo at all. Calm. */
-      neon: ['#7c87a0', '#7a98a4', '#8a80a0', '#a89a78', '#7f9c8c'],
+      neon: ['#7c87a0', '#7a98a4', '#8a80a0', '#a89a78', '#7f9c8c', '#a08a72', '#a0808a'],
       halo: 0,
 
       /* The daylight roof was a mid grey and sat too close in value to
@@ -533,6 +650,40 @@
           const x = (bx + k) % W
           const vx = 1 - Math.abs(k - bw / 2) / (bw / 2)
           dot(g, x, y, vx * vy * 0.32, T.smog)
+        }
+      }
+    }
+
+    /* ---- high pools ----
+       The top third of the frame had the ramp in it and nothing else.
+       The strata sit lower than this, the city glow pools at the
+       skyline, and there is no signage within two hundred pixels — so
+       it was nine stops of violet and a scatter of white dots covering
+       a third of the picture.
+
+       These are the same dithered pools the city glow uses down at the
+       skyline, moved up and cooled off: the last of the atmosphere
+       catching what little reaches it, in colours the ground never
+       gets. Cold teal, deep indigo, one thin rose, all very sparse.
+
+       Note what they are NOT. The galactic band below was removed
+       because a broad soft diagonal is a shape this scene has no
+       vocabulary for — everything in it is a hard edge or a deliberate
+       dither. A dithered pool is a shape it already speaks, which is
+       the whole reason this works where that did not. */
+    if (T.high) {
+      for (let i = 0; i < 9; i++) {
+        const cx = Math.floor(rnd() * W)
+        const cw = 180 + Math.floor(rnd() * 320)
+        const cy = 8 + Math.floor(rnd() * 150)
+        const ch = 70 + Math.floor(rnd() * 120)
+        const col = T.high[Math.floor(rnd() * T.high.length)]
+        for (let y = cy; y < cy + ch && y < SKYLINE; y++) {
+          const ty = Math.sin(((y - cy) / ch) * Math.PI)
+          for (let x = cx; x < cx + cw && x < W; x++) {
+            const tx = Math.sin(((x - cx) / cw) * Math.PI)
+            dot(g, x, y, ty * tx * ty * tx * 0.24, col)
+          }
         }
       }
     }
@@ -765,6 +916,21 @@
     const windows = []
     const snowy = weather === 'snow'
 
+    /* `o` is re-pointed at a tinted copy of itself for the duration of
+       each building (see MATERIAL, and the top of the loop), so the
+       three body colours vary tower to tower without every draw call
+       in here having to be rewritten to name a different object. The
+       original is kept to restore afterwards, because the landmarks
+       and the returned fill must be the layer's own values, not
+       whatever the last tower happened to be made of.
+
+       How far the tint is allowed to travel scales with how bright the
+       layer is. The same delta that separates two mid-grey towers
+       turns two near-black ones into different colours entirely, and
+       the near layer here is nearly black on purpose. */
+    const base = o
+    const matAmt = Math.max(0.35, Math.min(1, luma(base.fill) / 70))
+
     /* Snow lying on a horizontal edge. Ragged, because a straight white
        line on top of every ledge reads as piping, not as weather.
 
@@ -812,6 +978,17 @@
         h = Math.floor(h * 0.55)
       }
       const top = SKYLINE - h
+
+      // what this one is made of
+      const mat = MATERIAL[Math.floor(rnd() * MATERIAL.length)]
+      o = mat
+        ? {
+            ...base,
+            fill: shift(base.fill, mat, matAmt),
+            lit: shift(base.lit, mat, matAmt),
+            dark: shift(base.dark, mat, matAmt),
+          }
+        : base
 
       // body
       g.fillStyle = o.fill
@@ -920,8 +1097,10 @@
       if (type === 'banded') {
         for (let ly = top + 5; ly < SKYLINE - 3; ly += o.step + 1) {
           if (ly + 1 > bandY && ly < bandY + bandH) continue
+          // one storey, one tenant, one colour of light
+          const pane = o.glass[Math.floor(rnd() * o.glass.length)]
           const lit = rnd() < 0.55
-          g.fillStyle = lit ? o.window : o.dark
+          g.fillStyle = lit ? pane : o.dark
           g.fillRect(x + 2, ly, w - 4, Math.min(2, o.wh))
           if (lit) {
             // a few warm rooms among the cold ones
@@ -933,7 +1112,9 @@
             // and the mullions cutting the strip into offices
             g.fillStyle = o.dark
             for (let mx = x + 4; mx < x + w - 3; mx += 4) g.fillRect(mx, ly, 1, Math.min(2, o.wh))
-            if (rnd() < 0.3) windows.push({ x: x + 2, y: ly, w: w - 4, h: Math.min(2, o.wh) })
+            // `wall` is this tower's own body colour — see flicker(),
+            // which paints a window out by painting the wall back in
+            if (rnd() < 0.3) windows.push({ x: x + 2, y: ly, w: w - 4, h: Math.min(2, o.wh), wall: o.fill })
           }
         }
       }
@@ -966,17 +1147,22 @@
           if (wy + o.wh > bandY && wy < bandY + bandH) continue
           const tall = o.wh > 2 && rnd() < 0.12
           const hh = tall ? o.wh + 2 : o.wh
+          /* Which room this is. The draw is taken whether or not it
+             gets used, so night and day walk the same random stream
+             and the city never rearranges itself on a theme toggle —
+             the same rule the signage geometry already follows. */
+          const pane = o.glass[Math.floor(rnd() * o.glass.length)]
           const warmOne = rnd() < 0.12
           g.fillStyle = warmOne
             ? (snowy ? FESTIVE[((wx >> 2) + wy) % 3] : o.warm)
-            : o.window
+            : pane
           g.fillRect(wx, wy, o.ww, hh)
           // a body at the glass — one darker pixel, and the floor lives
           if (o.ww > 2 && rnd() < 0.18) {
             g.fillStyle = o.dark
             g.fillRect(wx + 1, wy + hh - 1, 1, 1)
           }
-          if (rnd() < 0.24) windows.push({ x: wx, y: wy, w: o.ww, h: hh })
+          if (rnd() < 0.24) windows.push({ x: wx, y: wy, w: o.ww, h: hh, wall: o.fill })
         }
       }
 
@@ -1119,6 +1305,10 @@
 
       x += w + (rnd() < 0.35 ? 1 + Math.floor(rnd() * 3) : 0)
     }
+
+    // back to the layer's own colours before anything that is not a
+    // building gets drawn in them
+    o = base
 
     // Landmarks go in with the buildings, before the wash, so they take
     // the same aerial perspective as everything else at this depth.
@@ -3323,8 +3513,15 @@
   function drawStars() {
     for (const s of stars) {
       if ((frame + s.phase) % s.rate <= s.rate * 0.2) continue
-      // a handful run warm — a sky of identical white dots is a texture
-      px(s.x, s.y, s.warm ? T.starWarm : s.bright > 0.7 ? T.star : T.starDim)
+      // a handful run warm, and the middle of the range runs blue —
+      // a sky of identical white dots is a texture, not a sky
+      px(
+        s.x, s.y,
+        s.warm ? T.starWarm
+          : s.bright > 0.85 ? T.star
+          : s.bright > 0.55 ? T.starCool
+          : T.starDim
+      )
       if (s.bright > 0.95) {
         px(s.x - 1, s.y, T.starDim)
         px(s.x + 1, s.y, T.starDim)
@@ -3789,7 +3986,10 @@
       if (!on) continue
       const sx = wnd.x - o
       if (sx < -8 || sx >= W) continue
-      ctx.fillStyle = beacon ? '#ff5a4a' : layer.fill
+      /* Painted out in the wall it is set into, which since buildings
+         started carrying their own tint is no longer the same as the
+         layer's fill. Landmarks have no tint and fall back to it. */
+      ctx.fillStyle = beacon ? '#ff5a4a' : wnd.wall || layer.fill
       ctx.fillRect(sx, wnd.y, wnd.w, wnd.h)
     }
   }
@@ -4046,79 +4246,286 @@
     }
   }
 
-  /* ---- Brazier on the roof ----
-     The flame is generated per frame rather than being a fixed sprite:
-     each row tapers toward the tip, is displaced by two out-of-phase
-     sines, and is filled in four bands from a dark red rim to a
-     near-white core. */
+  /* ---- Campfire on the roof ----
+     It used to be an oil drum: twenty-six pixels across, eighteen
+     tall, and a flame you could cover with a thumb. That was fine
+     while it was scenery, and wrong the moment it became something
+     that can go out — an event you cannot see is not an event.
+
+     So it is a campfire. Four logs stacked over a bed of embers with
+     a ring of stones round the front, and a flame half again as tall
+     over twice the footprint, which is enough that losing it is
+     obvious from across the frame.
+
+     Drawn back to front — back log, leaners, embers, flame, front log,
+     stones — so the flame comes out from *between* the logs instead of
+     standing in front of them. That order is the only reason a stack
+     of flat bars reads as a fire with depth in it.
+
+     The flame is still generated per frame rather than being a fixed
+     sprite: each row tapers toward the tip, is displaced by two
+     out-of-phase sines, and is filled in four bands from a dark red
+     rim to a near-white core. */
   const FIRE_X = 268
   const FIRE_BASE = ROOF_TOP + 78
-  const FIRE_H = 28
+  const FIRE_H = 44
+
+  const LOG_MID = '#4b3524'
+  const LOG_LIT = '#6f4d34'
+  const LOG_DARK = '#281a11'
+  const LOG_END = '#8d6a49'
+  const LOG_CHAR = '#1b1210'
+
+  /* One log. Walked along its long axis a pixel at a time with a run
+     laid across it, the leading edge catching light and the trailing
+     one falling into shadow — the two-tone rule every other surface on
+     this roof follows.
+
+     `char` is how much of it has burnt black. Burn is taken from the
+     middle outward and the ends stay sound, because that is both what
+     a log in a fire looks like and what keeps the stack readable once
+     the flame is over the top of it: four black bars would vanish. */
+  function fireLog(x0, y0, x1, y1, th, char, glow) {
+    const dx = x1 - x0
+    const dy = y1 - y0
+    const steps = Math.max(Math.abs(dx), Math.abs(dy), 1)
+    const flat = Math.abs(dx) >= Math.abs(dy)
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps
+      const x = Math.round(x0 + dx * t)
+      const y = Math.round(y0 + dy * t)
+      const burnt = char * (1 - Math.abs(t - 0.5) * 2.2) > 0.35
+      ctx.fillStyle = burnt ? LOG_CHAR : LOG_MID
+      if (flat) ctx.fillRect(x, y, 1, th)
+      else ctx.fillRect(x, y, th, 1)
+      ctx.fillStyle = burnt ? LOG_DARK : LOG_LIT
+      ctx.fillRect(x, y, 1, 1)
+      ctx.fillStyle = LOG_DARK
+      if (flat) ctx.fillRect(x, y + th - 1, 1, 1)
+      else ctx.fillRect(x + th - 1, y, 1, 1)
+      // a split still glowing somewhere in the charred stretch
+      if (burnt && glow > 0.04 && (s * 7 + frame * 3) % 17 < glow * 6) {
+        px(flat ? x : x + 1, flat ? y + 1 : y, frame % 3 ? '#8c2a0a' : '#d1560f')
+      }
+    }
+    // end grain, or a stack of logs is a pile of sticks
+    ctx.fillStyle = LOG_END
+    if (flat) ctx.fillRect(x1, y1 + 1, 1, Math.max(1, th - 2))
+    else ctx.fillRect(x1 + 1, y1, Math.max(1, th - 2), 1)
+  }
+
+  /* ---- whether it is under cover ----
+     The panel sits directly over the brazier, which is why the fire
+     has survived every rainstorm this scene has ever run: the rain
+     already treats the panel as a surface and lands on its lip rather
+     than on the roof underneath. The fire was the one object on the
+     roof still drawn as though none of that mattered.
+
+     So it depends on the window now. Take the panel out of the column
+     above the brazier — drag it aside, minimise it, close it — while
+     it is raining or snowing, and the flame drops, guts, and is out in
+     about two and a half seconds, leaving embers and a thread of
+     smoke. Put cover back and it catches again, but slower than it
+     went out, because nothing relights as fast as it dies.
+
+     The shelter test is the rain's own test with one clause dropped:
+     the rain requires the panel's lip to be on screen before a drop
+     will land on it, and a maximised window has its lip at or above
+     zero. Invisible either way — a maximised window covers the whole
+     roof — but a fire that quietly dies behind it and needs relighting
+     when you come back is a worse answer than one that was under cover
+     the whole time, which it was. */
+  const FIRE_DIE = 2.4 // seconds, lit to out
+  const FIRE_CATCH = 4.2 // seconds, out to lit
+  let fireLife = 1
+
+  const fireSheltered = (p) =>
+    !!p && FIRE_X >= p.x0 && FIRE_X <= p.x1 && p.y0 < FIRE_BASE - FIRE_H
+
+  /* Ticked from the 60fps side against real elapsed time, so "a couple
+     of seconds" is a couple of seconds and not a count of 12fps frames
+     that a slow machine would stretch. */
+  function stepFire(dt, p) {
+    const exposed = weather !== 'none' && T.fire && !fireSheltered(p)
+    const step = dt / 1000 / (exposed ? FIRE_DIE : FIRE_CATCH)
+    fireLife = Math.max(0, Math.min(1, fireLife + (exposed ? -step : step)))
+  }
 
   function drawFire() {
     /* The fire reads the weather harder than anything else on the roof,
        because a fire is the one object whose whole purpose changes with
        it. In snow it is banked right up and throwing twice the light —
        somebody needs it. In rain it is guttering and barely holding on.
-       Same twenty-eight rows of flame; three numbers different. */
+       Same twenty-eight rows of flame; three numbers different.
+
+       And all of it now runs through L, which is how much fire there
+       still is. At 1 this is exactly the fire it always was. */
     const snowy = weather === 'snow'
     const wet = weather === 'rain'
-    const reach = snowy ? 78 : wet ? 42 : 58
-    const height = snowy ? 1.25 : wet ? 0.7 : 1
-    const flick = (wet ? 0.5 : snowy ? 0.86 : 0.72) + (frame % 5 === 0 ? 0.1 : 0)
-    for (let y = FIRE_BASE - FIRE_H - 20; y <= FIRE_BASE + 18; y++) {
-      if (y < 0 || y >= H) continue
-      for (let x = FIRE_X - reach; x <= FIRE_X + reach; x++) {
-        if (x < 0 || x >= W) continue
-        const d = Math.hypot((x - FIRE_X) / 1.25, y - (FIRE_BASE - FIRE_H * 0.35))
-        if (d > reach) continue
-        dot(ctx, x, y, (1 - d / reach) * (1 - d / reach) * flick, '#4a2a14')
+    const L = fireLife
+    const reach = (snowy ? 112 : wet ? 62 : 86) * L
+    const height = (snowy ? 1.25 : wet ? 0.7 : 1) * L
+    const flick = ((wet ? 0.5 : snowy ? 0.86 : 0.72) + (frame % 5 === 0 ? 0.1 : 0)) * L
+    if (reach > 1) {
+      for (let y = FIRE_BASE - FIRE_H - 24; y <= FIRE_BASE + 24; y++) {
+        if (y < 0 || y >= H) continue
+        for (let x = FIRE_X - reach; x <= FIRE_X + reach; x++) {
+          if (x < 0 || x >= W) continue
+          const d = Math.hypot((x - FIRE_X) / 1.25, y - (FIRE_BASE - FIRE_H * 0.35))
+          if (d > reach) continue
+          dot(ctx, x, y, (1 - d / reach) * (1 - d / reach) * flick, '#4a2a14')
+        }
       }
     }
 
-    // the drum, with hoops and a punched vent glowing at the base
-    ctx.fillStyle = '#1c1636'
-    ctx.fillRect(FIRE_X - 13, FIRE_BASE - 1, 26, 18)
-    ctx.fillStyle = '#2a2250'
-    ctx.fillRect(FIRE_X - 13, FIRE_BASE - 1, 2, 18)
-    ctx.fillRect(FIRE_X - 13, FIRE_BASE + 4, 26, 1)
-    ctx.fillRect(FIRE_X - 13, FIRE_BASE + 11, 26, 1)
-    ctx.fillStyle = frame % 3 ? '#b8330d' : '#ef7714'
-    ctx.fillRect(FIRE_X - 6, FIRE_BASE + 7, 4, 3)
-    ctx.fillRect(FIRE_X + 3, FIRE_BASE + 8, 3, 2)
+    /* The stack. One log laid across the back goes down here, behind
+       the flame; the two leaners and the front log go on afterwards,
+       in front of it.
+
+       The leaners were originally behind as well and were completely
+       invisible — a dark log inside a bright flame is nothing. In
+       front they are silhouettes crossing the light, which is both the
+       strongest read a campfire has and the thing that makes it
+       obvious there is fuel here rather than a jet.
+
+       Char does not track the fire. A stack that has burnt is black in
+       the middle whether or not it is burning right now, and having it
+       lighten as the fire died looked like the logs were healing. Burn
+       is taken from the middle outward so the ends stay wood-coloured,
+       which is the only reason four dark bars are still legible. What
+       does track the fire is `glow` — the splits still lit inside the
+       charred stretch, and they go out with everything else. */
+    const char = 0.55
+    fireLog(FIRE_X - 23, FIRE_BASE + 5, FIRE_X + 21, FIRE_BASE + 2, 6, char, L)
+
+    /* The ember bed, and the reason going out reads as going out
+       rather than as the fire being deleted. Coals stay hot long after
+       there is nothing burning above them — they are the last warm
+       thing on this roof, and they cool rather than switch off. */
+    for (let i = 0; i < 30; i++) {
+      const ex = FIRE_X - 16 + ((i * 7) % 33)
+      const ey = FIRE_BASE + 2 + ((i * 5) % 8)
+      const beat = (frame * 0.6 + i * 3.7) % 12
+      const heat = (L * 0.62 + 0.38) * (beat < 6 ? 1 : 0.56)
+      px(ex, ey, heat > 0.74 ? '#ffb03a' : heat > 0.52 ? '#d1560f' : heat > 0.3 ? '#8c2a0a' : '#481605')
+    }
 
     for (let i = 0; i < FIRE_H; i++) {
-      const y = FIRE_BASE - 2 - i
+      const y = FIRE_BASE + 1 - i
       const p = i / FIRE_H
-      const wob = Math.sin(frame * 0.85 + i * 0.5) * 2 + Math.sin(frame * 0.47 + i * 0.9) * 1.4
-      const breathe = Math.sin(frame * 0.6) * 1.1
-      const w = Math.round(((1 - p) * 8 + breathe * (1 - p)) * height)
+      const wob = Math.sin(frame * 0.85 + i * 0.5) * 2.4 + Math.sin(frame * 0.47 + i * 0.9) * 1.7
+      const breathe = Math.sin(frame * 0.6) * 1.6
+      /* A teepee, not a cone. The first term narrows hard on the way
+         up; the second pinches the bottom two or three rows back in,
+         because a flame is thinnest where it meets the fuel and the
+         straight linear taper this used to run made the base wider
+         than the log stack it was supposed to be sitting in. */
+      const taper = Math.pow(1 - p, 1.35) * (0.5 + 0.5 * Math.min(1, p * 7))
+      const w = Math.round((taper * 12 + breathe * taper) * height)
       if (w <= 0) continue
       const cx = Math.round(FIRE_X + wob * p * 1.5)
       ctx.fillStyle = '#b8330d'
       ctx.fillRect(cx - w, y, w * 2 + 1, 1)
-      const w2 = w - 1
+      /* The bands are a FRACTION of the width, not a fixed inset. At
+         eight pixels across, insetting one and two pixels put the
+         yellow and the white at three quarters of the flame; at twelve
+         it made the whole thing a white column with a red edge. */
+      const w2 = Math.round(w * 0.76)
       if (w2 > 0) {
         ctx.fillStyle = '#ef7714'
         ctx.fillRect(cx - w2, y, w2 * 2 + 1, 1)
       }
-      const w3 = w - 2
-      if (w3 > 0 && p < 0.58) {
+      /* The hot bands go first as it dies. A dying fire does not
+         shrink evenly — it loses its white heart, then its yellow, and
+         what is left is the dull red that was always at the rim.
+         Gating both on L is what makes the last second read as cooling
+         rather than as the same flame scaled down. */
+      const w3 = Math.round(w * 0.46)
+      if (w3 > 0 && p < 0.44 * L) {
         ctx.fillStyle = '#ffd23a'
         ctx.fillRect(cx - w3, y, w3 * 2 + 1, 1)
       }
-      if (w3 > 1 && p < 0.3) {
+      const w4 = Math.round(w * 0.22)
+      if (w4 > 0 && p < 0.19 * L) {
         ctx.fillStyle = '#fff4b0'
-        ctx.fillRect(cx - w3 + 1, y, w3 * 2 - 1, 1)
+        ctx.fillRect(cx - w4, y, w4 * 2 + 1, 1)
       }
     }
 
-    for (let i = 0; i < 13; i++) {
-      const t = (frame * 0.6 + i * 6.5) % 52
-      if (t < 4 || t > 48) continue
-      const ey = Math.round(FIRE_BASE - 24 - t * 1.2)
-      const ex = Math.round(FIRE_X + Math.sin(frame * 0.28 + i * 2.1) * (3 + t * 0.16) + (i - 6) * 2)
-      px(ex, ey, t < 15 ? '#ffd23a' : t < 30 ? '#ef7714' : '#7a3210')
+    // the leaners, silhouetted against the flame they are feeding
+    fireLog(FIRE_X - 21, FIRE_BASE + 8, FIRE_X + 3, FIRE_BASE - 17, 5, char, L)
+    fireLog(FIRE_X + 21, FIRE_BASE + 8, FIRE_X - 3, FIRE_BASE - 17, 5, char, L)
+
+    // the front log, and the ring, which is what puts the fire inside
+    // the stones rather than on top of them
+    fireLog(FIRE_X - 25, FIRE_BASE + 13, FIRE_X + 23, FIRE_BASE + 9, 7, char * 0.7, L * 0.7)
+
+    /* Front arc only. The back of the ring is behind the logs and
+       would be six pixels of grey nobody can see.
+
+       Each is drawn as a body with a narrower row on top rather than
+       as one rect: a stone at this scale needs its top corners taken
+       off or the ring reads as a course of bricks, which is what it
+       did. The sizes are all slightly different for the same reason. */
+    const STONES = [[-31, 13, 9, 6], [-22, 15, 7, 5], [-12, 16, 9, 5],
+                    [0, 16, 8, 5], [10, 15, 8, 5], [19, 13, 10, 6]]
+    for (const [sx, sy, sw, sh] of STONES) {
+      const x = FIRE_X + sx
+      const y = FIRE_BASE + sy
+      ctx.fillStyle = '#332c4e'
+      ctx.fillRect(x, y + 1, sw, sh - 1)
+      ctx.fillRect(x + 1, y, sw - 2, 1)
+      ctx.fillStyle = '#4c4470'
+      ctx.fillRect(x + 1, y, sw - 2, 1)
+      ctx.fillStyle = '#1d1830'
+      ctx.fillRect(x, y + sh - 1, sw, 1)
+      // the inner face takes the fire, which is what lights the ring
+      if (L > 0.04) {
+        ctx.fillStyle = L > 0.5 ? '#8a4a22' : '#54301a'
+        ctx.fillRect(x + 2, y, sw - 4, 1)
+      }
+    }
+
+    const sparks = Math.round(20 * L)
+    for (let i = 0; i < sparks; i++) {
+      const t = (frame * 0.6 + i * 4.3) % 58
+      if (t < 4 || t > 54) continue
+      const ey = Math.round(FIRE_BASE - 32 - t * 1.35)
+      const ex = Math.round(FIRE_X + Math.sin(frame * 0.28 + i * 2.1) * (4 + t * 0.2) + (i - 10) * 2)
+      px(ex, ey, t < 16 ? '#ffd23a' : t < 34 ? '#ef7714' : '#7a3210')
+    }
+
+    /* ---- smoke ----
+       It comes in as the flame goes down and is thickest just after it
+       is out, which is when a real one smokes hardest: the fuel is
+       still hot and there is no longer a flame burning the smoke off.
+       Drawn on the same dithered column the vent steam uses, but grey
+       rather than the steam's violet, so the two never read as the
+       same thing.
+
+       It has to be a good deal lighter than smoke actually is. The
+       roof it rises off is `#090318` — near black — and a physically
+       honest dark grey plume against that is invisible, which is the
+       usual trade in a dark scene: value separation beats accuracy. */
+    const smoke = 1 - L
+    if (smoke > 0.03) {
+      for (let i = 0; i < 34; i++) {
+        const age = (frame * 1.15 + i * 1.7) % 56
+        const y = Math.round(FIRE_BASE - 4 - age * 1.2)
+        if (y < ROOF_TOP - 56 || y >= H) continue
+        const spread = 2.5 + age * 0.24
+        const drift = Math.sin(age * 0.13 + i * 1.7) * spread
+        const x = Math.round(FIRE_X - 2 + drift)
+        const fade = (1 - age / 56) * smoke
+        /* Blocks that widen as they rise, for the same reason the vent
+           steam is blocks: a column of lone pixels at this scale does
+           not read as smoke, it reads as dirt on the lens. */
+        const w = 3 + Math.round(age / 9)
+        for (let k = 0; k < w; k++) {
+          dot(ctx, x + k, y, fade * 0.9, age < 15 ? '#8d84a6' : '#665d7e')
+          dot(ctx, x + k, y - 1, fade * 0.5, '#554d6b')
+        }
+      }
     }
   }
 
@@ -4624,6 +5031,9 @@
 
     const live = Math.round((weather === 'rain' ? RAIN_N : SNOW_N) * wx)
     const p = weather === 'none' ? null : panelRect()
+
+    // the brazier reads the same panel rect the weather does
+    stepFire(dt, p)
 
     if (weather === 'rain') {
       stepRain(p, live, k)

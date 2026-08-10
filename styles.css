@@ -106,6 +106,13 @@
 
   --taskbar-h: 52px;
 
+  /* ---- desktop icon size ----
+     The sprites are 16x16, so this has to be a whole multiple of 16 or
+     the pixels come out uneven — some five wide, some six. Same reason
+     the display face steps instead of interpolating: it is the project's
+     first rule, and a clamp() breaks it. 64 is 4x. */
+  --dicon: 64px;
+
   --font-display: 'Press Start 2P', 'Courier New', monospace;
   /* Two faces, one job each. The pixel face is the INTERFACE - titles,
      buttons, labels, anything that is furniture. Satoshi is the
@@ -128,6 +135,7 @@
     --b2: 17px;
     --b3: 19px;
     --b4: 30px;
+    --dicon: 80px;
   }
 }
 
@@ -145,6 +153,7 @@
     --b3: 24px;
     --b4: 36px;
     --taskbar-h: 62px;
+    --dicon: 96px;
   }
 }
 
@@ -212,7 +221,14 @@ svg { display: block; image-rendering: pixelated; }
   align-items: center;
   justify-content: center;
   padding: var(--s7) var(--s5);
+  /* The stage is a full-viewport centring box with nothing in it but
+     windows, and it sits over the desktop icons. Left clickable it
+     would eat every click aimed at them — the icons would be visible
+     and dead. The windows take their clicks back below. */
+  pointer-events: none;
 }
+
+.window { pointer-events: auto; }
 
 /* The window used to lose the composition to the moon — largest,
    brightest, highest-contrast thing on screen. A dimming scrim behind
@@ -1495,22 +1511,38 @@ html[data-max='on'] .controls {
 /* ==================================================================
    DESKTOP ICONS
 
-   They come out when every window is down, which is the only moment
-   there is a desktop to put them on. Left-hand side, top-down, one
-   column — where they have always gone.
+   Left-hand side, top-down, one column — where they have always gone.
+   Two things changed.
 
-   Each glyph is built from blocks and hard offsets, like everything
-   else here. A folder is a slab with a tab on it; a document is a slab
-   with three lines; an envelope is a slab with a stepped chevron. None
-   of them needs to be more than that at this size.
+   They are up all the time now. They used to appear only when every
+   window was down, on the reasoning that that was the one moment there
+   was a desktop to look at. But a desktop with nothing on it until you
+   put every window away is not a desktop, it is an easter egg, and the
+   icons read as something the minimise button summoned rather than
+   something that was there the whole time. So they stay out, and the
+   windows land on top of them (z-index below .stage) exactly as
+   windows do. Nothing needs to move out of the way, because that is
+   already how the layering works.
+
+   And they are sprites rather than CSS. Each was a slab with
+   pseudo-element decoration bolted on: a folder with a tab, a document
+   with three lines, an envelope with a stepped chevron, a bare
+   rectangle for the app. Four different silhouettes at four different
+   sizes with nothing in common but the drop shadow, and only the
+   envelope really said what it opened. They are now four 16x16 sprites
+   drawn on the same grid with the same one-pixel ink outline, in
+   index.html's defs block next to the heart — a cartridge for the rack
+   of them in WORK.EXE, player one for the screen that says PLAYER 1,
+   a sealed envelope, and the CRT running the title screen.
    ================================================================== */
 .desktop {
   position: fixed;
   top: clamp(20px, 2vw, 34px);
   left: clamp(20px, 2vw, 34px);
-  z-index: 4;
+  /* Above the scene, below .stage. */
+  z-index: 1;
   display: grid;
-  gap: clamp(10px, 1vw, 18px);
+  gap: var(--s5);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1526,8 +1558,10 @@ html[data-max='on'] .controls {
      cell. */
   grid-template-columns: minmax(0, 1fr);
   gap: var(--s3);
-  /* PORTFOLIO is nine characters and did not fit 106px. */
-  width: clamp(104px, 8vw, 140px);
+  /* Wide enough for the sprite plus its offset shadow, and — the
+     binding constraint — for CONTACT, which is seven characters of the
+     display face and broke onto a second line at one gutter less. */
+  width: calc(var(--dicon) + var(--s7));
   padding: var(--s3) var(--s2);
   background: transparent;
   border: 2px solid transparent;
@@ -1556,71 +1590,12 @@ html[data-max='on'] .controls {
 html[data-mode='day'] .dicon__label { text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.7); }
 
 .dicon__art {
-  position: relative;
   display: block;
-  /* It was a hardcoded 38x32 inside a cell that scales to 118px, so
-     on a wide display it was a speck in a box. */
-  width: clamp(38px, 3vw, 54px);
-  height: clamp(32px, 2.5vw, 46px);
-  border: 2px solid var(--ink);
-  box-shadow: var(--s1) var(--s1) 0 var(--cast);
-}
-
-/* folder: a slab with a tab standing on its top-left corner */
-.dicon__art--folder { background: var(--gold); }
-
-.dicon__art--folder::before {
-  content: '';
-  position: absolute;
-  left: -2px;
-  top: -12px;
-  width: 46%;
-  height: 12px;
-  background: #c99a20;
-  border: 2px solid var(--ink);
-  border-bottom: 0;
-}
-
-/* document: a slab with lines on it and a clipped corner */
-.dicon__art--doc { background: #f4f0ff; }
-
-.dicon__art--doc::after {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 7px;
-  width: 18px;
-  height: 3px;
-  background: var(--panel-dim);
-  box-shadow: 0 7px 0 var(--panel-dim), 0 14px 0 var(--panel-dim);
-}
-
-/* envelope: a slab with a stepped chevron for the flap */
-.dicon__art--mail { background: var(--panel-edge); }
-
-.dicon__art--mail::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 6px;
-  width: 3px;
-  height: 3px;
-  background: var(--ink);
-  box-shadow:
-    3px 3px 0 var(--ink), 6px 6px 0 var(--ink), 9px 9px 0 var(--ink),
-    12px 9px 0 var(--ink), 15px 6px 0 var(--ink), 18px 3px 0 var(--ink),
-    21px 0 0 var(--ink);
-}
-
-/* the app itself: a little window */
-.dicon__art--app { background: #f4f0ff; }
-
-.dicon__art--app::after {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 7px;
-  background: var(--panel-accent);
+  width: var(--dicon);
+  height: var(--dicon);
+  /* Still a hard offset block — zero blur — it just follows the
+     sprite's silhouette now instead of a box drawn around it. */
+  filter: drop-shadow(4px 4px 0 var(--cast));
 }
 /* ==================================================================
    THE TASKBAR
@@ -1980,7 +1955,10 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   /* One column for everything, and the case card stands back up. */
   .cases { grid-template-columns: minmax(0, 1fr); }
   .case { grid-template-columns: minmax(0, 1fr); }
-  .desktop { top: var(--s3); left: var(--s3); }
+  /* The window is 100% wide here, so a persistent icon column would be
+     behind it at all times and never once clickable. The taskbar is
+     the way back on a phone. */
+  .desktop { display: none; }
 
   /* Editorial columns stack. */
   .grid-2 { grid-template-columns: minmax(0, 1fr); }
@@ -3303,9 +3281,9 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
    bowed in scene.js - presented as thirty-two bands, each stretched
    wider toward the centre line - because a curved sheet of glass
    actually bends what is behind it, and rounded corners only imply
-   that. Everything here is the rest of the illusion: the moulded
-   plastic around the tube, the darkening where the glass turns away
-   from you, and the sheen lying across it.
+   that. Everything here is the rest of the illusion: the darkening
+   where the glass turns away from you, and the sheen lying across it.
+   There is no case around it — see the note further down.
 
    All of it ignores the pointer, so nothing here can ever get in the
    way of the page underneath.
@@ -3324,7 +3302,6 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   position: absolute;
   inset: 0;
   display: block;
-  border-radius: 28px / 22px;
   box-shadow:
     /* the tube's own darkening toward the rim */
     inset 0 0 90px 30px rgba(0, 0, 0, 0.55),
@@ -3338,7 +3315,6 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: inherit;
   background:
     radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
 }
@@ -3360,29 +3336,17 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
     );
 }
 
-/* ---- the moulded bezel ----
-   Drawn as a border on the overlay rather than as a frame element, so
-   it can never take space away from the layout. Bevelled the same way
-   every other surface here is: light on the top-left, shadow on the
-   bottom-right. */
-.crt::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 14px solid #17151d;
-  border-radius: 34px / 28px;
-  box-shadow:
-    inset 0 0 0 2px #000,
-    inset 2px 2px 0 2px rgba(255, 255, 255, 0.05),
-    inset -2px -2px 0 2px rgba(0, 0, 0, 0.85),
-    0 0 0 100vmax #0b0a0e;
-}
+/* ---- no bezel ----
+   There was a moulded plastic case drawn round the whole viewport: a
+   14px border, rounded corners, a bevel, and a 100vmax spill of case
+   colour beyond it. It is gone. The picture now runs to the edge of
+   the display, which means the display is the tube — the same trick,
+   one layer of literalism removed.
 
-@media (max-width: 760px) {
-  /* a phone is not a monitor; keep a hint of the tube, lose the case */
-  .crt::after { border-width: 6px; border-radius: 18px / 16px; }
-  .crt__glass { border-radius: 16px / 14px; }
-}
+   What is left of the illusion is the part that is not a frame: the
+   glass darkening toward the rim, and the sheen lying across it. The
+   corners are square with the bezel gone, because a radius with
+   nothing outside it is just a clipped picture. */
 
 @media (prefers-reduced-motion: reduce) {
   .crt__glare { display: none; }
