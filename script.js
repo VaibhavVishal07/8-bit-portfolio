@@ -202,44 +202,379 @@
     }
   }
 
-  /* ---------------- day / night ---------------- */
-  const modeBtn = document.getElementById('modeToggle')
+  /* ==================================================================
+     DESKTOP ICONS
 
-  if (modeBtn && window.__scene) {
-    const label = modeBtn.querySelector('.btn__label')
+     These were four 16x16 sprites hand-written as SVG rects, one
+     element per run of pixels, in the defs block at the foot of the
+     markup. That is a fine way to ship a sprite and a terrible way to
+     AUTHOR one: adding detail meant adding a hundred more <rect>s and
+     counting coordinates by hand, so in practice they never got any.
+     Four flat objects that mostly read as "a coloured blob with a
+     label under it".
 
-    const paint = (mode) => {
-      modeBtn.dataset.mode = mode
-      modeBtn.setAttribute('aria-pressed', mode === 'day' ? 'true' : 'false')
-      if (label) label.textContent = mode === 'day' ? 'DAY' : 'NIGHT'
-      document.documentElement.dataset.mode = mode
+     They are written as strings now — one character per pixel, '.' is
+     a hole — and painted onto a canvas at load. Same output, except
+     the art is legible in the source and can be edited by typing, so
+     each one got the room to actually say what it opens.
+
+     All four share a vocabulary, which is the part that makes them
+     read as a set rather than as four unrelated pictures: a one-pixel
+     ink outline round the silhouette, a lit plane along the top-left,
+     a shaded one along the bottom-right, and exactly one accent colour
+     from the page palette each.
+     ================================================================== */
+  const ICON_PAL = {
+    k: '#05070f', // ink
+    w: '#eaf0ff', // paper / lit face
+    s: '#9aa6c8', // paper shade
+    d: '#3b3350', // deep shade
+    y: '#f8c838', // cartridge yellow
+    o: '#c99a20', // cartridge shade
+    c: '#3ef0ff', // cyan accent
+    m: '#ff3ea5', // magenta accent
+    g: '#2fe39a', // green accent
+    f: '#f2c39a', // skin
+    h: '#8a1fb8', // hair / violet
+    r: '#e8484f', // red seal
+    b: '#2a1a5c', // screen dark
+  }
+
+  const ICONS = {
+    /* A cartridge, three-quarter on: shell, paper label with a strip
+       of unreadable title type, and the ridged grip along the foot. */
+    work: [
+      '........................',
+      '......kkkkkkkkkkkk......',
+      '.....kyyyyyyyyyyyyk.....',
+      '....kkyyyyyyyyyyyykk....',
+      '....kyyyyyyyyyyyyyyk....',
+      '....kyykkkkkkkkkkyyk....',
+      '....kyykwwwwwwwwdkyk....',
+      '....kyykwbbbbbbwdkyk....',
+      '....kyykwbccccbwdkyk....',
+      '....kyykwbcmmcbwdkyk....',
+      '....kyykwbccccbwdkyk....',
+      '....kyykwbbbbbbwdkyk....',
+      '....kyykwwwwwwwwdkyk....',
+      '....kyykwsswsswsdkyk....',
+      '....kyykddddddddddkyk...',
+      '....kyykkkkkkkkkkkyyk...',
+      '....kyyyyyyyyyyyyyyyk...',
+      '....kooooooooooooooook..',
+      '....kokokokokokokokook..',
+      '....kokokokokokokokook..',
+      '....kokokokokokokokook..',
+      '....kooooooooooooooook..',
+      '.....kkkkkkkkkkkkkkkk...',
+      '........................',
+    ],
+    /* Player one. A bust on a card — hair, face, a headset band,
+       shoulders in a jacket with a cyan collar. */
+    about: [
+      '........................',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '..kwwwwwwwwwwwwwwwwwwk..',
+      '..kwssssssssssssssssdk..',
+      '..kws....hhhhhhhh...sdk.',
+      '..kws...hhhhhhhhhh..sdk.',
+      '..kws..hhffffffffh..sdk.',
+      '..kws.chhffffffffhc.sdk.',
+      '..kws.chfffffffffhc.sdk.',
+      '..kws.chffkffffkffhc.dk.',
+      '..kws.chfffffffffhc.sdk.',
+      '..kws.chffkkkkkkffhc.dk.',
+      '..kws.chhffffffffhc.sdk.',
+      '..kws..hffffffffh...sdk.',
+      '..kws....ffffff.....sdk.',
+      '..kws...cccccccc....sdk.',
+      '..kws..cccccccccc...sdk.',
+      '..kws.cchhhhhhhhcc..sdk.',
+      '..kws.chhhhhhhhhhc..sdk.',
+      '..kwshhhhhhhhhhhhhhssdk.',
+      '..kddddddddddddddddddk..',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '........................',
+      '........................',
+    ],
+    /* A sealed envelope, flap down, with a wax seal on it. The flap
+       edges are stepped rather than ruled, because a diagonal is the
+       one thing this project will not antialias. */
+    contact: [
+      '........................',
+      '........................',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '..kwwwwwwwwwwwwwwwwwwk..',
+      '..kwkwwwwwwwwwwwwwwkwk..',
+      '..kwwkwwwwwwwwwwwwkwwk..',
+      '..kwwwkwwwwwwwwwwkwwwk..',
+      '..kwwwwkwwwwwwwwkwwwwk..',
+      '..kwwwwwkwwwwwwkwwwwwk..',
+      '..kwwwwwwkwwwwkwwwwwwk..',
+      '..kwwwwwwwkwwkwwwwwwwk..',
+      '..kwwwwwwwwkkwwwwwwwwk..',
+      '..kwsswwwwwrrwwwwwwsswk.',
+      '..kwsssswwrrrrwwwsssswk.',
+      '..kwssssssrrrrssssssswk.',
+      '..kwsssssssrrsssssssswk.',
+      '..kwssssssssssssssssswk.',
+      '..kwssssssssssssssssswk.',
+      '..kdddddddddddddddddddk.',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '........................',
+      '........................',
+      '........................',
+      '........................',
+    ],
+    /* A one-page CV: folded top corner, a photo block, ruled lines of
+       type, and a download arrow sitting under it. */
+    resume: [
+      '........................',
+      '....kkkkkkkkkkkkkk......',
+      '....kwwwwwwwwwwkdk......',
+      '....kwwwwwwwwwwkddk.....',
+      '....kwwwwwwwwwwkdddk....',
+      '....kwwwwwwwwwwwwwwk....',
+      '....kwbbbbwsssssssswk...',
+      '....kwbbbbwssssssssswk..',
+      '....kwbbbbwwwwwwwwwwwk..',
+      '....kwbbbbwssssssssswk..',
+      '....kwwwwwwwwwwwwwwwwk..',
+      '....kwssssssssssssswwk..',
+      '....kwsssssssssssswwwk..',
+      '....kwwwwwwwwwwwwwwwwk..',
+      '....kwsssssssssssswwwk..',
+      '....kwssssssssswwwwwwk..',
+      '....kwwwwwwwwwwwwwwwwk..',
+      '....kddddddddddddddddk..',
+      '.....kkkkkkkkkkkkkkkk...',
+      '..........kggk..........',
+      '..........kggk..........',
+      '.......kkggggggkk.......',
+      '........kggggggk........',
+      '.........kkggkk.........',
+    ],
+
+    /* ---- the contact row ----
+       Four marks, all on the same 24x24 grid with the same one-pixel
+       ink outline, so they read as a set rather than as four logos
+       borrowed from four places. Deliberately generic silhouettes: an
+       envelope, a cat-in-a-circle, a card with a bar, a sheet with an
+       arrow. Nobody needs to be told an envelope is email. */
+    mail: [
+      '........................',
+      '........................',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '..kwwwwwwwwwwwwwwwwwwk..',
+      '..kwkwwwwwwwwwwwwwwkwk..',
+      '..kwwkwwwwwwwwwwwwkwwk..',
+      '..kwwwkwwwwwwwwwwkwwwk..',
+      '..kwwwwkwwwwwwwwkwwwwk..',
+      '..kwwwwwkwwwwwwkwwwwwk..',
+      '..kwwwwwwkwwwwkwwwwwwk..',
+      '..kwwwwwwwkwwkwwwwwwwk..',
+      '..kwwwwwwwwkkwwwwwwwwk..',
+      '..kwsswwwwwwwwwwwwsswk..',
+      '..kwsssswwwwwwwwsssswk..',
+      '..kwssssssssssssssssswk.',
+      '..kwssssssssssssssssswk.',
+      '..kdddddddddddddddddddk.',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '........................',
+      '........................',
+      '........................',
+      '........................',
+      '........................',
+      '........................',
+    ],
+    github: [
+      '........................',
+      '.......kkkkkkkkkk.......',
+      '.....kkwwwwwwwwwwkk.....',
+      '....kwwwwwwwwwwwwwwk....',
+      '...kwwwwwwwwwwwwwwwwk...',
+      '..kwwwkkwwwwwwwwkkwwwk..',
+      '..kwwkddkwwwwwwkddkwwk..',
+      '..kwwkddkwwwwwwkddkwwk..',
+      '..kwwwkkwwwwwwwwkkwwwk..',
+      '..kwwwwwwwwwwwwwwwwwwk..',
+      '..kwwwwwwwkkkkwwwwwwwk..',
+      '..kwwwwwwwkwwkwwwwwwwk..',
+      '...kwwwwwwwwwwwwwwwwk...',
+      '...kwwwwwwwwwwwwwwwwk...',
+      '....kwwwwwwwwwwwwwwk....',
+      '.....kwwwkwwwwkwwwk.....',
+      '......kwwkwwwwkwwk......',
+      '.......kkkwwwwkkk.......',
+      '.........kwwwwk.........',
+      '.........kwwwwk.........',
+      '..........kkkk..........',
+      '........................',
+      '........................',
+      '........................',
+    ],
+    linkedin: [
+      '........................',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '..kcccccccccccccccccck..',
+      '..kcccccccccccccccccck..',
+      '..kccwwccccccccccccccck.',
+      '..kccwwccccccccccccccck.',
+      '..kcccccccccccccccccck..',
+      '..kccwwccccwwwwcccccck..',
+      '..kccwwcccwwwwwwccccck..',
+      '..kccwwcccwwccwwccccck..',
+      '..kccwwcccwwccwwccccck..',
+      '..kccwwcccwwccwwccccck..',
+      '..kccwwcccwwccwwccccck..',
+      '..kccwwcccwwccwwccccck..',
+      '..kccwwcccwwccwwccccck..',
+      '..kcccccccccccccccccck..',
+      '..kcccccccccccccccccck..',
+      '..kdddddddddddddddddddk.',
+      '..kkkkkkkkkkkkkkkkkkkk..',
+      '........................',
+      '........................',
+      '........................',
+      '........................',
+      '........................',
+    ],
+  }
+
+  document.querySelectorAll('canvas[data-icon]').forEach((cv) => {
+    const art = ICONS[cv.dataset.icon]
+    if (!art) return
+    const N = 24
+    cv.width = N
+    cv.height = N
+    const g = cv.getContext('2d')
+    g.imageSmoothingEnabled = false
+    for (let y = 0; y < art.length; y++) {
+      const row = art[y]
+      for (let x = 0; x < row.length; x++) {
+        const col = ICON_PAL[row[x]]
+        if (!col) continue
+        g.fillStyle = col
+        g.fillRect(x, y, 1, 1)
+      }
     }
+  })
 
-    paint(window.__scene.current())
+  /* ==================================================================
+     THE CURSOR
 
-    modeBtn.addEventListener('click', () => {
-      const next = window.__scene.current() === 'day' ? 'night' : 'day'
-      window.__scene.setTheme(next)
-      paint(next)
-    })
+     The one piece of chrome the browser draws that this page had no
+     say over — a smooth, antialiased, system arrow floating over a
+     picture where every other edge lands on a pixel.
+
+     It is drawn here instead: a 12x12 sprite painted into a canvas
+     and handed to CSS as a data URI. Same rules as the rest of the
+     file — whole pixels, palette colours, no image file on disk — and
+     the hotspot is set to the tip so it still points at what it is
+     pointing at.
+
+     Two of them. The arrow everywhere, and a HAND over anything you
+     can press, because the moment you replace the arrow you inherit
+     the job of saying what is clickable.
+     ================================================================== */
+  const CURSORS = {
+    /* No sparkle. A three-pixel glint beside the arrow read as a
+       plus sign following the pointer around, which is a cursor with
+       a bug rather than a cursor with personality. The personality is
+       in the SIZE and the steps now: big enough that you can see it is
+       drawn out of blocks, which is the whole joke. */
+    arrow: [
+      'k.............',
+      'kk............',
+      'kwk...........',
+      'kwwk..........',
+      'kwwwk.........',
+      'kwwwwk........',
+      'kwwwwwk.......',
+      'kwwwwwwk......',
+      'kwwwwwwwk.....',
+      'kwwwwwwwwk....',
+      'kwwwkkkkkkk...',
+      'kwkck.........',
+      'kkck..........',
+      '.kkc..........',
+    ],
+    hand: [
+      '.....kk.......',
+      '....kwwk......',
+      '....kwwk......',
+      '....kwwk......',
+      '....kwwkkk....',
+      '....kwwkwwkk..',
+      '.kk.kwwkwwkwk.',
+      'kwwkkwwwwwwwk.',
+      'kwwwkwwwwwwwk.',
+      '.kwwwwwwwwwwk.',
+      '..kwwwwwwwwwk.',
+      '..kwwwwwwwwwk.',
+      '..kwwwwwwwwwk.',
+      '..kkkkkkkkkkk.',
+    ],
+  }
+
+  const CURSOR_PAL = { k: '#05070f', w: '#eaf0ff', c: '#3ef0ff', m: '#ff3ea5' }
+
+  function makeCursor(art, scale) {
+    const c = document.createElement('canvas')
+    c.width = 14 * scale
+    c.height = 14 * scale
+    const g = c.getContext('2d')
+    g.imageSmoothingEnabled = false
+    for (let y = 0; y < art.length; y++) {
+      for (let x = 0; x < art[y].length; x++) {
+        const col = CURSOR_PAL[art[y][x]]
+        if (!col) continue
+        g.fillStyle = col
+        g.fillRect(x * scale, y * scale, scale, scale)
+      }
+    }
+    return c.toDataURL('image/png')
+  }
+
+  try {
+    /* Doubled, because a 12px cursor on a high-density display is a
+       speck. Browsers cap the size around 128px, so 2x is safe. */
+    const S = 3
+    const arrow = makeCursor(CURSORS.arrow, S)
+    const hand = makeCursor(CURSORS.hand, S)
+    const css = document.createElement('style')
+    css.textContent =
+      'html, body { cursor: url(' + arrow + ') 0 0, auto; }\n' +
+      'a, button, .tile, summary, [role="button"] { cursor: url(' + hand + ') ' +
+      4 * S + ' 0, pointer; }'
+    document.head.appendChild(css)
+  } catch (e) {
+    // a tainted canvas or a blocked data URI just means the system
+    // arrow stays, which is a fine place to end up
   }
 
   /* ---------------- weather ----------------
-     Rain and snow are mutually exclusive in the scene, so both buttons
-     repaint after either is pressed. */
-  const rainBtn = document.getElementById('rainToggle')
-  const snowBtn = document.getElementById('snowToggle')
+     Rain is the only weather with a control on it now. The day palette
+     and the snow are still in the scene and still reachable through
+     __scene.setTheme / setSnow; what has gone is the row of buttons
+     inviting somebody to leave the shot the page was composed for.
 
-  if (rainBtn && snowBtn && window.__scene) {
-    const set = (btn, on, word) => {
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false')
-      const label = btn.querySelector('.btn__label')
-      if (label) label.textContent = `${word} ${on ? 'ON' : 'OFF'}`
-    }
+     The theme still has to be published to the document, because the
+     CSS keys its day overrides off `data-mode` and would otherwise be
+     left on whatever the markup happened to say. */
+  if (window.__scene) {
+    document.documentElement.dataset.mode = window.__scene.current()
+  }
+
+  const rainBtn = document.getElementById('rainToggle')
+
+  if (rainBtn && window.__scene) {
+    const label = rainBtn.querySelector('.btn__label')
 
     const paint = () => {
-      set(rainBtn, window.__scene.raining(), 'RAIN')
-      set(snowBtn, window.__scene.snowing(), 'SNOW')
+      const on = window.__scene.raining()
+      rainBtn.setAttribute('aria-pressed', on ? 'true' : 'false')
+      if (label) label.textContent = `RAIN ${on ? 'ON' : 'OFF'}`
     }
 
     paint()
@@ -248,445 +583,245 @@
       window.__scene.setRain(!window.__scene.raining())
       paint()
     })
-
-    snowBtn.addEventListener('click', () => {
-      window.__scene.setSnow(!window.__scene.snowing())
-      paint()
-    })
   }
 
   /* ==================================================================
-     WINDOWS
+     THE ROUTER
 
-     The title bar has had minimise, maximise and close on it since the
-     beginning and they did nothing. Now they do, and there is a second
-     window for the work.
+     This was a window manager: three window states, a taskbar to
+     minimise to, drag-by-the-title-bar, double-click to maximise, and
+     a zoom rectangle that flew between a window and its button. Around
+     four hundred lines of it, and all of it in service of a metaphor
+     that made every section arrive as a modal stacked on top of the
+     city. The first thing a visitor had to do was work out the window
+     manager rather than read anything.
 
-     One window is up at a time — opening WORK sends the title screen
-     down to the taskbar, exactly as described. Each window is in one of
-     three states and no more:
+     Pages now. One is up at a time, filling the frame, and the route
+     lives in the hash — so the back button works, a link can be
+     shared, and a reload lands where you were. Static hosting needs no
+     rewrite rules for a hash, which is the other reason it is a hash.
 
-       up      on screen, and the only one on screen
-       min     alive, but down on the taskbar
-       closed  gone, and not on the taskbar either
-
-     The taskbar itself only exists when there is more than one window
-     in play. On the bare title screen it would just be covering the
-     rooftop, which is the most detailed part of the scene.
+     Between two pages sits the wipe: it closes over the frame, the
+     swap happens behind it, it opens again. A navigation is one
+     movement instead of a cut, and nothing is ever seen half-changed —
+     which is the same reason the scene holds its snapshot while a
+     rebuild drains.
      ================================================================== */
-  const wins = new Map()
-  document.querySelectorAll('.window').forEach((el) => wins.set(el.dataset.win, el))
+  const pages = new Map()
+  document.querySelectorAll('.page').forEach((el) => pages.set(el.dataset.page, el))
 
-  const bar = document.querySelector('.taskbar')
-  const taskHost = document.querySelector('.taskbar__tasks')
-
-  if (wins.size && bar && taskHost) {
-    const LABEL = {
-      portfolio: 'PORTFOLIO.EXE',
-      work: 'WORK.EXE',
-      about: 'ABOUT.EXE',
-      contact: 'CONTACT.EXE',
-    }
-    /* The desktop icons are not state — they are up the whole time and
-       the windows layer over them, so nothing here touches them. They
-       used to be revealed only when every window was down. */
-    const state = new Map()
-    wins.forEach((el, id) => state.set(id, el.hasAttribute('hidden') ? 'closed' : 'up'))
-
+  if (pages.size) {
+    const wipe = document.querySelector('.wipe')
     const stepped = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    /* ---- the zoom rectangle ----
-       What Windows 98 did between a window and its taskbar button: an
-       outline that walks the gap in a handful of jumps and is gone
-       before you have finished registering it. Eight frames at 20ms is
-       about a sixth of a second, which is roughly what the real one
-       took — long enough to say where the window went, short enough
-       that it never feels like it is being animated at you. */
-    const ZOOM_STEPS = 8
-    const ZOOM_MS = 20
+    // half the wipe: closed by this point, swapped, then opening
+    const WIPE_MS = 260
 
-    function zoom(from, to, done) {
-      if (!stepped || !from || !to || !from.width || !to.width) {
-        if (done) done()
+    const routeOf = () => {
+      const h = (location.hash || '#home').slice(1)
+      return pages.has(h) ? h : 'home'
+    }
+
+    let current = null
+
+    /* Showing a page is three things: put the others away, reset the
+       scroll, and reset the view to its deck — landing on a stage you
+       opened ten minutes ago is disorienting in a way that landing on
+       the rack never is. */
+    function show(id) {
+      pages.forEach((el, key) => {
+        const on = key === id
+        el.hidden = !on
+        el.classList.toggle('is-on', on)
+        if (on) {
+          showDeck(el)
+          el.scrollTop = 0
+        }
+      })
+      document.documentElement.dataset.page = id
+      current = id
+      // the weather reads this to know what it is landing on
+      const live = pages.get(id)
+      pages.forEach((el) => el.removeAttribute('data-active'))
+      if (live) live.setAttribute('data-active', '')
+
+      /* Away from home, the city goes quiet. An L2 page is something
+         you are meant to READ, and a rooftop with rain on it, a train
+         crossing it and eleven neon signs guttering behind the text is
+         competing for exactly the attention the text needs. The scene
+         dims and comes to a stop — over half a second, so it reads as
+         the lights going down rather than as the page freezing. */
+      if (window.__scene && window.__scene.setFocus) {
+        window.__scene.setFocus(id !== 'home')
+      }
+    }
+
+    function go(id, instant) {
+      if (id === current) return
+      if (!stepped || instant) {
+        show(id)
         return
       }
-      const box = document.createElement('div')
-      box.className = 'zoombox'
-      document.body.appendChild(box)
-
-      let i = 0
-      const step = () => {
-        const t = i / ZOOM_STEPS
-        box.style.left = Math.round(from.left + (to.left - from.left) * t) + 'px'
-        box.style.top = Math.round(from.top + (to.top - from.top) * t) + 'px'
-        box.style.width = Math.max(4, Math.round(from.width + (to.width - from.width) * t)) + 'px'
-        box.style.height = Math.max(4, Math.round(from.height + (to.height - from.height) * t)) + 'px'
-        if (i++ > ZOOM_STEPS) {
-          box.remove()
-          if (done) done()
-          return
-        }
-        setTimeout(step, ZOOM_MS)
-      }
-      step()
+      wipe.classList.add('is-closing')
+      setTimeout(() => {
+        show(id)
+        wipe.classList.remove('is-closing')
+        wipe.classList.add('is-opening')
+        setTimeout(() => wipe.classList.remove('is-opening'), WIPE_MS)
+      }, WIPE_MS)
     }
 
-    const rectOf = (el) => (el ? el.getBoundingClientRect() : null)
-    const taskRect = (id) => {
-      const b = [...taskHost.children].find((c) => c.dataset.win === id)
-      return b ? b.getBoundingClientRect() : null
-    }
-
-    /* Minimising: measure the window, put it away, then fly the outline
-       down to the button that has just appeared for it. */
-    function goDown(id) {
-      const from = rectOf(wins.get(id))
-      state.set(id, 'min')
-      paint()
-      zoom(from, taskRect(id))
-    }
-
-    /* Restoring: the reverse, and the window stays hidden while the
-       outline is in flight so it arrives rather than being there
-       already. */
-    function goUp(id) {
-      const from = taskRect(id)
-      open(id)
-      paint()
-      const el = wins.get(id)
-      el.classList.add('is-zooming')
-      zoom(from, rectOf(el), () => el.classList.remove('is-zooming'))
-    }
-
-    const paint = () => {
-      let live = 0
-      let anyMin = false
-
-      wins.forEach((el, id) => {
-        const st = state.get(id)
-        el.hidden = st !== 'up'
-        // the weather reads this to know which window it is landing on
-        if (st === 'up') el.setAttribute('data-active', '')
-        else el.removeAttribute('data-active')
-        if (st !== 'closed') live++
-        if (st === 'min') anyMin = true
-      })
-
-      const maxed = [...wins.values()].some((el) => !el.hidden && el.classList.contains('is-max'))
-      document.documentElement.dataset.max = maxed ? 'on' : 'off'
-
-      const desktop = live > 1 || anyMin
-      bar.hidden = !desktop
-      document.documentElement.dataset.desktop = desktop ? 'on' : 'off'
-
-      taskHost.textContent = ''
-      wins.forEach((el, id) => {
-        if (state.get(id) === 'closed') return
-        const b = document.createElement('button')
-        b.type = 'button'
-        b.className = 'taskbar__task'
-        b.dataset.win = id
-        b.textContent = LABEL[id] || id
-        b.setAttribute('aria-pressed', state.get(id) === 'up' ? 'true' : 'false')
-        b.addEventListener('click', () => {
-          // clicking the window that is already up puts it away again
-          if (state.get(id) === 'up') goDown(id)
-          else goUp(id)
-        })
-        taskHost.appendChild(b)
-      })
-    }
-
-    function open(id) {
-      wins.forEach((el, other) => {
-        if (other !== id && state.get(other) === 'up') state.set(other, 'min')
-      })
-      state.set(id, 'up')
-      const el = wins.get(id)
-      const inner = el && el.querySelector('.screen__inner--doc')
-      if (inner) inner.scrollTop = 0
-    }
-
-    function close(id) {
-      state.set(id, 'closed')
-      wins.get(id).classList.remove('is-max')
-      // fall back to whatever is still alive, so the screen is never bare
-      if (![...state.values()].includes('up')) {
-        for (const [other, st] of state) {
-          if (st === 'min') {
-            state.set(other, 'up')
-            break
-          }
-        }
-      }
-    }
-
-    /* Maximising has to give up any dragged position first, or the
-       inline left/top beat the class's inset and the window "maximises"
-       to wherever you happened to leave it. */
-    function toggleMax(el) {
-      if (!el.classList.contains('is-max')) {
-        el.classList.remove('is-free')
-        el.style.left = ''
-        el.style.top = ''
-        el.style.width = ''
-      }
-      el.classList.toggle('is-max')
-      paint()
-    }
-
-    // minimise / maximise / close, on every window's title bar
-    wins.forEach((el, id) => {
-      el.querySelectorAll('.winbtn[data-act]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const act = btn.dataset.act
-          if (act === 'min') {
-            goDown(id)
-            return
-          }
-          // Closing is instant, as it was: there is nothing to fly to,
-          // and whatever gets promoted is simply revealed underneath.
-          if (act === 'max') toggleMax(el)
-          else {
-            close(id)
-            paint()
-          }
-        })
-      })
-    })
-
-    /* ---- dragging ----
-       By the title bar, as in the original. Windows 98 dragged an
-       outline and only moved the window on release; this moves the
-       window itself, because that is what a hand expects now — but the
-       position is rounded to whole pixels every frame, so a window
-       being dragged never lands between them. */
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
-    let drag = null
-
-    wins.forEach((el) => {
-      const barEl = el.querySelector('.window__bar')
-      if (!barEl) return
-
-      barEl.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0 || e.target.closest('.winbtn')) return
-        // on a phone the window is full-width; dragging it around only
-        // fights the scroll gesture
-        if (window.matchMedia('(max-width: 760px)').matches) return
-        if (el.classList.contains('is-max')) return
-        const r = el.getBoundingClientRect()
-        el.classList.add('is-free')
-        el.style.width = Math.round(r.width) + 'px'
-        el.style.left = Math.round(r.left) + 'px'
-        el.style.top = Math.round(r.top) + 'px'
-        drag = { el, dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width }
-        barEl.setPointerCapture(e.pointerId)
-        e.preventDefault()
-      })
-
-      barEl.addEventListener('pointermove', (e) => {
-        if (!drag || drag.el !== el) return
-        const barH = bar.hidden ? 0 : bar.offsetHeight
-        /* The title bar is never allowed off the screen. Lose that and
-           the window is gone: there is no way to grab it back. */
-        el.style.left =
-          clamp(Math.round(e.clientX - drag.dx), 60 - drag.w, window.innerWidth - 60) + 'px'
-        el.style.top =
-          clamp(Math.round(e.clientY - drag.dy), 0, window.innerHeight - barH - 30) + 'px'
-      })
-
-      const end = () => {
-        drag = null
-      }
-      barEl.addEventListener('pointerup', end)
-      barEl.addEventListener('pointercancel', end)
-
-      // double-click the bar to maximise, as it always has been
-      barEl.addEventListener('dblclick', (e) => {
-        if (e.target.closest('.winbtn')) return
-        // maximise is hidden on mobile; a double-tap must not secretly
-        // trigger what the UI no longer offers
-        if (window.matchMedia('(max-width: 760px)').matches) return
-        toggleMax(el)
-      })
-    })
-
-    // a dragged window must not be left stranded off-screen by a resize
-    window.addEventListener('resize', () => {
-      wins.forEach((el) => {
-        if (!el.classList.contains('is-free')) return
-        const r = el.getBoundingClientRect()
-        const barH = bar.hidden ? 0 : bar.offsetHeight
-        el.style.left = clamp(Math.round(r.left), 60 - r.width, window.innerWidth - 60) + 'px'
-        el.style.top = clamp(Math.round(r.top), 0, window.innerHeight - barH - 30) + 'px'
-      })
-    })
-
-    /* Launching. Both halves run at once, which is what an OS does:
-       whatever was up drops to the bar while the new window comes up
-       off it. If nothing was up — you are looking at the desktop — only
-       the second half plays. */
-    function launch(id) {
-      // a window always opens on its deck, whatever was open last time
-      const deckWin = document.querySelector('.window[data-win="' + id + '"]')
-      if (deckWin) showDeck(deckWin)
-      if (!wins.has(id) || state.get(id) === 'up') return
-      const prev = [...state.keys()].find((k) => state.get(k) === 'up')
-      const fromPrev = prev ? rectOf(wins.get(prev)) : null
-      open(id)
-      paint()
-      if (prev) zoom(fromPrev, taskRect(prev))
-      const w = wins.get(id)
-      w.classList.add('is-zooming')
-      zoom(taskRect(id) || rectOf(w), rectOf(w), () => {
-        w.classList.remove('is-zooming')
-        const btn = w.querySelector('.winbtn--close')
-        if (btn) btn.focus()
-      })
-    }
-
-    // the title-screen menu
-    document.querySelectorAll('.menu a[href]').forEach((a) => {
-      const id = a.getAttribute('href').slice(1)
-      if (!wins.has(id)) return
-      a.addEventListener('click', (e) => {
-        e.preventDefault()
-        launch(id)
-      })
-    })
-
-    /* Cross-page links inside documents: "see the work", "say hello".
-       Same launch as the menu, so the windows swap properly. */
-    document.querySelectorAll('a[data-open-win]').forEach((a) => {
-      a.addEventListener('click', (e) => {
-        e.preventDefault()
-        const id = a.dataset.openWin
-        if (state.get(id) === 'min') goUp(id)
-        else launch(id)
-      })
-    })
-
-    // and the desktop icons
-    document.querySelectorAll('.dicon[data-open]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const id = b.dataset.open
-        if (state.get(id) === 'min') goUp(id)
-        else launch(id)
-      })
-    })
+    window.addEventListener('hashchange', () => go(routeOf()))
+    show(routeOf())
 
     /* ---------------- deck <-> level ----------------
 
-       WORK and ABOUT are not documents; they are select screens. The
-       window holds two views - the .deck of cards and one .level per
-       card - and choosing a card swaps them. Nothing navigates away,
-       nothing opens another window: it is the same screen changing
-       what it is showing, which is how a game does it. */
+       WORK and ABOUT are select screens, not documents. The page holds
+       two views — the rack of cards and one .level per card — and
+       choosing a card swaps them. Nothing navigates, nothing opens:
+       it is the same page changing what it is showing, which is how a
+       game does it and the only place a route would be overkill. */
     let lastCard = null
 
-    function showDeck(win) {
-      const scope = win || doc
-      scope.querySelectorAll('.level').forEach((l) => (l.hidden = true))
-      scope.querySelectorAll('.deck').forEach((d) => (d.hidden = false))
-      const sc = scope.querySelector('.screen__inner')
-      if (sc) sc.scrollTop = 0
+    function showDeck(scope) {
+      const root = scope || document
+      root.querySelectorAll('.level').forEach((l) => (l.hidden = true))
+      root.querySelectorAll('.deck').forEach((d) => (d.hidden = false))
     }
 
     function showLevel(id) {
       const lvl = document.getElementById(id)
       if (!lvl) return
-      const win = lvl.closest('.window')
-      win.querySelectorAll('.deck').forEach((d) => (d.hidden = true))
-      win.querySelectorAll('.level').forEach((l) => (l.hidden = l.id !== id))
+      const page = lvl.closest('.page')
+      page.querySelectorAll('.deck').forEach((d) => (d.hidden = true))
+      page.querySelectorAll('.level').forEach((l) => (l.hidden = l.id !== id))
       // posters inside a hidden pane could not size themselves; now
       // that it is visible, let the generator have another go
       if (window.Posters) window.Posters.paintAll(lvl)
-      const sc = win.querySelector('.screen__inner')
-      if (sc) sc.scrollTop = 0
+      page.scrollTop = 0
       const back = lvl.querySelector('[data-back]')
       if (back) back.focus()
     }
 
     document.addEventListener('click', (e) => {
-      const go = e.target.closest('[data-goto]')
-      if (go) {
+      const go2 = e.target.closest('[data-goto]')
+      if (go2) {
         e.preventDefault()
-        if (go.classList.contains('card')) lastCard = go
-        showLevel(go.dataset.goto)
+        if (go2.classList.contains('card')) lastCard = go2
+        showLevel(go2.dataset.goto)
         return
       }
       const back = e.target.closest('[data-back]')
       if (back) {
         e.preventDefault()
-        const win = back.closest('.window')
-        showDeck(win)
-        // hand focus back to the card they came from, so keyboard
-        // users are not dumped at the top of the list
-        if (lastCard && win.contains(lastCard)) lastCard.focus()
+        const page = back.closest('.page')
+        showDeck(page)
+        page.scrollTop = 0
+        // hand focus back to the card they came from, so keyboard users
+        // are not dumped at the top of the list
+        if (lastCard && page.contains(lastCard)) lastCard.focus()
       }
     })
+
+    /* Escape goes up one level at a time: out of a stage to the rack
+       first, and only home if you are already there. Escape that skips
+       a level feels like a trapdoor. */
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return
-      /* One step at a time: escape out of a stage back to the select
-         screen first, and only close the window if you are already
-         there. Escape that skips a level feels like a trapdoor. */
-      const openLevel = document.querySelector('.window:not([hidden]) .level:not([hidden])')
+      const openLevel = document.querySelector('.page.is-on .level:not([hidden])')
       if (openLevel) {
-        const lw = openLevel.closest('.window')
-        showDeck(lw)
-        if (lastCard && lw.contains(lastCard)) lastCard.focus()
+        const page = openLevel.closest('.page')
+        showDeck(page)
+        if (lastCard && page.contains(lastCard)) lastCard.focus()
         return
       }
-      for (const [id, st] of state) {
-        if (st === 'up' && id !== 'portfolio') {
-          close(id)
-          paint()
-          return
-        }
-      }
+      if (current !== 'home') location.hash = '#home'
     })
-
-    paint()
-
-    /* The tray clock. It only shows hours and minutes, so it is only
-       worth repainting when the minute turns. */
-    const clock = document.getElementById('clock')
-    if (clock) {
-      const tick = () => {
-        const d = new Date()
-        clock.textContent =
-          String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
-        setTimeout(tick, (60 - d.getSeconds()) * 1000)
-      }
-      tick()
-    }
   }
 
-  /* ---------------- expanding case studies ----------------
-     The work page was a wall you could only read. Each case now opens
-     in place, and its grid cell takes the full width while it is open
-     so the detail has somewhere to go. One at a time: two open cases
-     side by side is a page, not a study. */
-  document.querySelectorAll('.case[aria-controls]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const panel = document.getElementById(btn.getAttribute('aria-controls'))
-      const cell = btn.closest('.cell')
-      const open = btn.getAttribute('aria-expanded') === 'true'
+  /* ==================================================================
+     THE COVER, ON THE CURSOR
 
-      document.querySelectorAll('.case[aria-expanded="true"]').forEach((other) => {
-        other.setAttribute('aria-expanded', 'false')
-        const p = document.getElementById(other.getAttribute('aria-controls'))
-        if (p) p.hidden = true
-        const c = other.closest('.cell')
-        if (c) c.classList.remove('is-open')
+     Point at a row on the shelf and its cover comes up next to the
+     pointer. A shelf is a list of things you like, and a list of
+     titles asks the reader to already know what they are; the cover
+     is the thing that actually communicates, and it does it in the
+     half second the pointer is passing over.
+
+     Two sources, in that order:
+
+       data-cover-src   a real image. Drop the actual sleeve, jacket
+                        or poster in and it is used verbatim.
+       data-cover       a KIND — book, game, film, music — which
+                        posters.js generates a piece of cover art for
+                        from the row's seed.
+
+     So it works with nothing filled in, and it gets better the moment
+     something real is dropped in. Painted once per row and cached on
+     the element, because generating a poster on every mouseenter is
+     work done repeatedly for a result that never changes.
+     ================================================================== */
+  const peek = document.querySelector('.peek')
+
+  if (peek) {
+    const peekCv = peek.querySelector('canvas')
+    const peekImg = peek.querySelector('img')
+    const rows = document.querySelectorAll('[data-cover]')
+    let raf = 0
+    let px = 0
+    let py = 0
+
+    const place = () => {
+      raf = 0
+      /* Offset down-right of the tip, and flipped to the other side
+         when it would run off the edge — a preview that leaves the
+         viewport is a preview you cannot see. */
+      const w = peek.offsetWidth
+      const h = peek.offsetHeight
+      const x = px + 28 + w > innerWidth ? px - w - 20 : px + 28
+      const y = Math.min(py + 20, innerHeight - h - 12)
+      peek.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)'
+    }
+
+    rows.forEach((row) => {
+      row.addEventListener('mouseenter', () => {
+        const src = row.dataset.coverSrc
+        if (src) {
+          peekImg.src = src
+          peekImg.hidden = false
+          peekCv.hidden = true
+        } else if (window.Posters) {
+          if (!row.dataset.painted) {
+            peekCv.dataset.poster = row.dataset.cover
+            peekCv.dataset.seed = row.dataset.seed || '1'
+            window.Posters.paint(peekCv)
+            // the canvas is shared, so repaint per row rather than cache
+          } else {
+            peekCv.dataset.poster = row.dataset.cover
+            peekCv.dataset.seed = row.dataset.seed || '1'
+            window.Posters.paint(peekCv)
+          }
+          peekImg.hidden = true
+          peekCv.hidden = false
+        }
+        peek.hidden = false
       })
 
-      if (open) return
-      btn.setAttribute('aria-expanded', 'true')
-      if (panel) panel.hidden = false
-      if (cell) cell.classList.add('is-open')
+      row.addEventListener('mouseleave', () => {
+        peek.hidden = true
+      })
     })
-  })
+
+    /* One listener on the document rather than four on the rows: the
+       pointer is moving constantly and this only has to know where it
+       is, not what it is over. */
+    document.addEventListener('mousemove', (e) => {
+      if (peek.hidden) return
+      px = e.clientX
+      py = e.clientY
+      if (!raf) raf = requestAnimationFrame(place)
+    })
+  }
 
   /* ---------------- the Konami code ----------------
      Up up down down left right left right B A. It belongs on a title
@@ -709,91 +844,9 @@
     document.documentElement.dataset.secret = 'on'
     if (window.__scene && window.__scene.setSecret) window.__scene.setSecret(true)
 
-    const press = document.querySelector('.press')
-    if (press) press.textContent = 'PLAYER 1 READY'
-    const title = document.querySelector('.window__title')
-    if (title) title.textContent = 'SECRET.EXE'
+    const role = document.querySelector('.role')
+    if (role) role.textContent = 'PLAYER 1 READY'
   })
-
-  /* ==================================================================
-     THE CAT, TALKING
-
-     Every L2 page carries a dialogue box with the rooftop cat beside
-     it. It types an intro the first time its window opens, and any
-     element carrying data-say re-types the box when pointed at. The
-     typing is character-by-character on a timer — the one animation in
-     the project that is stepped by its very nature.
-     ================================================================== */
-  const talkFast = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-  document.querySelectorAll('.screen__inner--doc').forEach((doc) => {
-    const talk = document.querySelector('.talk')
-    if (!talk) return
-    const out = talk.querySelector('.talk__text')
-    let timer = 0
-    let current = ''
-
-    const say = (line) => {
-      if (line === current) return // don't restart mid-sentence on re-hover
-      current = line
-      clearTimeout(timer)
-      if (talkFast) {
-        out.textContent = line
-        return
-      }
-      let i = 0
-      out.textContent = ''
-      const tick = () => {
-        // three characters a tick: timers stretch under the canvas's
-        // frame budget, and a line must never take longer to type than
-        // it takes to read
-        i = Math.min(line.length, i + 3)
-        out.textContent = line.slice(0, i)
-        if (i < line.length) timer = setTimeout(tick, 28)
-      }
-      tick()
-    }
-
-    // anything in this document that has something to say
-    document.addEventListener('mouseover', (e) => {
-      const t = e.target.closest('[data-say]')
-      if (t) say(t.dataset.say)
-    })
-    document.addEventListener('focusin', (e) => {
-      const t = e.target.closest('[data-say]')
-      if (t) say(t.dataset.say)
-    })
-    /* Touch has no hover, so a tap asks the cat directly. This also
-       fires alongside a click that does something else (opening a
-       stage), which is right: the cat comments on what you just did. */
-    document.addEventListener('click', (e) => {
-      const t = e.target.closest('[data-say]')
-      if (t) say(t.dataset.say)
-    })
-
-    // the intro fires when the window first becomes visible
-    const win = talk.closest('.window')
-    if (win) {
-      let greeted = false
-      new MutationObserver(() => {
-        if (win.hidden || greeted) return
-        greeted = true
-        say(talk.dataset.intro || '')
-      }).observe(win, { attributes: true, attributeFilter: ['hidden'] })
-    }
-  })
-
-  /* The CONTINUE countdown on the contact page. It counts 9 to 0 and
-     rolls over, forever, because that is what an arcade board does
-     when nobody puts a coin in. */
-  const continueN = document.getElementById('continueN')
-  if (continueN && !talkFast) {
-    let n = 9
-    setInterval(() => {
-      n = n === 0 ? 9 : n - 1
-      continueN.textContent = n
-    }, 1000)
-  }
 
   /* ---------------- keyboard menu ----------------
      Arrow keys move the cursor, 1-3 jump straight to a row, Enter

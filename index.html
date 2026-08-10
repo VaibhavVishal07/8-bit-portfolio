@@ -6,15 +6,10 @@
 <title>Vaibhav Vishal — Portfolio</title>
 <meta name="description" content="An 8-bit game title screen, as a personal portfolio landing page." />
 
-<link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-  <link
-    href="https://api.fontshare.com/v2/css?f%5B%5D=satoshi@400,500,700&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
-  href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400..700&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;700&display=swap"
   rel="stylesheet"
 />
 
@@ -82,667 +77,292 @@
      pass in front of it and can land on its top edge. -->
 <canvas id="weather" aria-hidden="true"></canvas>
 
+<!-- Rain is the only thing on offer. The scene opens at night in the
+     wet, which is it at its best, and the day palette and the snow are
+     still in scene.js behind __scene.setTheme / setSnow — there is just
+     no longer a control putting them one click away from the landing
+     shot. -->
 <div class="controls">
-  <button class="btn" id="modeToggle" type="button" aria-pressed="false">
-    <span class="btn__glyph btn__glyph--mode" aria-hidden="true"></span>
-    <span class="btn__label">NIGHT</span>
-  </button>
-
   <button class="btn" id="rainToggle" type="button" aria-pressed="false">
     <span class="btn__glyph btn__glyph--rain" aria-hidden="true"></span>
     <span class="btn__label">RAIN OFF</span>
   </button>
-
-  <button class="btn" id="snowToggle" type="button" aria-pressed="false">
-    <span class="btn__glyph btn__glyph--snow" aria-hidden="true"></span>
-    <span class="btn__label">SNOW OFF</span>
-  </button>
-
-
 </div>
 
-<main class="stage">
-  <div class="window" data-win="portfolio">
+<!-- ==================================================================
+     PAGES, NOT WINDOWS
 
-    <div class="window__bar">
-      <span class="window__icon" aria-hidden="true"></span>
-      <p class="window__title">PORTFOLIO.EXE</p>
-      <span class="winbtns">
-        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
-        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
-        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
-      </span>
-    </div>
+     This was a desktop: floating windows with title bars, minimise and
+     maximise, a taskbar along the foot and icons down the side. Every
+     section arrived as a modal stacked over the city, and the first
+     thing a visitor had to do was work out the window manager rather
+     than read anything.
 
-    <div class="screen">
-      <div class="scanlines" aria-hidden="true"></div>
+     It is one column now. The home page says who is talking, shows
+     the work, and gives you a way to get in touch — in that order,
+     without a single piece of chrome. Everything deeper is a real
+     page on its own route, so the back button and a shared link both
+     work.
 
-      <div class="screen__inner">
-        <!-- The lines are separate elements because each is set at its
-             own size: small on top, large on the bottom, so the block
-             reads as a trapezoid leaning away from the viewer. -->
-        <h1 class="wordmark">
-          <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
-          <span class="wordmark__line wordmark__line--b">VISHAL</span>
-        </h1>
+     WORK and ABOUT are gone as destinations. They were two clicks
+     standing in front of content that fits perfectly well on the page
+     you have already loaded, and a portfolio whose landing page does
+     not contain any work is a portfolio with a front door and no
+     hallway.
+     ================================================================== -->
+<main class="app">
 
-        <p class="role">YOUR ROLE &middot; PORTFOLIO 2026</p>
+  <section class="page page--home is-on" data-page="home">
+    <div class="col">
 
-        <nav class="menu" aria-label="Main">
-          <ul>
-            <li>
-              <a href="#work"><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">1</span><span class="menu__label">WORK</span></a>
-            </li>
-            <li>
-              <a href="#about"><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">2</span><span class="menu__label">ABOUT</span></a>
-            </li>
-            <li>
-              <a href="#contact"><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">3</span><span class="menu__label">CONTACT</span></a>
-            </li>
-            <li>
-              <a href="resume.pdf" download><svg class="cursor" viewBox="0 0 12 11" shape-rendering="crispEdges" aria-hidden="true"><use href="#heart-shape" /></svg><span class="menu__num">4</span><span class="menu__label">RESUME</span></a>
-            </li>
-          </ul>
-        </nav>
+      <!-- The lines are separate elements because each is set at its
+           own size: small on top, large on the bottom, so the block
+           reads as a trapezoid leaning away from the viewer. -->
+      <h1 class="wordmark">
+        <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
+        <span class="wordmark__line wordmark__line--b">VISHAL</span>
+      </h1>
 
-        <p class="press">PRESS ANY KEY</p>
-        <p class="copyright">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span></p>
+      <p class="role">YOUR ROLE &middot; PORTFOLIO 2026</p>
+
+      <div class="intro">
+        <p>I'm a product designer based in <b>CITY</b>, currently
+           designing at <b>COMPANY</b>. Before that I spent a few years
+           as a frontend engineer, which is why I still think in
+           components.</p>
+
+        <p>Here's a few selected pieces of work.</p>
       </div>
-    </div>
-  </div>
 
-  <!-- WORK.EXE. Opens from the menu; the title screen minimises to the
-       taskbar to make room for it. Everything in it is placeholder copy
-       meant to be replaced. -->
-  <section class="window window--wide" data-win="work" hidden>
+      <ul class="cards">
+        <li><a class="tile" href="#w1" aria-label="W1"></a></li>
+        <li><a class="tile" href="#w2" aria-label="W2"></a></li>
+        <li><a class="tile" href="#w3" aria-label="W3"></a></li>
+        <li><a class="tile" href="#w4" aria-label="W4"></a></li>
+      </ul>
 
-    <div class="window__bar">
-      <span class="window__icon" aria-hidden="true"></span>
-      <p class="window__title">WORK.EXE</p>
-      <span class="winbtns">
-        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
-        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
-        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
-      </span>
-    </div>
-
-    <div class="window__menu" aria-hidden="true">
-      <span><u>F</u>ILE</span><span><u>E</u>DIT</span><span><u>V</u>IEW</span><span><u>H</u>ELP</span>
-    </div>
-
-    <div class="screen">
-      <div class="scanlines" aria-hidden="true"></div>
-
-      <div class="screen__inner screen__inner--doc">
-
-        <!-- WORK is a STAGE SELECT, not a document. You land on a rack of
-             cards - each with its own generated 8-bit poster - and choosing
-             one swaps the whole screen for that stage. Same window, two
-             views: .deck and .level. -->
-        <div class="deck" data-deck="work">
-          <header class="deck__head">
-            <p class="deck__eyebrow">C:\PORTFOLIO\WORK</p>
-            <h2 class="deck__title">SELECT A STAGE</h2>
-            <p class="deck__hint">6 STAGES CLEARED <span aria-hidden="true">*</span> PICK ONE</p>
-          </header>
-
-          <ul class="cards">
-            <li>
-              <button class="card" type="button" data-goto="w1">
-                <span class="card__art">
-                  <canvas data-poster="cart" data-seed="1" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">STAGE 01</span>
-                  <span class="card__name">PROJECT ONE</span>
-                  <span class="card__meta">ROLE &middot; 2025</span>
-                </span>
-                <span class="card__enter">ENTER <b aria-hidden="true">&gt;</b></span>
-              </button>
-            </li>
-            <li>
-              <button class="card" type="button" data-goto="w2">
-                <span class="card__art">
-                  <canvas data-poster="cart" data-seed="2" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">STAGE 02</span>
-                  <span class="card__name">PROJECT TWO</span>
-                  <span class="card__meta">ROLE &middot; 2024</span>
-                </span>
-                <span class="card__enter">ENTER <b aria-hidden="true">&gt;</b></span>
-              </button>
-            </li>
-            <li>
-              <button class="card" type="button" data-goto="w3">
-                <span class="card__art">
-                  <canvas data-poster="cart" data-seed="3" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">STAGE 03</span>
-                  <span class="card__name">PROJECT THREE</span>
-                  <span class="card__meta">ROLE &middot; 2023</span>
-                </span>
-                <span class="card__enter">ENTER <b aria-hidden="true">&gt;</b></span>
-              </button>
-            </li>
-            <li>
-              <button class="card" type="button" data-goto="w4">
-                <span class="card__art">
-                  <canvas data-poster="cart" data-seed="4" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">STAGE 04</span>
-                  <span class="card__name">PROJECT FOUR</span>
-                  <span class="card__meta">ROLE &middot; 2022</span>
-                </span>
-                <span class="card__enter">ENTER <b aria-hidden="true">&gt;</b></span>
-              </button>
-            </li>
-            <li>
-              <button class="card" type="button" data-goto="w5">
-                <span class="card__art">
-                  <canvas data-poster="cart" data-seed="5" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">STAGE 05</span>
-                  <span class="card__name">PROJECT FIVE</span>
-                  <span class="card__meta">ROLE &middot; 2021</span>
-                </span>
-                <span class="card__enter">ENTER <b aria-hidden="true">&gt;</b></span>
-              </button>
-            </li>
-            <li>
-              <button class="card" type="button" data-goto="w6">
-                <span class="card__art">
-                  <canvas data-poster="cart" data-seed="6" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">STAGE 06</span>
-                  <span class="card__name">PROJECT SIX</span>
-                  <span class="card__meta">ROLE &middot; 2020</span>
-                </span>
-                <span class="card__enter">ENTER <b aria-hidden="true">&gt;</b></span>
-              </button>
-            </li>
-          </ul>
-
-          <h3 class="deck__h">RECORD</h3>
-          <ul class="xp">
-            <li><b>COMPANY NAME</b> Your title <span>2024 - NOW</span></li>
-            <li><b>PREVIOUS COMPANY</b> Your title <span>2022 - 2024</span></li>
-            <li><b>THE ONE BEFORE</b> Your title <span>2021 - 2022</span></li>
-          </ul>
-
-          <div class="prose">
-            <p>Have a project that fits? <a href="#contact" data-open-win="contact">Open a channel &gt;</a></p>
-          </div>
-        </div>
-
-        <article class="level" id="w1" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> STAGE SELECT</button>
-          <p class="level__no">STAGE 01</p>
-          <h2 class="level__title">PROJECT ONE</h2>
-          <p class="level__meta">ROLE &middot; CLIENT &middot; 2025</p>
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="3" aria-hidden="true"></canvas></span>
-          <div class="prose">
-            <p>One or two sentences. What it was, and what you did on it.</p>
-          </div>
-          <div class="gallery">
-            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
-            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
-          </div>
-          <nav class="level__nav">
-            <button type="button" data-goto="w4"><b aria-hidden="true">&lt;</b> STAGE 04</button>
-            <button type="button" data-goto="w2">STAGE 02 <b aria-hidden="true">&gt;</b></button>
-          </nav>
-        </article>
-
-        <article class="level" id="w2" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> STAGE SELECT</button>
-          <p class="level__no">STAGE 02</p>
-          <h2 class="level__title">PROJECT TWO</h2>
-          <p class="level__meta">ROLE &middot; CLIENT &middot; 2024</p>
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="17" aria-hidden="true"></canvas></span>
-          <div class="prose">
-            <p>One or two sentences. What it was, and what you did on it.</p>
-          </div>
-          <div class="gallery">
-            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
-            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
-          </div>
-          <nav class="level__nav">
-            <button type="button" data-goto="w1"><b aria-hidden="true">&lt;</b> STAGE 01</button>
-            <button type="button" data-goto="w3">STAGE 03 <b aria-hidden="true">&gt;</b></button>
-          </nav>
-        </article>
-
-        <article class="level" id="w3" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> STAGE SELECT</button>
-          <p class="level__no">STAGE 03</p>
-          <h2 class="level__title">PROJECT THREE</h2>
-          <p class="level__meta">ROLE &middot; CLIENT &middot; 2023</p>
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="41" aria-hidden="true"></canvas></span>
-          <div class="prose">
-            <p>One or two sentences. What it was, and what you did on it.</p>
-          </div>
-          <div class="gallery">
-            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
-            <span class="slot media" aria-hidden="true"><i>IMG</i></span>
-          </div>
-          <nav class="level__nav">
-            <button type="button" data-goto="w2"><b aria-hidden="true">&lt;</b> STAGE 02</button>
-            <button type="button" data-goto="w4">STAGE 04 <b aria-hidden="true">&gt;</b></button>
-          </nav>
-        </article>
-
-        <article class="level" id="w4" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> STAGE SELECT</button>
-          <p class="level__no">STAGE 04</p>
-          <h2 class="level__title">PROJECT FOUR</h2>
-          <p class="level__meta">ROLE &middot; CLIENT &middot; 2022</p>
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="88" aria-hidden="true"></canvas></span>
-          <div class="prose">
-            <p>One or two sentences. What it was, and what you did on it.</p>
-          </div>
-          <nav class="level__nav">
-            <button type="button" data-goto="w3"><b aria-hidden="true">&lt;</b> STAGE 03</button>
-            <button type="button" data-goto="w1">STAGE 01 <b aria-hidden="true">&gt;</b></button>
-          </nav>
-        </article>
-
-        <article class="level" id="w5" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> STAGE SELECT</button>
-          <p class="level__no">STAGE 05</p>
-          <h2 class="level__title">PROJECT FIVE</h2>
-          <p class="level__meta">ROLE &middot; CLIENT &middot; 2022</p>
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="5" aria-hidden="true"></canvas></span>
-          <div class="prose">
-            <p>One or two sentences. What it was, and what you did on it.</p>
-          </div>
-          <nav class="level__nav">
-            <button type="button" data-goto="w4"><b aria-hidden="true">&lt;</b> STAGE 03</button>
-            <button type="button" data-goto="w6">STAGE 06 <b aria-hidden="true">&gt;</b></button>
-          </nav>
-        </article>
-
-        <article class="level" id="w6" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> STAGE SELECT</button>
-          <p class="level__no">STAGE 06</p>
-          <h2 class="level__title">PROJECT SIX</h2>
-          <p class="level__meta">ROLE &middot; CLIENT &middot; 2022</p>
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="6" aria-hidden="true"></canvas></span>
-          <div class="prose">
-            <p>One or two sentences. What it was, and what you did on it.</p>
-          </div>
-          <nav class="level__nav">
-            <button type="button" data-goto="w5"><b aria-hidden="true">&lt;</b> STAGE 03</button>
-            <button type="button" data-goto="w1">STAGE 01 <b aria-hidden="true">&gt;</b></button>
-          </nav>
-        </article>
+      <div class="intro">
+        <p>Previously I worked in-house on design systems, and before
+           that freelance with small teams who needed one person to do
+           all of it.</p>
       </div>
-    </div>
-    <div class="window__status"><span class="field field--grow">6 OBJECTS</span><span class="field">STAGE SELECT</span><span class="field">C:\</span></div>
 
+      <!-- ---- more about me ----
+           The reference puts a code block here listing where he is and
+           what he does with his weekends, and it is the best thing on
+           that page: a readout is a way to say six true things without
+           writing six sentences about yourself, which almost nobody can
+           do without sounding like a cover letter.
+
+           Same idea, in this machine's voice. -->
+      <h2 class="sect">ABOUT</h2>
+      <div class="intro">
+        <p>I grew up in <b>HOMETOWN</b> and moved for the work. I got
+           here through engineering, which is why I still care more
+           about how a thing is built than how it presents.</p>
+      </div>
+
+      <!-- ---- the shelf ----
+           Four lines about what is actually on the desk this month.
+           A readout of tools and hobbies said what somebody DOES; this
+           says what they are into, which is the thing that actually
+           tells you who you would be working with. -->
+      <ul class="shelf">
+        <li data-cover="book" data-seed="7"><span>READING</span><b>BOOK TITLE</b><i>Author</i></li>
+        <li data-cover="game" data-seed="12"><span>PLAYING</span><b>GAME TITLE</b><i>Platform</i></li>
+        <li data-cover="film" data-seed="23"><span>WATCHING</span><b>FILM OR SHOW</b><i>Director</i></li>
+        <li data-cover="music" data-seed="31"><span>LISTENING</span><b>ALBUM TITLE</b><i>Artist</i></li>
+      </ul>
+
+      <div class="intro">
+        <p>Things I am bad at: estimating, letting a draft go, and
+           saying no to a side project. This is the most likeable
+           paragraph on any about page and almost nobody writes it.</p>
+      </div>
+
+      <!-- ---- articles ----
+           A list, not a grid. Writing is a title and a date; giving it
+           a card and a thumbnail would be dressing a paragraph up as a
+           product. -->
+      <h2 class="sect">WRITING</h2>
+      <ul class="reads">
+        <li>
+          <a href="#r1">
+            <span class="reads__title">Why every gradient in this city is a lie</span>
+            <span class="reads__meta">2026 &middot; 6 min</span>
+          </a>
+        </li>
+        <li>
+          <a href="#r2">
+            <span class="reads__title">Stepped motion, and when to break it</span>
+            <span class="reads__meta">2025 &middot; 4 min</span>
+          </a>
+        </li>
+        <li>
+          <a href="#r3">
+            <span class="reads__title">The case against the hamburger menu</span>
+            <span class="reads__meta">2025 &middot; 8 min</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="intro">
+        <p>Away from the desk it's bouldering, too many podcasts, and a
+           standing argument about whether filter coffee counts.</p>
+
+        <p>Thanks for visiting. If you want to work together, or just
+           want to say hello, here are the ways to reach me.</p>
+      </div>
+
+      <!-- ---- contact ----
+           Four icons in a row. It was four full-width rows with a
+           label, a value and a hover affordance in each — a table of
+           contact details at the foot of a page whose whole point is
+           that it is quiet. Nobody needs to be TOLD that an envelope
+           is email. -->
+      <ul class="links">
+        <li><a href="mailto:you@example.com" title="you@example.com">
+          <canvas class="links__art" data-icon="mail" aria-hidden="true"></canvas>
+          <span class="links__name">EMAIL</span></a></li>
+        <li><a href="https://linkedin.com/in/handle" title="linkedin.com/in/handle">
+          <canvas class="links__art" data-icon="linkedin" aria-hidden="true"></canvas>
+          <span class="links__name">LINKEDIN</span></a></li>
+        <li><a href="resume.pdf" download title="one page, PDF">
+          <canvas class="links__art" data-icon="resume" aria-hidden="true"></canvas>
+          <span class="links__name">RESUME</span></a></li>
+      </ul>
+
+      <p class="copyright">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span>
+        &middot; drawn in code, no images</p>
+    </div>
   </section>
 
-  <section class="window window--wide" data-win="about" hidden>
-    <div class="window__bar">
-      <span class="window__icon" aria-hidden="true"></span>
-      <p class="window__title">ABOUT.EXE</p>
-      <span class="winbtns">
-        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
-        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
-        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
-      </span>
-    </div>
-
-    <div class="window__menu" aria-hidden="true">
-      <span><u>F</u>ILE</span><span><u>E</u>DIT</span><span><u>V</u>IEW</span><span><u>H</u>ELP</span>
-    </div>
-    <div class="screen">
-      <div class="scanlines" aria-hidden="true"></div>
-      <div class="screen__inner screen__inner--doc">
-        <!-- ABOUT is not a competence audit. Nobody was ever won over by a
-             bar chart of somebody else's taste. This is the human version:
-             where he is from, what he is like on a Sunday, what he will
-             argue about, what is on the desk this month. -->
-        <div class="deck" data-deck="about">
-          <div class="sheet">
-            <span class="sheet__pic card__art"><canvas data-poster="portrait" data-seed="5" aria-hidden="true"></canvas></span>
-            <div class="sheet__body">
-              <p class="deck__eyebrow">HELLO</p>
-              <h2 class="sheet__name">YOUR NAME</h2>
-              <p class="sheet__class">YOUR ROLE <span aria-hidden="true">*</span> CITY</p>
-              <div class="prose">
-                <p class="lede">One honest line about who you are when you are
-                   not working. Replace me.</p>
-                <p>Two or three sentences in your own voice - where you grew up,
-                   where you landed, and the thing you would be doing if nobody
-                   were paying you to do anything.</p>
-              </div>
-            </div>
-          </div>
-
-          <h3 class="deck__h">THE BASICS</h3>
-          <ul class="facts">
-            <li><span>FROM</span><b>Hometown</b></li>
-            <li><span>NOW IN</span><b>City, TZ</b></li>
-            <li><span>MORNINGS</span><b>Reluctant</b></li>
-            <li><span>FUELLED BY</span><b>Filter coffee</b></li>
-            <li><span>WEAKNESS</span><b>Stationery shops</b></li>
-            <li><span>ALWAYS ON</span><b>One podcast too many</b></li>
-          </ul>
-
-          <h3 class="deck__h">IN ROTATION</h3>
-          <p class="deck__sub">What is actually on the desk this month. Tap one.</p>
-          <ul class="cards cards--shelf">
-            <li>
-              <button class="card card--tall" type="button" data-goto="a1">
-                <span class="card__art">
-                  <canvas data-poster="book" data-seed="7" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">READING</span>
-                  <span class="card__name">BOOK TITLE</span>
-                  <span class="card__meta">AUTHOR</span>
-                </span>
-              </button>
-            </li>
-            <li>
-              <button class="card card--tall" type="button" data-goto="a2">
-                <span class="card__art">
-                  <canvas data-poster="game" data-seed="12" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">PLAYING</span>
-                  <span class="card__name">GAME TITLE</span>
-                  <span class="card__meta">PLATFORM</span>
-                </span>
-              </button>
-            </li>
-            <li>
-              <button class="card card--tall" type="button" data-goto="a3">
-                <span class="card__art">
-                  <canvas data-poster="film" data-seed="23" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">WATCHING</span>
-                  <span class="card__name">FILM OR SHOW</span>
-                  <span class="card__meta">DIRECTOR</span>
-                </span>
-              </button>
-            </li>
-            <li>
-              <button class="card card--tall" type="button" data-goto="a4">
-                <span class="card__art">
-                  <canvas data-poster="music" data-seed="31" aria-hidden="true"></canvas>
-                </span>
-                <span class="card__info">
-                  <span class="card__no">LISTENING</span>
-                  <span class="card__name">ALBUM TITLE</span>
-                  <span class="card__meta">ARTIST</span>
-                </span>
-              </button>
-            </li>
-          </ul>
-
-          <h3 class="deck__h">HILLS I WILL DIE ON</h3>
-          <p class="deck__sub">Small opinions, held far too strongly.</p>
-          <ul class="takes">
-            <li>A strong opinion about food. Everyone has one.</li>
-            <li>The film everybody likes that you do not.</li>
-            <li>The film nobody likes that you do.</li>
-            <li>Something about how a city should work.</li>
-            <li>A hill so small it is embarrassing. Keep this one.</li>
-          </ul>
-
-          <div class="grid-2">
-            <div class="prose">
-              <h3>A day off looks like</h3>
-              <p>Where you go, who you go with, what time you get out of bed and
-                 what you eat. Concrete beats charming - the specifics are the
-                 personality.</p>
-              <h3>Things I am bad at</h3>
-              <p>Two or three, honestly. This is the most likeable paragraph on
-                 any about page and almost nobody writes it.</p>
-            </div>
-            <div class="prose">
-              <h3>Ask me about</h3>
-              <ul>
-                <li>The thing you can talk about for an hour unprompted.</li>
-                <li>Another one.</li>
-                <li>The weird one. Always keep the weird one.</li>
-              </ul>
-              <h3>Do not ask me about</h3>
-              <p>One thing, said with a wink.</p>
-            </div>
-          </div>
-
-          <h3 class="deck__h">SIDE QUESTS</h3>
-          <div class="prose">
-            <ul>
-              <li>Something you do that has nothing to do with work.</li>
-              <li>The hobby you are suspiciously serious about.</li>
-              <li>The one you are genuinely bad at and do anyway.</li>
-            </ul>
-          </div>
-
-          <h3 class="deck__h">LOG</h3>
-          <ul class="xp">
-            <li><b>2025</b> Something that actually happened to you <span>NOW</span></li>
-            <li><b>2024</b> Moved, learned, started, quit <span>+1</span></li>
-            <li><b>2022</b> The leap <span>+1</span></li>
-            <li><b>2020</b> Where the story starts <span>START</span></li>
-          </ul>
-
-          <div class="prose">
-            <p>Still reading? <a href="#contact" data-open-win="contact">Come say hello &gt;</a></p>
-          </div>
-        </div>
-
-<article class="level" id="a1" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> BACK</button>
-          <p class="level__no">READING</p>
-          <h2 class="level__title">BOOK TITLE</h2>
-          <p class="level__meta">AUTHOR &middot; STARTED THIS MONTH</p>
-          <div class="level__split">
-            <span class="card__art card__art--big">
-              <canvas data-poster="book" data-seed="7" aria-hidden="true"></canvas>
-            </span>
-            <div class="prose">
-              <p>Why you picked it up, and whether it is any good. Two or
-                 three sentences - this is a shelf, not a review column.</p>
-              <p><b>Next up:</b> the one waiting behind it.</p>
-            </div>
-          </div>
-        </article>
-
-        <article class="level" id="a2" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> BACK</button>
-          <p class="level__no">PLAYING</p>
-          <h2 class="level__title">GAME TITLE</h2>
-          <p class="level__meta">PLATFORM &middot; HOURS SUNK</p>
-          <div class="level__split">
-            <span class="card__art card__art--big">
-              <canvas data-poster="game" data-seed="12" aria-hidden="true"></canvas>
-            </span>
-            <div class="prose">
-              <p>What keeps you coming back to it. The mechanic, the mood,
-                 the one level you think about at work.</p>
-              <p><b>All-time favourite:</b> the one you would defend in an argument.</p>
-            </div>
-          </div>
-        </article>
-
-        <article class="level" id="a3" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> BACK</button>
-          <p class="level__no">WATCHING</p>
-          <h2 class="level__title">FILM OR SHOW</h2>
-          <p class="level__meta">DIRECTOR &middot; YEAR</p>
-          <div class="level__split">
-            <span class="card__art card__art--big">
-              <canvas data-poster="film" data-seed="23" aria-hidden="true"></canvas>
-            </span>
-            <div class="prose">
-              <p>The scene you rewound. Why it stuck.</p>
-            </div>
-          </div>
-        </article>
-
-        <article class="level" id="a4" hidden>
-          <button class="level__back" type="button" data-back><b aria-hidden="true">&lt;</b> BACK</button>
-          <p class="level__no">LISTENING</p>
-          <h2 class="level__title">ALBUM TITLE</h2>
-          <p class="level__meta">ARTIST &middot; ON REPEAT</p>
-          <div class="level__split">
-            <span class="card__art card__art--big">
-              <canvas data-poster="music" data-seed="31" aria-hidden="true"></canvas>
-            </span>
-            <div class="prose">
-              <p>What it is good for - working, walking, or neither.</p>
-            </div>
-          </div>
-        </article>
+  <section class="page" data-page="w1" hidden>
+    <header class="page__head">
+      <a class="home-btn" href="#home">HOME</a>
+    </header>
+    <div class="col col--doc">
+      <p class="level__meta">ROLE &middot; CLIENT &middot; 2025</p>
+      <h2 class="level__title">PROJECT ONE</h2>
+      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="3" aria-hidden="true"></canvas></span>
+      <div class="prose">
+        <p>One or two sentences. What it was, and what you did on it.</p>
+        <p>A second paragraph with the part you are actually proud of.</p>
+      </div>
+      <div class="gallery">
+        <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+        <span class="slot media" aria-hidden="true"><i>IMG</i></span>
       </div>
     </div>
-    <div class="window__status"><span class="field field--grow">PLAYER 1</span><span class="field">READY</span><span class="field">C:\</span></div>
-
   </section>
 
-  <section class="window window--wide" data-win="contact" hidden>
-    <div class="window__bar">
-      <span class="window__icon" aria-hidden="true"></span>
-      <p class="window__title">CONTACT.EXE</p>
-      <span class="winbtns">
-        <button class="winbtn winbtn--min" type="button" data-act="min" aria-label="Minimise"><i></i></button>
-        <button class="winbtn winbtn--max" type="button" data-act="max" aria-label="Maximise"><i></i></button>
-        <button class="winbtn winbtn--close" type="button" data-act="close" aria-label="Close"><i></i></button>
-      </span>
-    </div>
-
-    <div class="window__menu" aria-hidden="true">
-      <span><u>F</u>ILE</span><span><u>E</u>DIT</span><span><u>V</u>IEW</span><span><u>H</u>ELP</span>
-    </div>
-    <div class="screen">
-      <div class="scanlines" aria-hidden="true"></div>
-      <div class="screen__inner screen__inner--doc">
-        <div class="deck" data-deck="contact">
-          <header class="deck__head">
-            <p class="deck__eyebrow">C:\PORTFOLIO\CONTACT</p>
-            <h2 class="deck__title">SAY HELLO</h2>
-            <p class="deck__hint">Any of these reaches me. The first one reaches me fastest.</p>
-          </header>
-
-          <ul class="wires">
-            <li class="wire wire--wide">
-              <a href="mailto:you@example.com">
-                <span class="wire__k">EMAIL</span>
-                <span class="wire__v">you@example.com</span>
-                <span class="wire__go">SEND <b aria-hidden="true">&gt;</b></span>
-              </a>
-            </li>
-            <li class="wire">
-              <a href="#social">
-                <span class="wire__k">SOCIAL</span>
-                <span class="wire__v">@handle</span>
-                <span class="wire__go">OPEN <b aria-hidden="true">&gt;</b></span>
-              </a>
-            </li>
-            <li class="wire">
-              <a href="#github">
-                <span class="wire__k">GITHUB</span>
-                <span class="wire__v">github.com/handle</span>
-                <span class="wire__go">OPEN <b aria-hidden="true">&gt;</b></span>
-              </a>
-            </li>
-            <li class="wire">
-              <a href="#linkedin">
-                <span class="wire__k">LINKEDIN</span>
-                <span class="wire__v">in/handle</span>
-                <span class="wire__go">OPEN <b aria-hidden="true">&gt;</b></span>
-              </a>
-            </li>
-            <li class="wire">
-              <a href="resume.pdf" download>
-                <span class="wire__k">CV</span>
-                <span class="wire__v">resume.pdf</span>
-                <span class="wire__go">GET <b aria-hidden="true">&gt;</b></span>
-              </a>
-            </li>
-          </ul>
-
-          <div class="grid-2">
-            <div class="prose">
-              <h3>Where I am</h3>
-              <p>CITY (TZ). Happy working with anywhere - I have done the
-                 six-hour-difference thing and it is fine.</p>
-              <h3>Right now</h3>
-              <p><b>Open to full-time / freelance / collaborations</b>, whichever
-                 is true. Replace this line when it stops being true.</p>
-            </div>
-            <div class="prose">
-              <h3>A good first message</h3>
-              <ul>
-                <li>What you are building, in one line.</li>
-                <li>Where it is stuck, or where it wants to go.</li>
-                <li>Rough timeline. Honest beats optimistic.</li>
-              </ul>
-              <p>That is it. No brief required - a paragraph is plenty.</p>
-            </div>
-          </div>
-        </div>
+  <section class="page" data-page="w2" hidden>
+    <header class="page__head">
+      <a class="home-btn" href="#home">HOME</a>
+    </header>
+    <div class="col col--doc">
+      <p class="level__meta">ROLE &middot; CLIENT &middot; 2024</p>
+      <h2 class="level__title">PROJECT TWO</h2>
+      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="17" aria-hidden="true"></canvas></span>
+      <div class="prose">
+        <p>One or two sentences. What it was, and what you did on it.</p>
+      </div>
+      <div class="gallery">
+        <span class="slot media" aria-hidden="true"><i>IMG</i></span>
+        <span class="slot media" aria-hidden="true"><i>IMG</i></span>
       </div>
     </div>
+  </section>
 
-<div class="window__status"><span class="field field--grow">5 CHANNELS</span><span class="field">ONLINE</span><span class="field">C:\</span></div>
+  <section class="page" data-page="w3" hidden>
+    <header class="page__head">
+      <a class="home-btn" href="#home">HOME</a>
+    </header>
+    <div class="col col--doc">
+      <p class="level__meta">ROLE &middot; CLIENT &middot; 2023</p>
+      <h2 class="level__title">PROJECT THREE</h2>
+      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="41" aria-hidden="true"></canvas></span>
+      <div class="prose">
+        <p>One or two sentences. What it was, and what you did on it.</p>
+      </div>
+    </div>
+  </section>
 
+  <section class="page" data-page="w4" hidden>
+    <header class="page__head">
+      <a class="home-btn" href="#home">HOME</a>
+    </header>
+    <div class="col col--doc">
+      <p class="level__meta">ROLE &middot; CLIENT &middot; 2022</p>
+      <h2 class="level__title">PROJECT FOUR</h2>
+      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="88" aria-hidden="true"></canvas></span>
+      <div class="prose">
+        <p>One or two sentences. What it was, and what you did on it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" data-page="r1" hidden>
+    <header class="page__head">
+      <a class="home-btn" href="#home">HOME</a>
+    </header>
+    <div class="col col--doc">
+      <p class="level__meta">2026 &middot; 6 MIN</p>
+      <h2 class="level__title">Why every gradient in this city is a lie</h2>
+      <div class="prose">
+        <p>Opening paragraph. What you are about to argue, in one
+           sentence, before anybody has to decide whether to keep
+           reading.</p>
+        <p>Replace all of this. The container is the point: a column of
+           readable measure, one voice, no sidebar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" data-page="r2" hidden>
+    <header class="page__head">
+      <a class="home-btn" href="#home">HOME</a>
+    </header>
+    <div class="col col--doc">
+      <p class="level__meta">2025 &middot; 4 MIN</p>
+      <h2 class="level__title">Stepped motion, and when to break it</h2>
+      <div class="prose">
+        <p>Opening paragraph.</p>
+        <p>Replace all of this.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" data-page="r3" hidden>
+    <header class="page__head">
+      <a class="home-btn" href="#home">HOME</a>
+    </header>
+    <div class="col col--doc">
+      <p class="level__meta">2025 &middot; 8 MIN</p>
+      <h2 class="level__title">The case against the hamburger menu</h2>
+      <div class="prose">
+        <p>Opening paragraph.</p>
+        <p>Replace all of this.</p>
+      </div>
+    </div>
   </section>
 </main>
 
-<!-- Desktop icons. Always out, the way icons on a desktop are: they sit
-     under the windows rather than waiting for one to be minimised. The
-     sprites are in the defs block at the foot of this file. -->
-<ul class="desktop">
-  <li>
-    <button class="dicon" type="button" data-open="work">
-      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-work" /></svg>
-      <span class="dicon__label">WORK</span>
-    </button>
-  </li>
-  <li>
-    <button class="dicon" type="button" data-open="about">
-      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-about" /></svg>
-      <span class="dicon__label">ABOUT</span>
-    </button>
-  </li>
-  <li>
-    <button class="dicon" type="button" data-open="contact">
-      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-contact" /></svg>
-      <span class="dicon__label">CONTACT</span>
-    </button>
-  </li>
-  <li>
-    <button class="dicon" type="button" data-open="portfolio">
-      <svg class="dicon__art" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><use href="#ico-home" /></svg>
-      <span class="dicon__label">HOME</span>
-    </button>
-  </li>
-</ul>
+<!-- ---- the wipe ----
+     What sits between two pages. It closes over the frame, the pages
+     swap behind it, and it opens again — so a navigation is one
+     movement rather than a cut, and nothing is ever seen half-changed.
 
-<!-- The taskbar only exists once there is more than one window in play.
-     On the bare title screen it would just be covering the rooftop. -->
-<div class="crt" aria-hidden="true"><i class="crt__glass"></i><i class="crt__glare"></i></div>
+     The desktop icons and the taskbar used to live here. Both are
+     gone: with pages instead of windows there is nothing to minimise
+     to and nothing to launch, and they were the two things standing
+     between a visitor and the only four links that matter. -->
+<!-- The cover that follows the cursor over a shelf row. One element,
+     reused for all four — the art is generated by posters.js unless a
+     row carries data-cover-src, in which case that image is used. -->
+<div class="peek" aria-hidden="true" hidden><canvas></canvas><img alt="" hidden /></div>
 
-  <div class="taskbar" hidden>
-  <span class="taskbar__brand" aria-hidden="true">
-    <b class="taskbar__logo"></b>PORTFOLIO
-  </span>
-  <div class="taskbar__tasks"></div>
-  <div class="taskbar__tray">
-    <span class="taskbar__clock" id="clock">--:--</span>
-  </div>
-</div>
+<div class="wipe" aria-hidden="true"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -904,6 +524,51 @@
       <rect x=" 7" y=" 9" width=" 2" height=" 2" fill="#ff3ea5" />
       <rect x=" 2" y="11" width="12" height=" 2" fill="#c9d4f5" />
       <rect x=" 1" y="13" width="14" height=" 1" fill="#05070f" />
+    </g>
+
+    <!-- The mark on the taskbar. Three triangles on a 16x14 grid, each
+         one lit along its left rake and shadowed along its right, so it
+         reads as three solid objects rather than as a logo outline. It
+         is the same reference standing on a roof out in the city; this
+         is just where you put your hand on it. -->
+    <g id="tri-mark">
+      <rect x="7" y="0" width="2" height="1" fill="#fff4b0" />
+      <rect x="6" y="1" width="1" height="1" fill="#fff4b0" />
+      <rect x="7" y="1" width="2" height="1" fill="#f8d038" />
+      <rect x="9" y="1" width="1" height="1" fill="#b8901f" />
+      <rect x="5" y="2" width="1" height="1" fill="#fff4b0" />
+      <rect x="6" y="2" width="3" height="1" fill="#f8d038" />
+      <rect x="9" y="2" width="2" height="1" fill="#b8901f" />
+      <rect x="4" y="3" width="1" height="1" fill="#fff4b0" />
+      <rect x="5" y="3" width="5" height="1" fill="#f8d038" />
+      <rect x="10" y="3" width="2" height="1" fill="#b8901f" />
+      <rect x="3" y="4" width="1" height="1" fill="#fff4b0" />
+      <rect x="4" y="4" width="7" height="1" fill="#f8d038" />
+      <rect x="11" y="4" width="2" height="1" fill="#b8901f" />
+      <rect x="3" y="5" width="10" height="1" fill="#8a6a12" />
+
+      <rect x="3" y="7" width="2" height="1" fill="#fff4b0" />
+      <rect x="11" y="7" width="2" height="1" fill="#fff4b0" />
+      <rect x="2" y="8" width="1" height="1" fill="#fff4b0" />
+      <rect x="3" y="8" width="2" height="1" fill="#f8d038" />
+      <rect x="5" y="8" width="1" height="1" fill="#b8901f" />
+      <rect x="10" y="8" width="1" height="1" fill="#fff4b0" />
+      <rect x="11" y="8" width="2" height="1" fill="#f8d038" />
+      <rect x="13" y="8" width="1" height="1" fill="#b8901f" />
+      <rect x="1" y="9" width="1" height="1" fill="#fff4b0" />
+      <rect x="2" y="9" width="3" height="1" fill="#f8d038" />
+      <rect x="5" y="9" width="2" height="1" fill="#b8901f" />
+      <rect x="9" y="9" width="1" height="1" fill="#fff4b0" />
+      <rect x="10" y="9" width="3" height="1" fill="#f8d038" />
+      <rect x="13" y="9" width="2" height="1" fill="#b8901f" />
+      <rect x="0" y="10" width="1" height="1" fill="#fff4b0" />
+      <rect x="1" y="10" width="5" height="1" fill="#f8d038" />
+      <rect x="6" y="10" width="1" height="1" fill="#b8901f" />
+      <rect x="8" y="10" width="1" height="1" fill="#fff4b0" />
+      <rect x="9" y="10" width="5" height="1" fill="#f8d038" />
+      <rect x="14" y="10" width="1" height="1" fill="#b8901f" />
+      <rect x="0" y="11" width="7" height="1" fill="#8a6a12" />
+      <rect x="8" y="11" width="7" height="1" fill="#8a6a12" />
     </g>
 
     <!-- 12x11 heart, used as the menu cursor -->

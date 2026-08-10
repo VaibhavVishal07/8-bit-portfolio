@@ -37,15 +37,57 @@
   // at 72% — a moon with its head cut off is worse than a lower moon.
   const ORB_Y = 106
   const ORB_R = 38
+  /* Shared by the static prop in buildRoof and the per-frame occupant
+     shared with the prop below it. */
+  const PIPE_X = 636
   const VIA_Y = 360 // top of the elevated deck
   const VIA_H = 11
   const LOOP_W = W * 2
 
+  /* ==================================================================
+     SUPERSAMPLING
+
+     The scene is composed on a 960x540 grid and always will be —
+     every coordinate in this file, every landmark, every prop and the
+     whole rooftop are authored against it, and re-authoring that is a
+     different job from this one.
+
+     What changes here is how many real pixels back each of those
+     authored ones. The canvas is S times larger in each axis and every
+     drawing context carries a matching transform, so all the code
+     below goes on speaking in 960x540 coordinates and does not know
+     the difference — but anything that chooses to work at a finer
+     grain than one authored pixel now can, and the browser is no
+     longer stretching a 960-wide image across a 3200-wide display.
+
+     The thing that immediately cashes this in is the DITHER. Every
+     large wash in the scene — the aerial haze on each skyline, the
+     city glow, the weather wash, the snow blanket — is an ordered
+     dither, and an ordered dither is only as fine as the pixels it has
+     to work with. At S=3 those washes get nine times the cells to
+     place tone in, so the haze that used to read as a coarse pattern
+     laid over the city reads as tone. That is where "more detail"
+     actually comes from here: not more things, but the gradients
+     between them no longer being chunky.
+
+     S is chosen from how much upscale the display is actually giving
+     us, because there is no point rendering three times the pixels
+     into a viewport that cannot show them — and because at S=3 the two
+     looping city buffers alone are 5760x1620, which is memory a phone
+     should never be asked for. */
+  const S = (() => {
+    const up = Math.max(window.innerWidth / W, window.innerHeight / H)
+    return up >= 2.6 ? 3 : up >= 1.7 ? 2 : 1
+  })()
+
+  // authored units -> device pixels, for anything compositing whole buffers
+  const dev = (n) => n * S
+
   const cv = document.getElementById('scene')
   if (!cv) return
 
-  cv.width = W
-  cv.height = H
+  cv.width = dev(W)
+  cv.height = dev(H)
   /* Double-buffered. The scene paints into an offscreen canvas at its
      fixed 12fps — that stepped motion is the project's identity — and a
      compositor presents it to the visible canvas every rAF frame. The
@@ -55,11 +97,13 @@
      did exactly this — coarse background, smooth sprites. */
   const screenCtx = cv.getContext('2d')
   screenCtx.imageSmoothingEnabled = false
+  screenCtx.setTransform(S, 0, 0, S, 0, 0)
   const sceneCv = document.createElement('canvas')
-  sceneCv.width = W
-  sceneCv.height = H
+  sceneCv.width = dev(W)
+  sceneCv.height = dev(H)
   const ctx = sceneCv.getContext('2d')
   ctx.imageSmoothingEnabled = false
+  ctx.setTransform(S, 0, 0, S, 0, 0)
 
   /* Weather sits on its own canvas above the panel, so falling drops
      and flakes pass in front of the window. Anything that *lands*
@@ -68,19 +112,30 @@
   const wv = document.getElementById('weather')
   let wctx = null
   if (wv) {
-    wv.width = W
-    wv.height = H
+    wv.width = dev(W)
+    wv.height = dev(H)
     wctx = wv.getContext('2d')
     wctx.imageSmoothingEnabled = false
+    wctx.setTransform(S, 0, 0, S, 0, 0)
   }
 
   const animating = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  /* Every load opens the same way: night, rain, neon on wet streets.
-     The scene at its best is the scene you land on. The weather
-     buttons still work for the visit; the choice just does not follow
-     you home. A portfolio gets to insist on its opening shot. */
-  let weather = 'rain'
+  /* Every load opens the same way: a clear night over the city.
+
+     It used to open in the rain, on the reasoning that the scene at
+     its best is the scene you land on and a portfolio gets to insist
+     on its opening shot. Both halves of that are true and the
+     conclusion was still wrong: two hundred falling drops are the
+     busiest thing this page can do, and they were the first thing a
+     visitor met, over the top of the words they came to read. Rain is
+     a mood you should be able to CHOOSE, which is what the switch in
+     the corner is for.
+
+     Clear by default. The city is quieter, the type sits on it
+     without competing, and the fire is lit because nothing is falling
+     on it. */
+  let weather = 'none'
 
   /* ---- weather transitions ----
      Weather used to arrive all at once: press the button and two
@@ -112,11 +167,24 @@
      no jump cut. Snow reads from surfaces, not from the air. */
   let snowLevel = weather === 'snow' ? 1 : 0
 
+  /* How much snow is LYING, as a continuous 0..1. `snowLevel` is this
+     value quantised to the steps at which the static layers are
+     actually rebuilt; this is the one that moves every frame. Keeping
+     them apart is what lets the accumulation be smooth without
+     rebuilding the whole city sixty times a second. */
+  let snowDepth = snowLevel
+
   /* Christmas lives in the snow palette: bulb colours for the string
      lights, the tree, and a scatter of festive windows in the city. */
   const FESTIVE = ['#e8484f', '#3fbf6f', '#f8c838']
   const RAMP_UP_MS = 5500
   const RAMP_DOWN_MS = 4000
+
+  /* How long the ledges take to go white once it is snowing properly.
+     Deliberately far longer than the fall ramp: the air filling and
+     the ground covering are not the same event, and collapsing them
+     into one is what made the snow land already-settled. */
+  const SETTLE_MS = 26000
 
   /* The canvases are `object-fit: cover` with `object-position: 50% 72%`
      — anchored low, so the crop on a wide viewport comes out of the sky
@@ -139,8 +207,12 @@
      minimised. */
   function panelRect() {
     const el =
-      document.querySelector('.window[data-active]') ||
-      document.querySelector('.window:not([hidden])')
+      /* The column of content, not the page — a page fills the frame
+         now, and rain landing on the whole viewport is rain landing on
+         nothing. What the weather settles on, and what shelters the
+         brazier, is the box the words are actually in. */
+      document.querySelector('.page[data-active] .col') ||
+      document.querySelector('.page.is-on .col')
     if (!el) return null
     const r = el.getBoundingClientRect()
     if (!r.width) return null
@@ -191,12 +263,15 @@
   ]
   const BAYER_N = 64
 
+  /* Every layer buffer is supersampled and pre-transformed, so callers
+     keep passing authored 960x540-space sizes and coordinates. */
   function makeBuffer(w, h) {
     const c = document.createElement('canvas')
-    c.width = w
-    c.height = h
+    c.width = dev(w)
+    c.height = dev(h)
     const x = c.getContext('2d')
     x.imageSmoothingEnabled = false
+    x.setTransform(S, 0, 0, S, 0, 0)
     return { c, x }
   }
 
@@ -206,12 +281,164 @@
   }
 
   /* One dithered pixel. Used where the intensity varies across x —
-     glows, halos, haloes, bolts — and so cannot be laid down as a row. */
+     glows, halos, bolts — and so cannot be laid down as a row.
+
+     At S > 1 the authored pixel is subdivided and each of its S x S
+     device cells is thresholded on its own, against the Bayer matrix
+     indexed in DEVICE space. That is the whole supersampling payoff
+     for glows: a halo bleeding off a neon tube used to have sixty-four
+     levels to fall through and one pixel of spatial resolution to do
+     it in, so it stepped. It now has nine times the cells, and the
+     falloff is smooth enough to read as light rather than as a
+     pattern. */
+  const SUB = 1 / S
+
+  /* ==================================================================
+     LIGHT
+
+     Everything else in this file is dithered, and dithering is the
+     right answer for a SURFACE — a hazy sky, a wash over a building,
+     snow lying on a ledge. It is the wrong answer for a SOURCE.
+
+     A neon tube's bleed was drawn with the same ordered dither as the
+     haze, at a falloff that spent most of its range down in the sparse
+     levels, and a sparse ordered dither is a regular lattice. So every
+     sign in the city was surrounded by a field of hard single pixels
+     in the sign's own colour: not light coming off the glass, static
+     sitting next to it. It read as noise because structurally it WAS
+     noise — a fixed pattern with no tonal continuity in it.
+
+     Light gets real alpha instead. A radial falloff, composited
+     `lighter` so two signs near each other add up the way two lights
+     actually do, and no threshold anywhere: at the tube it is bright,
+     and it goes smoothly to nothing. This is the one place the project
+     spends a gradient, and it spends it on the one thing in the frame
+     that is not a surface.
+     ================================================================== */
+  const rgbaCache = new Map()
+
+  function rgba(hex, a) {
+    const key = hex + '|' + a
+    let out = rgbaCache.get(key)
+    if (out) return out
+    const n = parseInt(hex.slice(1), 16)
+    out = `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`
+    rgbaCache.set(key, out)
+    return out
+  }
+
+  /* The bleed off a lit thing. `reach` is how far the light carries
+     beyond the shape's own edge; `amt` scales the whole thing so a
+     daylight theme can turn it off by passing zero. */
+  function glow(g, x, y, w, h, reach, col, amt) {
+    if (!(amt > 0) || reach <= 0) return
+    const cx = x + w / 2
+    const cy = y + h / 2
+    const rx = w / 2 + reach
+    const ry = h / 2 + reach
+    const R = Math.max(rx, ry)
+
+    g.save()
+    g.globalCompositeOperation = 'lighter'
+    g.translate(cx, cy)
+    // one gradient, squashed to the shape's proportions, so a long
+    // horizontal tube throws a long horizontal glow
+    g.scale(rx / R, ry / R)
+    const grd = g.createRadialGradient(0, 0, 0, 0, 0, R)
+    /* The core is deliberately short and the tail deliberately long.
+       A linear falloff reads as a disc with an edge; this reads as
+       light, because light does most of its dying close in. */
+    grd.addColorStop(0, rgba(col, Math.min(1, 0.62 * amt)))
+    grd.addColorStop(0.18, rgba(col, Math.min(1, 0.34 * amt)))
+    grd.addColorStop(0.45, rgba(col, Math.min(1, 0.12 * amt)))
+    grd.addColorStop(1, rgba(col, 0))
+    g.fillStyle = grd
+    g.fillRect(-R, -R, R * 2, R * 2)
+    g.restore()
+  }
+
+  /* A cone of light thrown from a point — a searchlight under a drone,
+     a tractor beam under a saucer.
+
+     These were dithered, and a dithered cone is the worst case for an
+     ordered kernel: the intensity falls off across BOTH axes at once,
+     so most of the cone sits down in the sparse levels where Bayer
+     stops being a gradient and becomes a stencil. What you got was a
+     triangle of loose speckle that read as debris falling out of the
+     thing rather than as light coming out of it.
+
+     A clipped radial falloff instead, composited `lighter` like every
+     other light in the scene. Same reasoning as the neon: a beam is a
+     source, not a surface. */
+  function beam(g, x, y, spread, length, col, amt) {
+    if (!(amt > 0)) return
+    g.save()
+    g.globalCompositeOperation = 'lighter'
+    g.beginPath()
+    g.moveTo(x - 2, y)
+    g.lineTo(x + 2, y)
+    g.lineTo(x + spread, y + length)
+    g.lineTo(x - spread, y + length)
+    g.closePath()
+    g.clip()
+    const grd = g.createRadialGradient(x, y, 0, x, y, length)
+    grd.addColorStop(0, rgba(col, Math.min(1, 0.55 * amt)))
+    grd.addColorStop(0.35, rgba(col, Math.min(1, 0.2 * amt)))
+    grd.addColorStop(1, rgba(col, 0))
+    g.fillStyle = grd
+    g.fillRect(x - spread, y, spread * 2, length)
+    g.restore()
+  }
+
+  /* A soft pool of light in the air — the high cold patches near the
+     zenith, the sign colour bouncing off the underside of the smog,
+     the strata lying across the ramp.
+
+     All of these were per-pixel dithered, which was wrong twice over.
+     Wrong to look at, because a big soft blob rendered through an
+     ordered kernel at low intensity is a lattice, not a haze. And
+     ruinously slow: nine pools at five hundred by a hundred and ninety
+     is most of a million dot() calls, each of which does nine
+     sub-pixel tests at S=3, and that single loop was eighty
+     milliseconds of the rebuild on its own.
+
+     One gradient fill each instead. Faster by three orders of
+     magnitude, and it finally looks like air. */
+  function pool(g, cx, cy, rw, rh, col, amt) {
+    if (!(amt > 0)) return
+    const R = Math.max(rw, rh)
+    g.save()
+    g.globalCompositeOperation = 'lighter'
+    g.translate(cx, cy)
+    g.scale(rw / R, rh / R)
+    const grd = g.createRadialGradient(0, 0, 0, 0, 0, R)
+    grd.addColorStop(0, rgba(col, amt))
+    grd.addColorStop(0.5, rgba(col, amt * 0.4))
+    grd.addColorStop(1, rgba(col, 0))
+    g.fillStyle = grd
+    g.fillRect(-R, -R, R * 2, R * 2)
+    g.restore()
+  }
+
   function dot(g, x, y, t, col) {
     if (t <= 0) return
-    if (t > (BAYER[y & 7][x & 7] + 0.5) / BAYER_N) {
-      g.fillStyle = col
-      g.fillRect(x, y, 1, 1)
+    if (S === 1) {
+      if (t > (BAYER[y & 7][x & 7] + 0.5) / BAYER_N) {
+        g.fillStyle = col
+        g.fillRect(x, y, 1, 1)
+      }
+      return
+    }
+    const dx = x * S
+    const dy = y * S
+    g.fillStyle = col
+    for (let j = 0; j < S; j++) {
+      const row = BAYER[(dy + j) & 7]
+      for (let i = 0; i < S; i++) {
+        if (t > (row[(dx + i) & 7] + 0.5) / BAYER_N) {
+          g.fillRect(x + i * SUB, y + j * SUB, SUB, SUB)
+        }
+      }
     }
   }
 
@@ -253,31 +480,34 @@
     }
   }
 
-  /* What the city sells. Short, because a billboard is forty pixels
-     across - and kind, because a skyline of good small businesses is a
-     city you want to look at longer. Nothing here is a real brand. */
+  /* What the city sells.
+
+     It was ramen, sushi, tacos and sake — a generic east-Asian
+     cyberpunk street that every one of these scenes has, and one
+     that says nothing about whose city this is. It is an Indian one
+     now: the businesses that are actually open at midnight on a road
+     like this, and the ones with the good signage.
+
+     Short, because a billboard is forty pixels across — and kind,
+     because a skyline of good small businesses is a city you want to
+     look at for longer. Nothing here is a real brand. */
   const SIGNS = [
-    'RAMEN', 'SUSHI', 'NOODLES', 'TACOS', 'HOT PIZZA', 'DUMPLING',
-    'KARAOKE', 'LAUNDRY', 'GOOD SOUP', 'CATS ONLY', 'ROBOT BAR',
-    'NAPS 24H', 'FREE HUGS', 'FLOWERS', 'BOOKS', 'OPEN LATE',
-    'WARM BREAD', 'TEA HOUSE', 'MOON RENT', 'ARCADE',
+    'CHAI', 'DOSA', 'IRANI CAFE', 'PAAN', 'BIRYANI', 'KULFI',
+    'TIFFIN', 'SAMOSA', 'JALEBI', 'CHAAT', 'FILTER KAPI', 'THALI',
+    'LASSI', 'VADA PAV', 'SWEETS', 'OPEN LATE', 'TAILOR', 'BOOKS',
+    'XEROX', 'STD ISD PCO',
   ]
   const TALL_SIGNS = [
-    'RAMEN', 'BAR', 'SAKE', 'NEON', 'HOTEL', 'NOODLE',
-    'CATS', 'PIZZA', 'SOUP', 'OPEN', 'BATHS', 'DONUT',
+    'CHAI', 'BAR', 'HOTEL', 'DHABA', 'MESS', 'CAFE',
+    'PAAN', 'SWEET', 'IDLI', 'OPEN', 'LODGE', 'TIFFIN',
   ]
 
-  /* The airship flies a different banner every time it comes round. */
-  /* What the airship carries. Not gags - small kindnesses. A banner
-     over a rainy city should feel like a hand on the shoulder, and one
-     of them is a motto: greatness from small beginnings. The font has
-     no comma, which keeps every line honest and short. */
-  const BANNERS = [
-    'SIC PARVIS MAGNA', 'THE CAT SAYS HI', 'YOU LOOKED UP. NICE.',
-    'CARRYING GOOD NEWS', 'NO HURRY UP HERE', 'HOME BY DINNER',
-  ]
+  /* The airship and its banner are gone, and so is the plane that
+     towed one. Both put WORDS in the backdrop, and a page whose job
+     is to be read cannot afford a second thing in the frame asking to
+     be read — least of all one that moves. */
 
-  const MOVIES = ['NOW SHOWING', 'SOLD OUT', 'ONE NIGHT ONLY', 'BRING SNACKS']
+  const MOVIES = ['HOUSEFULL', 'MATINEE', 'FIRST DAY FIRST SHOW', 'INTERVAL']
 
   /* A dithered *wash* is the same kernel baked into a repeating fill
      pattern, so a full-width row costs one fillRect instead of 960.
@@ -293,14 +523,29 @@
     const key = col + '|' + lvl
     let p = washCache.get(key)
     if (p) return p
-    const b = makeBuffer(8, 8)
-    b.x.fillStyle = col
+    /* The tile is built RAW — eight by eight actual pixels, no
+       supersampling transform on it — and then handed a pattern
+       transform of 1/S so that when it is painted through a context
+       scaled by S it lands one tile cell per DEVICE pixel.
+
+       Without that the tile would be scaled up with everything else
+       and each Bayer cell would come out as an S x S block, which is
+       the opposite of the point: the washes would get coarser as the
+       resolution went up. This is the line that turns the extra pixels
+       into finer haze instead of bigger haze. */
+    const c = document.createElement('canvas')
+    c.width = 8
+    c.height = 8
+    const x = c.getContext('2d')
+    x.imageSmoothingEnabled = false
+    x.fillStyle = col
     for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 8; x++) {
-        if (BAYER[y][x] < lvl) b.x.fillRect(x, y, 1, 1)
+      for (let i = 0; i < 8; i++) {
+        if (BAYER[y][i] < lvl) x.fillRect(i, y, 1, 1)
       }
     }
-    p = b.x.createPattern(b.c, 'repeat')
+    p = x.createPattern(c, 'repeat')
+    if (S !== 1 && p.setTransform) p.setTransform(new DOMMatrix([SUB, 0, 0, SUB, 0, 0]))
     washCache.set(key, p)
     return p
   }
@@ -342,6 +587,42 @@
     return out
   }
 
+  /* Blend two palette entries, quantised to a fixed number of steps.
+
+     This is how a ramp is supposed to be built on hardware with a
+     palette: you spend palette entries on the gradient and you do not
+     dither it at all. Dithering is what you do when you have run OUT
+     of entries.
+
+     The sky ramp was dithered between neighbouring stops, and that is
+     what put a screen-door over the entire top half of the frame. An
+     ordered dither at a low blend fraction is not subtle — it is a
+     perfectly regular lattice, the same handful of pixels lighting up
+     in every 8x8 cell across four hundred rows. Sparse and regular is
+     the most visible thing a dither can be, which is why the sky read
+     as textured everywhere rather than as air.
+
+     Cached on the same principle as `shift`: a few hundred distinct
+     (a, b, step) triples for the whole ramp, parsed once. */
+  const mixCache = new Map()
+
+  function mix(a, b, t, steps) {
+    const q = Math.round(t * steps) / steps
+    if (q <= 0) return a
+    if (q >= 1) return b
+    const key = a + '|' + b + '|' + q
+    let out = mixCache.get(key)
+    if (out) return out
+    const na = parseInt(a.slice(1), 16)
+    const nb = parseInt(b.slice(1), 16)
+    const r = Math.round(((na >> 16) & 255) + (((nb >> 16) & 255) - ((na >> 16) & 255)) * q)
+    const gg = Math.round(((na >> 8) & 255) + (((nb >> 8) & 255) - ((na >> 8) & 255)) * q)
+    const bl = Math.round((na & 255) + ((nb & 255) - (na & 255)) * q)
+    out = '#' + (((1 << 24) | (r << 16) | (gg << 8) | bl).toString(16).slice(1))
+    mixCache.set(key, out)
+    return out
+  }
+
   const luma = (hex) => {
     const n = parseInt(hex.slice(1), 16)
     return 0.3 * ((n >> 16) & 255) + 0.6 * ((n >> 8) & 255) + 0.1 * (n & 255)
@@ -355,13 +636,27 @@
      Small on purpose. Two towers that touch have to separate; the layer
      as a whole still has to read as one distance, because that is the
      job aerial perspective is doing over the top of it. */
+  /* Nine materials rather than six, and each travels further than it
+     used to. Six shifts of a dozen points across a whole skyline is
+     not enough to stop three hundred towers reading as one wall with a
+     pattern on it — you need the difference between two neighbours to
+     be obvious at a glance, because at this scale a glance is all any
+     one building gets.
+
+     The axis is warm/cool with a lightness component, which is what
+     separates brick from glass from concrete in a real skyline. How
+     far each shift actually travels is still scaled by `matAmt` off
+     the layer's own brightness, so the near layer does not blow out. */
   const MATERIAL = [
     null,             // the layer exactly as authored
-    [16, 4, -6],      // brick
-    [-8, 0, 18],      // glass
-    [12, 10, 4],      // pale concrete
-    [-14, -8, 0],     // in shadow
-    [20, 8, -10],     // sodium-stained
+    [30, 8, -12],     // brick
+    [-16, 0, 34],     // glass
+    [24, 20, 10],     // pale concrete
+    [-24, -14, -2],   // in shadow
+    [36, 16, -18],    // sodium-stained
+    [-10, 14, 6],     // green glass
+    [18, -6, 22],     // stained render
+    [8, 4, -22],      // dark brick
   ]
 
   /* ==================================================================
@@ -374,29 +669,31 @@
      ================================================================== */
   const THEMES = {
     night: {
-      /* Deep violet-black base so the neon has somewhere dark to burn
-         against. The haze near the skyline is the only place the purple
-         gets bright, and even that stays under the sign colours.
+      /* ---- NEO-GOTHAM ----
 
-         The ramp used to run straight up the violet axis — nine steps
-         of the same hue getting lighter — which is why the top half of
-         the frame had nothing happening in it. It now rotates as it
-         descends: blue-black at the zenith, where there is no city
-         light left to reach, through indigo, into a magenta-violet at
-         the skyline where there is nothing but. That rotation is what
-         light pollution actually looks like, and it costs the same
-         nine entries. */
+         The ramp used to walk up the violet axis into a magenta
+         skyline, which is a pretty cyberpunk night and the wrong one
+         for this city. A Batman Beyond sky is not lilac: it is
+         near-black overhead and it BURNS at the horizon — a deep
+         oxblood red sitting on the rooftops, because the whole
+         drawing is one silhouette against one hot band of light.
+
+         Nine stops, same as before. Blue-black at the zenith, through
+         a bruised indigo, into crimson at the skyline. The colour is
+         all at the bottom of the frame where the city is, which is
+         also why the picture reads as calmer: the top two thirds are
+         nearly empty. */
       sky: [
-        '#03040f', '#06061c', '#0c0729', '#150936', '#200b48',
-        '#2d0f5a', '#3c126c', '#4d1782', '#651d94',
+        '#03040e', '#07061a', '#0d0722', '#16082c', '#210937',
+        '#340c3a', '#4e0f36', '#6d132e', '#8e1a26',
       ],
-      haze: '#8a21ab',
-      smog: '#6a1a86',
+      haze: '#c8412c',
+      smog: '#7a1a2a',
       fog: '#3a1880',
-      fogAmt: [0.42, 0.20, 0.02],
+      fogAmt: [0.26, 0.11, 0.0],
       rainSky: '#0d0520',
       snowSky: '#241c48',
-      snowWash: [0.10, 0.26], blanket: [0.85, 0.15], fogSnowBoost: 0.18,
+      snowWash: [0.06, 0.16], blanket: [0.85, 0.15], fogSnowBoost: 0.09,
       lightning: '#c9b6ff', boltCore: '#ffffff',
 
       orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#6b1fa8',
@@ -431,36 +728,58 @@
          saturated ones stay rare enough that the neon signs are still
          the loudest thing at each depth. Nearer layers get more of
          them, because that is where you could actually see in. */
+      /* ---- the depth ramp ----
+
+         Furthest is lightest and nearest is darkest, which is right for
+         a night city: the far towers sit in the glow and the near ones
+         are unlit bulk in front of it.
+
+         The nearest layer had taken that to #07020f with a #020007
+         shadow — three values inside six points of black. Nothing drawn
+         on it could survive: the lit edge, the shadowed edge, the
+         mullions, the ledges, the crown steps and the mechanical floor
+         were all rendering in colours nothing can tell apart, so a
+         tower that has eight separate pieces of structure on it arrived
+         as one flat black rectangle.
+
+         Every layer now carries a real interval between fill, lit and
+         dark — roughly a doubling up to `lit` and a halving down to
+         `dark` — so the same drawing code that was always there has
+         values to draw in. The near layer is still the darkest thing in
+         the frame and still reads as the nearest; it is just no longer
+         a silhouette of itself. */
       cityFar: {
-        fill: '#3a2270', lit: '#4a2e88', dark: '#2a1655', window: '#6b50b0', warm: '#8a63c8',
-        glass: ['#6b50b0', '#6b50b0', '#6b50b0', '#7a5cc0', '#5f46a0', '#8a6bb8', '#9a7ac0', '#6b50b0'],
+        fill: '#33203c', lit: '#4a2c4c', dark: '#22152a', window: '#7a5470', warm: '#a86e66',
+        glass: ['#8a5c86', '#8a5c86', '#8a5c86', '#a06a80', '#7a5070', '#b07a72', '#96667c', '#8a5c86'],
       },
       city: [
         {
-          fill: '#2a1461', lit: '#3d1f85', dark: '#1a0b3e', window: '#9b74e8', warm: '#ff5cc4',
-          glass: ['#9b74e8', '#9b74e8', '#9b74e8', '#b79bff', '#ffc27a', '#7fe8ff', '#8affc8', '#d98cff'],
+          fill: '#2a1533', lit: '#472344', dark: '#180b1e', window: '#c86a7a', warm: '#ff8a5c',
+          glass: ['#c86a7a', '#c86a7a', '#e0806a', '#ffb45c', '#7fd8ff', '#ff8a5c', '#a05a70', '#ffd08a'],
         },
         {
-          fill: '#160a36', lit: '#241058', dark: '#0a0420', window: '#a86bff', warm: '#ff5cc4',
-          glass: ['#a86bff', '#a86bff', '#c7a5ff', '#ffb85c', '#7dfcff', '#a6ffd8', '#ff8ad4', '#e0d0ff'],
+          fill: '#1b0f24', lit: '#3a1c34', dark: '#0d0612', window: '#e0705c', warm: '#ffb45c',
+          glass: ['#e0705c', '#e0705c', '#ff9a5c', '#ffc46b', '#6bd8ff', '#ff5c6b', '#c25a68', '#fff0c0'],
         },
         {
-          fill: '#07020f', lit: '#12052a', dark: '#020007', window: '#c98cff', warm: '#ff7ad4',
-          glass: ['#c98cff', '#c98cff', '#e0c0ff', '#ffc06a', '#8affff', '#b8ffe0', '#ff9ad8', '#fff0d0'],
+          fill: '#0e0716', lit: '#2a1228', dark: '#040209', window: '#ff7a5c', warm: '#ffc46b',
+          glass: ['#ff7a5c', '#ff7a5c', '#ffb06a', '#ffd88a', '#8affff', '#ff4a5c', '#ffe0a8', '#d8607a'],
         },
       ],
       // hot pink, cyan, neon purple, electric yellow, neon green,
       // sodium orange, and a red that only ever means BAR
+      // hot pink, cyan, neon purple, electric yellow, neon green,
+      // sodium orange, and a red that only ever means BAR
       neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d', '#ff7a1a', '#ff2d55'],
-      halo: 0.38,
+      halo: 0.5,
 
-      roof: '#090318', roofLit: '#2a0f5c', roofSpeck: '#150733', roofDark: '#03010c',
-      rail: '#150a32', railLit: '#7a4fd8', railDark: '#040108',
+      roof: '#0a0510', roofLit: '#2c1526', roofSpeck: '#160a18', roofDark: '#030106',
+      rail: '#170c1c', railLit: '#7a3f4c', railGlint: '#ffd0b0', railDark: '#050106',
       /* `edge` is the foreground's silhouette line and is used for
          nothing else, so it can be pushed as dark as it needs to go
          without dragging any other surface down with it. `sep` is the
          haze the city is lifted with just behind that line. */
-      edge: '#020106', sep: '#6a2fb0', sepDark: '#150929',
+      edge: '#050108', sep: '#8a2f3a', sepDark: '#1c0a12',
       bounce: ['#ff2bb0', '#00f0ff', '#b026ff'],
       wet: ['#ff2bb0', '#00f0ff', '#b026ff'],
       wetDeck: '#0d0526', wetGloss: '#5a3ba8',
@@ -474,7 +793,12 @@
          values are pitched to sit in that band. Anything as dark as the
          near layer reads as a cut-out pasted in front of the city. */
       ship: '#2a1a56', shipLit: '#48307e', shipDark: '#160a34', shipTrim: '#00f0ff',
-      cat: '#060214', catRim: '#b026ff', catEye: '#7dfcff', catCollar: '#ff2bb0',
+      /* `catShade` is the ONE mid value the cat is allowed inside its
+         silhouette — chest, haunch crease and tabby bars. It has to sit
+         close enough to `cat` that the cut-out against the lit city
+         never breaks, and far enough that the marks read at all. */
+      cat: '#060214', catShade: '#100828', catRim: '#b026ff',
+      catEye: '#7dfcff', catNose: '#ff6fae', catCollar: '#ff2bb0',
       sign: '#00f0ff', signBox: '#120630',
       lamp: '#ffbe5c', lampDim: '#7a4a1c',
       steam: '#6b4fa8',
@@ -499,20 +823,24 @@
       haze: '#ffbc7a',
       smog: '#e8a878',
       fog: '#d9b6b4',
-      fogAmt: [0.48, 0.28, 0.09],
+      fogAmt: [0.30, 0.15, 0.03],
       rainSky: '#6f7789',
       snowSky: '#dde0ec',
       /* Pale-on-pale: keep the sky wash sparse and the blanket near
          solid, so neither sits at the checkerboard midpoint. */
-      snowWash: [0.08, 0.30], blanket: [0.78, 0.22], fogSnowBoost: 0.12,
+      snowWash: [0.05, 0.18], blanket: [0.78, 0.22], fogSnowBoost: 0.07,
       lightning: '#fff4e0', boltCore: '#ffffff',
 
       orb: '#fff8d2', orbShade: '#ffe6a0', orbGlow: '#ffd08a',
       craters: false, orbShine: true,
       cloud: '#c9b4c4', cloudLit: '#f6e6e0', cloudDark: '#9c8a9e',
-      // daylight pools are close in value to the ramp they sit on — the
-      // point here is a sky that is not one flat sheet, not colour
-      high: ['#3f7fae', '#a894b4', '#d9ae8e'],
+      /* Daylight pools are close in value to the ramp they sit on — the
+         point here is a sky that is not one flat sheet, not colour.
+         They were not actually close: a pale mauve and a pale amber
+         over a mid blue is a big jump, and a sparse ordered dither of
+         a big jump is a lattice of visible dots rather than a change
+         in the air. Pulled back toward the ramp. */
+      high: ['#2f6ea0', '#5b7fa8', '#8f8fa4'],
       star: '#ffffff', starDim: '#cfe4f6', starCool: '#dceaff', starWarm: '#ffe0b8', stars: false,
 
       /* Buildings stay cool and desaturated so the signage on them is
@@ -550,7 +878,7 @@
          the city behind it. It is the nearest plane in the scene; it
          should be the heaviest thing in it. */
       roof: '#5a5164', roofLit: '#7b7186', roofSpeck: '#685f74', roofDark: '#352f3e',
-      rail: '#443c4e', railLit: '#988ca6', railDark: '#1c1724',
+      rail: '#443c4e', railLit: '#988ca6', railGlint: '#ffffff', railDark: '#1c1724',
       edge: '#100c16', sep: '#efe6ec', sepDark: '#83879e',
       bounce: ['#ff8fc0', '#7fd8e8', '#ffd8a0'],
       wet: ['#ff6faa', '#4ec4dc', '#ffc27a'],
@@ -562,7 +890,8 @@
       trainWin: '#f0e4f4', trainHead: '#fff8d8', trainStripe: '#8b97ad',
 
       ship: '#8f9ab8', shipLit: '#b9c1d6', shipDark: '#6a7593', shipTrim: '#0d7f96',
-      cat: '#2a2436', catRim: '#ffbc7a', catEye: '#19d7e8', catCollar: '#ff3ea0',
+      cat: '#2a2436', catShade: '#463c58', catRim: '#ffbc7a',
+      catEye: '#19d7e8', catNose: '#e88aa8', catCollar: '#ff3ea0',
       sign: '#66788f', signBox: '#3a3048',
       lamp: '#ffd89a', lampDim: '#a08258',
       steam: '#e8dce8',
@@ -588,7 +917,14 @@
      no longer the clear-sky one. */
   const fogColour = () =>
     weather === 'snow' ? T.snowSky : weather === 'rain' ? T.rainSky : T.fog
-  const fogBoost = () => (weather === 'snow' ? T.fogSnowBoost * snowLevel : weather === 'rain' ? 0.13 : 0)
+  const fogBoost = () => (weather === 'snow' ? T.fogSnowBoost * snowLevel : weather === 'rain' ? 0.07 : 0)
+
+  /* The hard ceiling on any aerial wash, weather included. An ordered
+     dither is a texture below this and a checkerboard at 0.5 — and a
+     checkerboard laid over one-pixel mullions and two-pixel windows is
+     not weather, it is the building being deleted every other pixel.
+     Everything that hazes the city clamps to this. */
+  const FOG_CAP = 0.34
 
   /* ==================================================================
      STATIC LAYERS
@@ -606,6 +942,93 @@
   let panX = 0
   let panTo = 0
 
+  /* ==================================================================
+     PARALLAX
+
+     This used to be counted in frames: `-Math.floor(frame / 26)` and
+     friends, ticked by the 12fps counter. Which meant the far skyline
+     advanced ONE PIXEL EVERY TWENTY-SIX FRAMES — one pixel every 2.2
+     seconds, upscaled to nearly two on screen. That is not slow
+     motion, it is a still image that lurches, and it is what read as
+     jitter: the eye gets nothing at all for two seconds and then a
+     jump, which is the exact signature of a dropped frame.
+
+     Two changes fix it, and they have to happen together.
+
+     ONE — speed. Integer-pixel art cannot move smoothly below about
+     ten steps a second, because there is no such thing as half a pixel
+     and a step you can count is a step you can see. The layers now
+     drift in pixels per second, fast enough that the nearest ones step
+     ten to twenty times a second and read as continuous drift. The
+     city crosses the frame in a minute or two rather than a quarter of
+     an hour.
+
+     TWO — the clock. Frames are the wrong unit for this. Speeds are
+     authored here in pixels per second and read off elapsed time, so
+     the drift is identical on any machine, and — crucially — a layer
+     can now step BETWEEN 12fps ticks. The scene still renders its
+     content at twelve; it simply also renders when a parallax layer
+     has something new to say. The upper bound on that is the fastest
+     drift, so this costs about twenty renders a second at worst, not
+     sixty.
+
+     Everything else in the scene is still counted in frames and still
+     steps at twelve. The stepped identity is in the cat, the fire, the
+     window flicker and the train — not in whether the background is
+     allowed to move.
+     ================================================================== */
+  /* Ridge, city 0..2, viaduct — in scene pixels per second.
+
+     The viaduct is ZERO, and that is a correction rather than a
+     tuning. Parallax is what a scene does when the CAMERA moves, and
+     this camera does not: it is a fixed shot from one rooftop. The
+     distant skylines are allowed to drift because at that distance the
+     drift reads as the city being alive — cloud shadow, haze moving,
+     the sheer scale of it. The elevated line is thirty feet away and
+     bolted to the ground. Sliding it sideways said the viewer was
+     travelling, which contradicted everything else in the frame, and
+     it was the nearest moving thing so it contradicted it loudest.
+
+     The line holds still now. The TRAIN still runs along it, which is
+     the only thing on that structure that should ever move. */
+  /* Divisors, not speeds. A layer advances one pixel every N frames
+     of the 12fps tick, so every step is exactly the same length —
+     which is the whole cure for the jitter. Driving this off elapsed
+     milliseconds meant steps landed at uneven intervals and the eye
+     reads uneven steps as stutter even when the average speed is
+     right. Ridge 3px/s, near layer 12px/s. */
+  const DIV = [4, 3, 2, 1, 0]
+
+  /* ---- reading mode ----
+
+     0 is the city awake, 1 is the city settled down to read against.
+
+     The city goes DARK and STILL, and one thing is left burning.
+
+     This went through two wrong answers first. Dimming everything
+     kept the neon legible, and a dimmed sign is still a sign asking
+     to be read — quieter, but competing. Slowing everything down kept
+     eleven separate small movements going at a third speed, which is
+     eleven things to ignore instead of eleven things to look at.
+
+     Off is the answer. Every layer from the sky to the deck goes
+     under a heavy wash of the darkest colour in the palette, which
+     takes the signage, the lit windows, the string lights, the glow
+     and the parallax with it. Nothing crosses the sky. Nothing
+     flickers.
+
+     The brazier is drawn after that wash, at full strength, so the
+     fire is the only light in the frame — and a single fire in a dark
+     city is about as calm as this scene knows how to be. */
+  const FOCUS_MS = 520
+  /* How far the city goes down. Deliberately most of the way: the
+     point is that the lights are OFF, not low. */
+  const LIGHTS_OUT = 0.88
+  let focus = 0
+  let focusTo = 0
+
+  const drift = (i) => (DIV[i] ? -Math.floor(frame / DIV[i]) : 0)
+
   let roofLights = []
   let puddles = []
   /* Lighthouse lanterns. Their beams sweep, so they cannot be baked
@@ -618,22 +1041,45 @@
      distance to cover, so the banding tightens instead of showing. */
   const SKY_STOPS = [0, 50, 100, 152, 204, 256, 306, 358, SKYLINE]
 
+  /* Steps blended between each neighbouring pair of authored stops.
+     Eight puts a new colour every six or seven rows, and the delta
+     between two adjacent stops is small enough that each of those
+     steps moves two or three points per channel — under what the eye
+     picks up as a band, and far under what a dither costs in texture. */
+  const SKY_LEVELS = 8
+
   /* ---- Sky: seven bands dithered into each other, then strata ---- */
   function buildSky() {
     sky = makeBuffer(W, H)
     const g = sky.x
     const rnd = mulberry32(6161)
 
-    /* The ramp is laid down two fillRects to a row: the band colour
-       flat, then the next band washed over it at the blend amount. */
+    /* The ramp is one flat fill per row, on an interpolated palette.
+
+       It used to be two: the band colour flat, then the NEXT band
+       dithered over it at the blend amount. Nine authored stops across
+       four hundred rows meant every row in the frame carried a partial
+       dither of the stop below it, and a partial ordered dither is a
+       regular lattice — so the entire sky wore a screen-door texture
+       that no amount of tuning further down could undo, because it was
+       under everything else.
+
+       The stops are still the only authored colours; they are control
+       points now rather than the whole palette, with SKY_LEVELS steps
+       blended between each neighbouring pair. That is how a machine
+       with a palette actually drew a sky: spend entries on the ramp,
+       and save the dithering for the things you cannot spend entries
+       on. Which is exactly what everything below this still does — the
+       strata, the pools, the glow and the weather wash are all still
+       dithered, and they read as texture now because they are the only
+       texture there is. */
     for (let y = 0; y < SKYLINE + 8; y++) {
       let i = 0
       while (i < SKY_STOPS.length - 2 && y > SKY_STOPS[i + 1]) i++
       const span = Math.max(1, SKY_STOPS[i + 1] - SKY_STOPS[i])
       const t = Math.min(1, Math.max(0, (y - SKY_STOPS[i]) / span))
-      g.fillStyle = T.sky[i]
+      g.fillStyle = mix(T.sky[i], T.sky[Math.min(i + 1, T.sky.length - 1)], t, SKY_LEVELS)
       g.fillRect(0, y, W, 1)
-      washRow(g, y, W, T.sky[Math.min(i + 1, T.sky.length - 1)], t)
     }
 
     /* Smog strata. Thin horizontal shelves of haze lying across the
@@ -644,14 +1090,8 @@
       const bh = 3 + Math.floor(rnd() * 10)
       const bx = Math.floor(rnd() * W)
       const bw = 220 + Math.floor(rnd() * 520)
-      for (let y = by; y < by + bh; y++) {
-        const vy = 1 - Math.abs(y - (by + bh / 2)) / (bh / 2 + 0.5)
-        for (let k = 0; k < bw; k++) {
-          const x = (bx + k) % W
-          const vx = 1 - Math.abs(k - bw / 2) / (bw / 2)
-          dot(g, x, y, vx * vy * 0.32, T.smog)
-        }
-      }
+      // a long flat lens, tapering to nothing at both ends
+      pool(g, (bx + bw / 2) % W, by + bh / 2, bw / 2, bh, T.smog, 0.13)
     }
 
     /* ---- high pools ----
@@ -678,13 +1118,7 @@
         const cy = 8 + Math.floor(rnd() * 150)
         const ch = 70 + Math.floor(rnd() * 120)
         const col = T.high[Math.floor(rnd() * T.high.length)]
-        for (let y = cy; y < cy + ch && y < SKYLINE; y++) {
-          const ty = Math.sin(((y - cy) / ch) * Math.PI)
-          for (let x = cx; x < cx + cw && x < W; x++) {
-            const tx = Math.sin(((x - cx) / cw) * Math.PI)
-            dot(g, x, y, ty * tx * ty * tx * 0.24, col)
-          }
-        }
+        pool(g, cx + cw / 2, cy + ch / 2, cw / 2, ch / 2, col, 0.11)
       }
     }
 
@@ -716,10 +1150,19 @@
       }
     }
 
-    // city glow pooling above the skyline — flat in x, so it washes
+    /* City glow pooling above the skyline — flat in x, so it washes.
+
+       This is the band the whole skyline is drawn against, and four
+       separate dithered things were stacking in it: the ramp, the smog
+       strata, this glow at 0.85, and the bounce pools on top. By the
+       time a building was laid over that, its silhouette had nothing
+       clean to be a silhouette against — the sky was as busy as the
+       city. Cubed rather than squared, and topping out below the
+       checkerboard, so the glow is still there but it is a field the
+       towers can sit in front of. */
     for (let y = SKYLINE - 160; y < SKYLINE; y++) {
       const t = 1 - (SKYLINE - y) / 160
-      washRow(g, y, W, T.haze, t * t * 0.85)
+      washRow(g, y, W, T.haze, t * t * t * 0.52)
     }
 
     /* Coloured pools in that haze. A single flat haze colour is what
@@ -732,13 +1175,9 @@
         const cw = 110 + Math.floor(rnd() * 190)
         const ch = 60 + Math.floor(rnd() * 90)
         const col = T.bounce[Math.floor(rnd() * T.bounce.length)]
-        for (let y = SKYLINE - ch; y < SKYLINE; y++) {
-          const ty = 1 - (SKYLINE - y) / ch
-          for (let x = cx; x < cx + cw && x < W; x++) {
-            const tx = 1 - Math.abs(x - (cx + cw / 2)) / (cw / 2)
-            dot(g, x, y, ty * tx * ty * tx * 0.5, col)
-          }
-        }
+        // centred ON the skyline so only its upper half shows — the
+        // glow is coming up off the streets, not sitting in the air
+        pool(g, cx + cw / 2, SKYLINE, cw / 2, ch, col, 0.16)
       }
     }
 
@@ -960,24 +1399,84 @@
       let h = o.minH + Math.floor(rnd() * (o.maxH - o.minH))
 
       /* ---- archetypes ----
-         BANDED  continuous lit floor strips instead of a window grid -
-                 the office slab, the most recognisable shape in the
-                 reference after the neon itself.
-         NEEDLE  a narrow spire, far taller than its neighbours.
-         SLAB    low, wide, nearer the street.
-         GRID    the ordinary tower.
+
+         There were four, and all four were rectangles: an office slab,
+         a thin rectangle, a short wide rectangle, and a rectangle. So
+         the skyline was three hundred boxes of varying height, which
+         is why every building read as the same building no matter how
+         much detail went on its face. Silhouette is the first thing
+         the eye reads and the last thing it forgets, and a city where
+         every roofline is flat has thrown that away.
+
+         Five more, all of them defined by the shape of their TOP,
+         because that is the part that meets the sky:
+
+         BANDED    continuous lit floor strips instead of a window grid
+                   - the office slab, the most recognisable shape in
+                   the reference after the neon itself.
+         NEEDLE    a narrow spire, far taller than its neighbours.
+         SLAB      low, wide, nearer the street.
+         DOME      a drum with a half-round cap - a capitol, a museum,
+                   an observatory that is not the landmark one.
+         DRUM      a true cylinder: curved shoulders both sides and
+                   vertical shading, the round hotel tower.
+         ZIGGURAT  art deco, stepping in hard three or four times.
+         PITCHED   a low hall under a peaked roof - a market, a depot,
+                   the older stock every real city keeps at its feet.
+         BARREL    a low block under a half-round vault, the shed with
+                   an arched roof that sits between the towers.
+         GRID      the ordinary tower, still the most common thing.
+
          Picked BEFORE w and h are used, so a needle reshapes itself
          rather than being a normal tower wearing a mast. */
+      /* Weighted hard toward DECO.
+
+         Nine archetypes at roughly equal odds gave a skyline with a
+         bit of everything in it, which is another way of saying it had
+         no character — a barrel vault beside a pitched hall beside a
+         drum reads as a sample book, not as a place. A real city has a
+         period.
+
+         This one now has an American one: the setback tower is more
+         than a third of everything built, and the pitched sheds and
+         barrel-vaulted warehouses that were littering the roofline are
+         gone from the mix entirely. */
       const roll = rnd()
-      const type = roll < 0.22 ? 'banded' : roll < 0.32 ? 'needle' : roll < 0.46 ? 'slab' : 'grid'
+      const type =
+        roll < 0.38 ? 'ziggurat'
+        : roll < 0.52 ? 'banded'
+        : roll < 0.62 ? 'needle'
+        : roll < 0.70 ? 'slab'
+        : roll < 0.77 ? 'dome'
+        : roll < 0.84 ? 'drum'
+        : 'grid'
+
       if (type === 'needle') {
         w = Math.max(6, Math.floor(w * 0.45))
         h = Math.floor(h * 1.35)
       } else if (type === 'slab') {
         w = Math.floor(w * 1.5)
         h = Math.floor(h * 0.55)
+      } else if (type === 'dome' || type === 'drum') {
+        // a round building is read by its width, so it needs some
+        w = Math.max(12, Math.floor(w * 1.15))
+        h = Math.floor(h * (type === 'dome' ? 0.62 : 0.9))
+      } else if (type === 'ziggurat') {
+        w = Math.floor(w * 1.35)
+        h = Math.floor(h * 0.85)
+      } else if (type === 'pitched' || type === 'barrel') {
+        w = Math.floor(w * 1.4)
+        h = Math.max(14, Math.floor(h * 0.3))
       }
       const top = SKYLINE - h
+
+      // the roofline sits above `top` for anything with a cap on it,
+      // and the crown/plant/mast code further down has to know
+      let capH = 0
+      if (type === 'dome') capH = Math.floor(w * 0.42)
+      else if (type === 'pitched') capH = Math.floor(w * 0.3)
+      else if (type === 'barrel') capH = Math.floor(w * 0.26)
+      else if (type === 'drum') capH = 3
 
       // what this one is made of
       const mat = MATERIAL[Math.floor(rnd() * MATERIAL.length)]
@@ -998,6 +1497,128 @@
       g.fillStyle = o.lit
       g.fillRect(x, top, 1, SKYLINE - top)
       g.fillRect(x, top, w, 1)
+
+      /* ---- the roofline ----
+         Everything that is not a flat-topped box gets its shape here,
+         drawn UP from `top` so the window grid below is untouched. All
+         of it is lit top-left and shadowed bottom-right, the same rule
+         the flat bodies follow, because that is what keeps nine
+         different silhouettes reading as one city. */
+      if (type === 'dome' || type === 'barrel') {
+        // a half-round cap: for each column, how far up the arc reaches
+        const r = w / 2
+        const cxm = x + r
+        for (let i = 0; i < w; i++) {
+          const u = (i + 0.5 - r) / r
+          const rise = Math.round(Math.sqrt(Math.max(0, 1 - u * u)) * capH)
+          if (rise < 1) continue
+          g.fillStyle = o.fill
+          g.fillRect(x + i, top - rise, 1, rise)
+          // the lit quarter is the upper left of the curve
+          g.fillStyle = u < -0.15 ? o.lit : u > 0.45 ? o.dark : o.fill
+          g.fillRect(x + i, top - rise, 1, 1)
+        }
+        // a lantern on the dome, and a finial
+        if (type === 'dome' && w > 16) {
+          g.fillStyle = o.lit
+          g.fillRect(Math.round(cxm) - 2, top - capH - 3, 4, 3)
+          g.fillStyle = o.neon[Math.floor(rnd() * o.neon.length)]
+          g.fillRect(Math.round(cxm), top - capH - 6, 1, 3)
+        }
+      } else if (type === 'pitched') {
+        // a peak: two straight rakes meeting in the middle
+        const r = w / 2
+        for (let i = 0; i < w; i++) {
+          const rise = Math.round((1 - Math.abs(i + 0.5 - r) / r) * capH)
+          if (rise < 1) continue
+          g.fillStyle = i + 0.5 < r ? o.lit : o.dark
+          g.fillRect(x + i, top - rise, 1, rise)
+        }
+        // ridge line
+        g.fillStyle = o.dark
+        g.fillRect(Math.round(x + r) - 1, top - capH, 2, 1)
+      } else if (type === 'drum') {
+        /* A cylinder is shading, not outline: a lit band a third of
+           the way across and a shadowed one down the far side, held
+           all the way down the body. Round the shoulders by one pixel
+           either side so the top does not read as a flat lid. */
+        const band = Math.max(1, Math.floor(w / 7))
+        g.fillStyle = o.lit
+        g.fillRect(x + band, top, band, SKYLINE - top)
+        g.fillStyle = o.dark
+        g.fillRect(x + w - band * 2, top, band, SKYLINE - top)
+        g.fillStyle = o.fill
+        g.fillRect(x + 1, top - 2, w - 2, 2)
+        g.fillStyle = o.lit
+        g.fillRect(x + 1, top - 2, w - 2, 1)
+        g.fillRect(x + 2, top - 3, w - 4, 1)
+      } else if (type === 'ziggurat') {
+        /* ---- the setback tower ----
+
+           The shape the 1930s put on every skyline in America, and it
+           is three things rather than one. It was only doing the first.
+
+           THE SETBACKS. The body steps in as it rises, drawn downward
+           from the top so each shelf shadows the one beneath it.
+
+           THE FLUTING. Vertical piers running the full height of every
+           stage, with recesses between them. This is the part that was
+           missing and it is the part that makes the style read: a deco
+           tower is not a stack of boxes, it is a bundle of vertical
+           lines that happens to step. Without the piers the same
+           silhouette is just a wedding cake.
+
+           THE CROWN. A narrow finial on the last stage with a lit tip.
+           Every one of these buildings ends in a point, because the
+           whole argument of the style is upward. */
+        let zx = x
+        let zw = w
+        let zy = top
+        const stages = 3 + Math.floor(rnd() * 2)
+
+        for (let s = 0; s < stages && zw > 8; s++) {
+          const inset = Math.max(2, Math.floor(zw * 0.14))
+          const sh = 10 + Math.floor(rnd() * 14)
+          zx += inset
+          zw -= inset * 2
+          zy -= sh
+          if (zw < 5) break
+
+          g.fillStyle = o.fill
+          g.fillRect(zx, zy, zw, sh + 1)
+          g.fillStyle = o.dark
+          g.fillRect(zx + zw - 1, zy, 1, sh)
+          g.fillStyle = o.lit
+          g.fillRect(zx, zy, zw, 1)
+          g.fillRect(zx, zy, 1, sh)
+
+          // piers and recesses, every three pixels across the face
+          for (let fx = zx + 2; fx < zx + zw - 2; fx += 3) {
+            g.fillStyle = o.dark
+            g.fillRect(fx, zy + 2, 1, sh - 1)
+            g.fillStyle = o.lit
+            g.fillRect(fx + 1, zy + 2, 1, sh - 1)
+          }
+
+          // a shelf line under each setback, catching the light
+          g.fillStyle = o.lit
+          g.fillRect(zx - inset, zy + sh, zw + inset * 2, 1)
+          cap(zx, zy + 1, zw, 3)
+        }
+
+        // the crown: a stepped finial, lit at the tip
+        const fx0 = Math.round(zx + zw / 2)
+        for (let k = 0; k < 3; k++) {
+          const fw = 5 - k * 2
+          if (fw < 1) break
+          g.fillStyle = o.fill
+          g.fillRect(fx0 - (fw >> 1), zy - 6 - k * 5, fw, 6)
+          g.fillStyle = o.lit
+          g.fillRect(fx0 - (fw >> 1), zy - 6 - k * 5, 1, 6)
+        }
+        g.fillStyle = o.window
+        g.fillRect(fx0, zy - 24, 1, 6)
+      }
 
       /* Mullions and floor ledges. Without them a tower is a flat slab
          with dots on it; a couple of vertical seams and a ledge every
@@ -1026,11 +1647,18 @@
 
       /* Crown: narrower blocks stacked on the roof. Walks up from the
          body, insetting and shortening, and the last one carries the
-         plant — so masts and tanks sit on the crown, not in mid-air. */
+         plant — so masts and tanks sit on the crown, not in mid-air.
+
+         Only flat-topped buildings get one. A dome, a pitched roof, a
+         vault and a ziggurat have already said what their top is, and
+         stacking a crown on them would put a box through the middle of
+         the shape that makes them recognisable in the first place. */
+      const flatTop =
+        type !== 'dome' && type !== 'pitched' && type !== 'barrel' && type !== 'ziggurat'
       let cx = x
       let cw = w
       let cy = top
-      if (h > 78 && w > 12) {
+      if (flatTop && h > 78 && w > 12) {
         const steps = 1 + Math.floor(rnd() * 3)
         for (let s = 0; s < steps; s++) {
           const inset = 2 + Math.floor(rnd() * 3)
@@ -1053,14 +1681,16 @@
           g.fillRect(cx + 1, cy + 2, cw - 2, 1)
         }
       }
-      cap(cx, cy + 1, cw, 3)
-      if (cx > x) {
-        cap(x, top + 1, cx - x, 3)
-        cap(cx + cw, top + 1, x + w - (cx + cw), 3)
+      if (flatTop) {
+        cap(cx, cy + 1, cw, 3)
+        if (cx > x) {
+          cap(x, top + 1, cx - x, 3)
+          cap(cx + cw, top + 1, x + w - (cx + cw), 3)
+        }
       }
 
       // rooftop plant: a box, a tank, or a vent stack
-      if (rnd() < 0.55 && cw > 10) {
+      if (rnd() < 0.16 && flatTop && cw > 10) {
         const aw = 3 + Math.floor(rnd() * 7)
         const ah = 2 + Math.floor(rnd() * 4)
         const ax = cx + 2 + Math.floor(rnd() * Math.max(1, cw - aw - 3))
@@ -1072,7 +1702,7 @@
       }
 
       // mast, with guy wires and an aircraft warning light
-      if (rnd() < 0.34) {
+      if (rnd() < 0.12 && flatTop) {
         const mx = cx + Math.floor(cw / 2)
         const mh = 8 + Math.floor(rnd() * 22)
         g.fillStyle = o.dark
@@ -1180,23 +1810,28 @@
           windows.push({ x: tx, y: ty, w: tw, h: th, sign: true, col: col, off: o.dark })
         }
 
+        /* The bleed onto the wall. It is clipped to the tower it is
+           bolted to — light spilling off the sides of a building it is
+           mounted flat against would be light with nothing to land on
+           — but within that it is a real falloff now rather than a
+           dither, so a tube looks lit instead of surrounded by
+           speckle. */
+        /* The bleed off the tube.
+
+           This used to be clipped to the tower the tube is bolted to,
+           on the reasoning that light spilling off the sides of a
+           building it is mounted flat against is light with nothing to
+           land on. That reasoning is wrong, and it is why the city had
+           no glow in it: a neon tube is a gas discharge in open air,
+           and the thing that makes one read as LIT rather than as
+           painted is precisely the halo you see against the sky beside
+           it. Clipping that away left every sign looking like a decal.
+
+           Unclipped, and with real reach. It spills onto the wall, off
+           the edges, and into the sky — which is what neon does. */
         const halo = (hx, hy, hw, hh) => {
-          // tighter, and it falls off faster: light this far from a
-          // tube is nearly gone, and the old cubic-free falloff kept
-          // it visible right out to the edge of the reach
-          const reach = 5
-          for (let yy = hy - reach; yy < hy + hh + reach; yy++) {
-            if (yy < top - 2 || yy > SKYLINE) continue
-            for (let xx = hx - reach; xx < hx + hw + reach; xx++) {
-              if (xx < x || xx > x + w - 1) continue
-              const dx = Math.max(0, Math.max(hx - xx, xx - (hx + hw - 1)))
-              const dy = Math.max(0, Math.max(hy - yy, yy - (hy + hh - 1)))
-              const d = Math.hypot(dx, dy)
-              if (d === 0 || d > reach) continue
-              const t = 1 - d / reach
-              dot(g, xx, yy, t * t * t * o.halo, col)
-            }
-          }
+          if (!o.halo) return
+          glow(g, hx, hy, hw, hh, 22, col, o.halo * 2.6)
         }
 
         /* ---- the big board ----
@@ -1316,13 +1951,32 @@
 
     /* Aerial perspective. Everything at this depth is washed toward the
        horizon colour — stronger the further back, stronger again in fog
-       or snow. source-atop keeps it off the transparent sky. */
-    const amt = o.fog + fogBoost() * (o.fog > 0.15 ? 1.2 : 0.7)
+       or snow. source-atop keeps it off the transparent sky.
+
+       Two rules govern this wash, and breaking either one dissolves the
+       city into noise:
+
+       ONE — it never reaches the checkerboard. An ordered dither at
+       t = 0.5 replaces every other pixel, which at this scale is not
+       haze, it is a destroyed image: the mullions are one pixel wide,
+       the windows are two, and half of every one of them goes. FOG_CAP
+       holds the wash below that, so the dither stays a texture laid
+       over the buildings rather than a texture that has eaten them.
+
+       TWO — it pools at the base. It used to carry 42% of its strength
+       at the very top of the frame, so a tower's crown, its mast and
+       its whole upper half were hazed as hard as its feet. Haze is
+       densest where the air is thickest, which is at street level, and
+       squaring the ramp puts it there: near nothing up high, full
+       strength along the skyline. That is what lets a building have a
+       readable silhouette and still sit back in the distance. */
+    const amt = Math.min(FOG_CAP, o.fog + fogBoost() * (o.fog > 0.15 ? 1.2 : 0.7))
     if (amt > 0.01) {
       const col = fogColour()
       g.globalCompositeOperation = 'source-atop'
       for (let y = 0; y < SKYLINE + 2; y++) {
-        washRow(g, y, LOOP_W, col, amt * (0.42 + 0.58 * (y / SKYLINE)))
+        const t = Math.max(0, y / SKYLINE)
+        washRow(g, y, LOOP_W, col, amt * (0.06 + 0.94 * t * t))
       }
       g.globalCompositeOperation = 'source-over'
     }
@@ -1640,7 +2294,7 @@
     }
 
     // the marquee under it
-    text(g, MOVIES[0], x - Math.round(textW(MOVIES[0]) / 2), top + h + 12, o.window)
+    // the marquee is blank now — no words in the backdrop
 
     // the picture flickers, the way a projector does
     windows.push({ x: x - 65, y: top + 5, w: w - 10, h: 8 })
@@ -1835,20 +2489,96 @@
   /* A lit signboard standing on a building's roof, with a support
      lattice and a dithered halo. Drawn into a skyline buffer so it
      parallaxes with the building it belongs to. */
+  /* ==================================================================
+     THE QUIET REFERENCES
+
+     These used to be cameos — a Triforce that assembled itself in mid
+     air, a question block that floated over the skyline, a pipe that
+     rose out of nowhere. They read as stickers, because that is what
+     they were: things happening AT the city rather than in it.
+
+     So they are buildings now. A Triforce is a neon sign, and a city
+     full of neon signs is exactly where one belongs; it hangs on a
+     roof with a lattice under it and a halo bleeding onto the wall
+     behind it, drawn by the same code that draws RAMEN 24H, and it
+     parallaxes with the layer it is standing on. Nobody is told it is
+     there. You either catch it on the skyline or you do not, which is
+     the only way an easter egg is worth anything.
+     ================================================================== */
+
+  /* Three triangles in gold neon on a roof-mounted frame. Drawn as
+     outline tubes rather than solid, because that is what a neon sign
+     is — bent glass, not a painted panel. */
+  function triforceSign(g, x, y) {
+    const R = 21
+    const GOLD = '#f8d038'
+    const half = (r) => Math.round(((r + 1) / R) * R * 0.58)
+
+    // the halo first, so the tubes sit on top of it
+    glow(g, x - R, y, R * 2, R * 2, 16, GOLD, T.halo * 2.2)
+
+    // the mounting frame, same lattice the billboards use
+    g.fillStyle = T.signBox
+    g.fillRect(x - 2, y + R * 2, 4, 16)
+    for (let k = 0; k < 2; k++) g.fillRect(x - 8, y + R * 2 + 4 + k * 6, 16, 2)
+
+    /* One triangle as a tube: the two rakes and the base. Stepping the
+       rakes by whole pixels is what makes it read as bent glass rather
+       than as a vector shape somebody pasted in. */
+    const tri = (ox, oy) => {
+      for (let r = 0; r < R; r++) {
+        const hw = half(r)
+        g.fillStyle = GOLD
+        g.fillRect(ox - hw, oy + r, 2, 1)
+        g.fillRect(ox + hw - 2, oy + r, 2, 1)
+      }
+      g.fillRect(ox - half(R - 1), oy + R - 1, half(R - 1) * 2, 2)
+    }
+
+    tri(x, y)
+    tri(x - Math.round(R * 0.58), y + R)
+    tri(x + Math.round(R * 0.58), y + R)
+  }
+
+  /* A question block, as a lit sign on the side of a tower. It is the
+     one shape from that game everybody can draw from memory, so it
+     survives being twelve pixels across on a distant building. */
+  function queryBlock(g, x, y) {
+    const s = 14
+    glow(g, x, y, s, s, 12, '#e8901f', T.halo * 2)
+    g.fillStyle = '#e8901f'
+    g.fillRect(x, y, s, s)
+    g.fillStyle = '#a8600f'
+    g.fillRect(x, y + s - 2, s, 2)
+    g.fillRect(x + s - 2, y, 2, s)
+    g.fillStyle = '#3a2408'
+    for (const [rx, ry] of [[1, 1], [11, 1], [1, 11], [11, 11]]) g.fillRect(x + rx, y + ry, 2, 2)
+    // the "?" itself
+    g.fillRect(x + 5, y + 4, 4, 2)
+    g.fillRect(x + 8, y + 5, 2, 2)
+    g.fillRect(x + 6, y + 7, 3, 2)
+    g.fillRect(x + 6, y + 10, 2, 2)
+  }
+
+  /* ==================================================================
+     THE REST OF THEM
+
+     Written as sprite strings — one character per pixel, '.' is a hole
+     — because that is the only way pixel art in a source file stays
+     editable. Each one is mounted on a roof as a lit sign with a real
+     glow under it, at whatever scale the layer it lands on can carry.
+
+     They are deliberately scattered across all three skylines rather
+     than lined up on one, so no single frame contains more than two or
+     three of them and the city never turns into a quiz. Most visitors
+     will catch one. Nobody is going to catch all of them without
+     sitting there, which is the point.
+     ================================================================== */
   function signboard(g, x, y, word) {
     const w = 78
     const h = 28
 
-    for (let yy = y - 9; yy < y + h + 9; yy++) {
-      for (let xx = x - 9; xx < x + w + 9; xx++) {
-        if (xx < 0 || xx >= LOOP_W) continue
-        const dx = Math.max(0, Math.max(x - xx, xx - (x + w - 1)))
-        const dy = Math.max(0, Math.max(y - yy, yy - (y + h - 1)))
-        const d = Math.hypot(dx, dy)
-        if (d === 0 || d > 9) continue
-        dot(g, xx, yy, (1 - d / 9) * 0.75, T.sign)
-      }
-    }
+    glow(g, x, y, w, h, 18, T.sign, T.halo ? 1.5 : 0.35)
 
     // support lattice rather than a plain leg
     g.fillStyle = T.signBox
@@ -1865,37 +2595,100 @@
     text(g, word, x + Math.round((w - textW(word)) / 2), y + 11, T.sign)
   }
 
-  function buildSkyline() {
-    beamSources = []
+  /* ==================================================================
+     AERIAL PERSPECTIVE, DONE IN THE PALETTE
 
+     Depth was being carried entirely by a dithered wash laid over each
+     finished layer, and that wash had to be kept weak or it turned the
+     city into a checkerboard. Weak wash, no separation: four skylines
+     sitting at almost the same value, which is exactly what "flat"
+     looks like.
+
+     The fix is to stop asking the dither to do it. Every colour a
+     layer is built FROM is blended toward the horizon before a single
+     building is drawn — so the far city is genuinely made of paler,
+     lower-contrast material, not the near city with fog on top of it.
+     No pixels are spent, nothing is thresholded, and the separation
+     can now be as strong as the picture needs because it costs no
+     texture at all.
+
+     The `glass` array recedes with everything else. Lit windows that
+     stayed saturated while their walls went pale were the other half
+     of the flatness: distance kills contrast, and a window is contrast. */
+  function recede(pal, amt) {
+    if (!(amt > 0)) return pal
+    const sky = fogColour()
+    const to = (hex) => mix(hex, sky, amt, 24)
+    const out = { ...pal }
+    for (const k of ['fill', 'lit', 'dark', 'window', 'warm']) {
+      if (out[k]) out[k] = to(out[k])
+    }
+    if (Array.isArray(out.glass)) out.glass = out.glass.map(to)
+    return out
+  }
+
+  /* The skyline is built as five independent steps rather than one
+     call, so a rebuild can be spread across frames instead of landing
+     as a single stall. Each city buffer is 5760x1620 at S=3 and takes
+     roughly a fortieth of a second to fill; four of them plus the sky,
+     the clouds, the viaduct and the roof in one synchronous block came
+     to about 134ms, which at 60fps is eight frames dropped in a row —
+     and it landed at precisely the moment the weather changed, which
+     is the moment you are looking. See stageRebuild. */
+  const skylineSteps = () => [
+    () => {
+      beamSources = []
+      buildRidge()
+    },
+    () => buildLayer0(),
+    () => buildLayer1(),
+    () => buildLayer2(),
+    () => buildSignage(),
+  ]
+
+  function buildSkyline() {
+    for (const step of skylineSteps()) step()
+  }
+
+  function buildRidge() {
     /* The far ridge: low, wide, nearly featureless towers one step off
        the haze colour. No neon, almost no windows, no flicker — at that
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
+    /* The four RECEDE amounts are the depth ramp. They are what makes
+       this read as four distances rather than four heights, and they
+       are deliberately far apart — half the palette's distance to the
+       horizon for the ridge, none at all for the near layer, which
+       keeps its full authored contrast because it is the thing you are
+       standing closest to. */
     ridge = buildCity(7777, {
       minW: 26, maxW: 60, minH: 18, maxH: 64,
       step: 6, ww: 1, wh: 1, litChance: 0.1,
-      neon: T.neon, neonChance: 0, halo: 0, fog: 0.46,
-      ...T.cityFar,
+      neon: T.neon, neonChance: 0, halo: 0, fog: 0.10,
+      ...recede(T.cityFar, 0.5),
     })
+  }
 
-    city = [
-      buildCity(4411, {
+  function buildLayer0() {
+    city[0] = buildCity(4411, {
         minW: 12, maxW: 26, minH: 60, maxH: 150,
         step: 4, ww: 2, wh: 2, litChance: 0.30,
-        neon: T.neon, neonChance: 0.18, halo: T.halo, fog: T.fogAmt[0],
-        ...T.city[0],
+        neon: T.neon, neonChance: 0.10, halo: T.halo, fog: 0.08,
+        ...recede(T.city[0], 0.32),
         landmarks: (g, o) => {
           stadium(g, o, 420)
           bridge(g, o, 1020)
           radioDish(g, o, 1640)
         },
-      }),
-      buildCity(881, {
+    })
+  }
+
+  function buildLayer1() {
+    city[1] = buildCity(881, {
         minW: 16, maxW: 34, minH: 90, maxH: 205,
         step: 5, ww: 2, wh: 3, litChance: 0.34,
-        neon: T.neon, neonChance: 0.32, halo: T.halo, fog: T.fogAmt[1],
-        ...T.city[1],
+        neon: T.neon, neonChance: 0.18, halo: T.halo, fog: 0.04,
+        ...recede(T.city[1], 0.14),
         /* Spread across the loop so that at any moment one or two are
            in frame and the rest are on their way round. */
         landmarks: (g, o, windows) => {
@@ -1904,15 +2697,21 @@
           clockTower(g, o, 900)
           crane(g, o, 1300, windows)
           rocket(g, o, 1750)
+          /* The quiet references, standing on roofs like any other
+             sign. Spaced so no two are ever in the same frame. */
+          triforceSign(g, 1480, SKYLINE - 196)
           windowCat(g, o, 372, SKYLINE - 96)
           windowWashers(g, o, 1075, SKYLINE - 190, SKYLINE - 96)
           rooftopPool(g, o, 690, SKYLINE - 152)
         },
-      }),
-      buildCity(2266, {
+    })
+  }
+
+  function buildLayer2() {
+    city[2] = buildCity(2266, {
         minW: 22, maxW: 46, minH: 50, maxH: 130,
         step: 7, ww: 3, wh: 3, litChance: 0.3,
-        neon: T.neon, neonChance: 0.36, halo: T.halo, fog: T.fogAmt[2],
+        neon: T.neon, neonChance: 0.22, halo: T.halo, fog: 0,
         ...T.city[2],
         landmarks: (g, o, windows, beams) => {
           lighthouse(g, o, 180, beams)
@@ -1922,31 +2721,11 @@
           gargoyle(g, o, 940, SKYLINE - 118)
           windowCat(g, o, 1666, SKYLINE - 74)
         },
-      }),
-    ]
+    })
+  }
 
-    // signboards on the mid skyline, spread so one is usually in frame
-    signboard(city[1].buf.x, 210, SKYLINE - 172, 'RAMEN 24H')
-    signboard(city[1].buf.x, 980, SKYLINE - 146, 'HELLO WORLD')
-    signboard(city[1].buf.x, 1560, SKYLINE - 190, 'STAY AWHILE')
+  function buildSignage() {
 
-    /* One tower has its lit windows arranged to spell something. It is
-       drawn at two pixels to a letter-pixel on the *mid* skyline, on the
-       same grid pitch as every other window, so it reads as an ordinary
-       office block until the moment it doesn't. */
-    const g = city[1].buf.x
-    const msg = 'HI'
-    for (let i = 0; i < msg.length; i++) {
-      const gl = FONT[msg[i]]
-      for (let r = 0; r < 5; r++) {
-        const bits = +gl[r]
-        for (let c = 0; c < 3; c++) {
-          if (!(bits & (4 >> c))) continue
-          g.fillStyle = T.city[1].warm
-          g.fillRect(1300 + i * 10 + c * 3, SKYLINE - 128 + r * 3, 2, 2)
-        }
-      }
-    }
   }
 
   /* ==================================================================
@@ -2143,10 +2922,22 @@
        from noise. A loose scatter of single pixels in three colours is
        just dirt on the screen, so there are far fewer of them than a
        scatter would use and only two values in play. */
-    for (let i = 0; i < 900; i++) {
+    /* Nine hundred stones was too many. Every one is a lit pixel with a
+       dark one under it — a chip with its own shadow — which is the
+       right way to draw ballast and also means each one is competing
+       with the props standing on the same deck. At this density the
+       floor was reading as texture rather than as floor, and the air
+       handlers and crates were sitting in a field of noise.
+
+       Fewer, and thinned toward the front: the near half of the deck
+       is where the objects are and where the eye goes, so that is the
+       half that has to stay quiet. */
+    for (let i = 0; i < 560; i++) {
       const x = Math.floor(rnd() * W)
       const y = ROOF_TOP + 8 + Math.floor(rnd() * (H - ROOF_TOP - 12))
       const sw = rnd() < 0.28 ? 2 : 1
+      // thin out as the deck comes toward the viewer
+      if (y > ROOF_TOP + 70 && i % 2) continue
       // Wet ballast is mostly under water. The same stones are drawn in
       // both states, just fewer of them — drawing a *different* number
       // of them would consume the stream differently and shuffle the
@@ -2282,26 +3073,23 @@
 
        Two things fix it, and it needs both:
 
-       1. A short dithered band of haze laid over the city immediately
-          above the parapet, lifting the background away from the
-          foreground's value. This is the atmospheric trick done on
-          purpose — the further plane pales as it approaches the nearer
-          one's edge — and it gives the silhouette something to be dark
-          against no matter what the weather has done to either. */
-    /* Which way the band goes depends on what the foreground is doing,
-       and getting that backwards is worse than not having it.
+       1. There WAS a dithered band of haze here — twenty-four rows of
+          `sep` laid over the city immediately above the parapet, at up
+          to 0.5 dry and 0.66 under snow, meant to lift the background
+          away from the foreground's value.
 
-       Dry, the roof is the darker plane, so the city is *lifted* behind
-       it and the silhouette bites. Under snow both planes go pale — the
-       deck from the blanket, the city from the snow light — and lifting
-       the background is then exactly the wrong move: it walks the two
-       values together. So under snow the buildings' bottoms are
-       *darkened* instead, and the pale roof reads against them. */
-    const sepCol = snowy ? T.sepDark : T.sep
-    const sepAmt = snowy ? 0.66 : 0.5
-    for (let k = 0; k < 24; k++) {
-      washRow(g, ROOF_TOP - 1 - k, W, sepCol, (1 - k / 24) * sepAmt)
-    }
+          It is gone. Both of those amounts are at or past the
+          checkerboard, so what it actually put on screen was a solid
+          slab of alternating pixels twenty-four rows deep, running the
+          full width of the frame, sitting exactly across the bottom
+          storeys of the near city — which is where the street-level
+          signage is. Every sign down there was being read through it.
+          It was the single largest patch of pure noise left in the
+          scene and it was destroying the most legible thing in it.
+
+          The job it was supposedly doing is done properly, and with
+          one flat line instead of a field of dither, by the rim
+          below. */
 
     /*  2. The single most important line in the whole scene: a hard,
           near-black rim along the very top of the coping, in a colour
@@ -2310,11 +3098,31 @@
           background in pixel art, and three pixels was not enough of
           it once the coping could be covered in snow. */
     g.fillStyle = T.edge
-    g.fillRect(0, capY - 4, W, 4)
+    g.fillRect(0, capY - 6, W, 6)
 
-    // coping — top face, front face, undercut
+    /* ---- the catch light ----
+
+       This one line is doing more work than everything else on the
+       parapet put together.
+
+       The problem was never that the roof and the city were the wrong
+       values — it was that at the seam between them there was nothing
+       for the eye to LOCK onto. Two dark planes meeting at a dark edge
+       is one plane. What separates a foreground in any picture drawn
+       this way is a hard bright rim along its topmost surface: the
+       near thing catches the light that the far thing is generating,
+       and the moment that line exists the two stop being the same
+       distance away.
+
+       So the coping now goes near-black immediately above (six pixels
+       of `edge`, up from four), then a single bright pixel of catch
+       along its very top, then its lit face, its front, its undercut.
+       Reading down: shadow, light, mid, dark. Four values in twelve
+       pixels, and the picture gains a foreground. */
+    g.fillStyle = T.railGlint || T.railLit
+    g.fillRect(0, capY, W, 1)
     g.fillStyle = T.railLit
-    g.fillRect(0, capY, W, 3)
+    g.fillRect(0, capY + 1, W, 2)
     g.fillStyle = T.rail
     g.fillRect(0, capY + 3, W, 6)
     g.fillStyle = T.railDark
@@ -2535,378 +3343,21 @@
       washRow(g, capY + 45 + k, W, T.roofDark, (1 - k / 6) * 0.62)
     }
 
-    /* ---- props ---- */
+    /* ---- no props ----
 
-    // stairwell hutch, left of centre, with a door and a neon over it
-    box(108, ROOF_TOP + 16, 96, 68)
-    g.fillStyle = T.railDark
-    g.fillRect(140, ROOF_TOP + 44, 22, 40)
-    g.fillStyle = T.roofLit
-    g.fillRect(140, ROOF_TOP + 44, 22, 1)
-    g.fillRect(158, ROOF_TOP + 60, 2, 4)
-    g.fillStyle = T.signBox
-    g.fillRect(126, ROOF_TOP + 26, 52, 12)
-    g.fillStyle = T.sign
-    g.fillRect(129, ROOF_TOP + 29, 46, 2)
-    for (let k = 0; k < 5; k++) g.fillRect(130 + k * 9, ROOF_TOP + 33, 6, 3)
-    for (let y = ROOF_TOP + 20; y < ROOF_TOP + 46; y++) {
-      for (let x = 116; x < 190; x++) {
-        const dx = Math.max(0, Math.max(126 - x, x - 177))
-        const dy = Math.max(0, Math.max(ROOF_TOP + 26 - y, y - (ROOF_TOP + 37)))
-        const d = Math.hypot(dx, dy)
-        if (d === 0 || d > 8) continue
-        dot(g, x, y, (1 - d / 8) * 0.7, T.sign)
-      }
-    }
-    // graffiti tag on the hutch flank
-    g.fillStyle = T.neon[0]
-    for (let k = 0; k < 7; k++) {
-      g.fillRect(112 + k * 3, ROOF_TOP + 56 + ((k * 5) % 7), 2, 8 - ((k * 3) % 5))
-    }
+       The terrace carried a stairwell hutch, a water tank on legs, two
+       air handlers, ducting, crates, a satellite dish, four poles of
+       string lights, a washing line, a chess game, traffic cones, a
+       bicycle, a rubber duck, a pizza box, a coin and a green pipe.
 
-    // water tank on legs, far left
-    g.fillStyle = T.railDark
-    g.fillRect(28, ROOF_TOP + 52, 3, 22)
-    g.fillRect(74, ROOF_TOP + 52, 3, 22)
-    box(22, ROOF_TOP + 22, 60, 32)
-    g.fillStyle = T.railDark
-    for (let k = 0; k < 3; k++) g.fillRect(22, ROOF_TOP + 28 + k * 9, 60, 1)
-    g.fillStyle = T.roofLit // ladder
-    for (let k = 0; k < 7; k++) g.fillRect(84, ROOF_TOP + 24 + k * 5, 6, 1)
-    g.fillRect(84, ROOF_TOP + 22, 1, 34)
-    g.fillRect(89, ROOF_TOP + 22, 1, 34)
+       Every one of them was drawn with care and together they were a
+       junk shop sitting directly under the column of text. A rooftop
+       with one fire on it reads as somewhere a person goes to be
+       quiet, which is the mood this page is actually after; the same
+       rooftop with eighteen objects on it reads as an I-spy puzzle.
 
-    // stacked crates, with slats
-    box(330, ROOF_TOP + 48, 30, 22)
-    box(338, ROOF_TOP + 30, 22, 18)
-    g.fillStyle = T.railDark
-    for (let k = 0; k < 3; k++) g.fillRect(332, ROOF_TOP + 53 + k * 6, 26, 1)
-
-    // air handling units, right, with fan grills and louvers
-    box(786, ROOF_TOP + 38, 74, 36)
-    box(872, ROOF_TOP + 52, 40, 24)
-    g.fillStyle = T.railDark
-    for (let r = 0; r < 5; r++) g.fillRect(790, ROOF_TOP + 44 + r * 5, 30, 2)
-    for (let ring = 3; ring <= 11; ring += 4) {
-      for (let a = 0; a < 28; a++) {
-        const th = (a / 28) * Math.PI * 2
-        g.fillRect(Math.round(838 + Math.cos(th) * ring), Math.round(ROOF_TOP + 56 + Math.sin(th) * ring), 1, 1)
-      }
-    }
-
-    // ducting between them, with support brackets and an elbow
-    g.fillStyle = T.rail
-    g.fillRect(96, ROOF_TOP + 92, 236, 6)
-    g.fillRect(596, ROOF_TOP + 100, 192, 6)
-    g.fillStyle = T.roofLit
-    g.fillRect(96, ROOF_TOP + 92, 236, 1)
-    g.fillRect(596, ROOF_TOP + 100, 192, 1)
-    g.fillStyle = T.railDark
-    for (let x = 104; x < 330; x += 26) g.fillRect(x, ROOF_TOP + 92, 2, 6)
-    for (let x = 604; x < 786; x += 26) g.fillRect(x, ROOF_TOP + 100, 2, 6)
-    snowCap(96, ROOF_TOP + 92, 236, 2)
-    snowCap(596, ROOF_TOP + 100, 192, 2)
-
-    // satellite dish with a feed arm and a mount
-    g.fillStyle = T.rail
-    for (let i = 0; i < 17; i++) {
-      const span = Math.floor(Math.sqrt(Math.max(0, 289 - (i - 8) * (i - 8) * 4)))
-      g.fillRect(930 - span, ROOF_TOP + 14 + i, span * 2, 1)
-    }
-    g.fillStyle = T.roofLit
-    for (let i = 0; i < 17; i++) {
-      const span = Math.floor(Math.sqrt(Math.max(0, 289 - (i - 8) * (i - 8) * 4)))
-      g.fillRect(930 - span, ROOF_TOP + 14 + i, 1, 1)
-    }
-    g.fillStyle = T.railDark
-    g.fillRect(929, ROOF_TOP + 30, 3, 18)
-    g.fillRect(922, ROOF_TOP + 46, 17, 3)
-    g.fillRect(936, ROOF_TOP + 18, 1, 6)
-    g.fillRect(933, ROOF_TOP + 22, 4, 1)
-
-    /* String lights across the deck. Poles with a catenary sagging
-       between them, a bulb every few pixels — the one warm colour in a
-       foreground otherwise lit entirely by signage. */
-    const poles = [58, 302, 566, 830]
-    for (const p of poles) {
-      g.fillStyle = T.rail
-      g.fillRect(p, ROOF_TOP + 26, 3, 74)
-      g.fillStyle = T.roofLit
-      g.fillRect(p, ROOF_TOP + 26, 1, 74)
-      g.fillStyle = T.railDark
-      g.fillRect(p - 3, ROOF_TOP + 26, 9, 2)
-      snowCap(p - 3, ROOF_TOP + 26, 9, 2)
-    }
-    for (let s = 0; s < poles.length - 1; s++) {
-      const x0 = poles[s] + 1
-      const x1 = poles[s + 1] + 1
-      const span = x1 - x0
-      for (let x = x0; x <= x1; x++) {
-        const t = (x - x0) / span
-        const y = Math.round(ROOF_TOP + 27 + Math.sin(t * Math.PI) * 22)
-        g.fillStyle = T.railDark
-        g.fillRect(x, y, 1, 1)
-        if ((x - x0) % 34 === 16) roofLights.push({ x, y: y + 1 })
-      }
-    }
-
-    /* A washing line between the hutch and the second light pole.
-       Somebody lives up here. Nothing else on this roof says that, and
-       one line of laundry says it instantly. */
-    g.fillStyle = T.railDark
-    for (let x = 204; x <= 302; x++) {
-      const t = (x - 204) / 98
-      g.fillRect(x, Math.round(ROOF_TOP + 34 + Math.sin(t * Math.PI) * 7), 1, 1)
-    }
-
-    /* ==================================================================
-       SOMEBODY'S ROOF
-
-       The deck is the biggest-pixel real estate in the scene — nothing
-       is more than a metre or two away — so it is where detail actually
-       pays. Everything below is a discrete object you can name, placed
-       by hand, none of it overlapping anything else. The point is that
-       you can sit and go round it: the telescope, the deck chair, the
-       tomatoes, the bike, the chess game nobody finished.
-       ================================================================== */
-
-    // antenna array on the hutch roof
-    g.fillStyle = T.railDark
-    g.fillRect(150, ROOF_TOP - 2, 1, 18)
-    for (let k = 0; k < 4; k++) g.fillRect(144, ROOF_TOP + 2 + k * 4, 13, 1)
-    g.fillRect(176, ROOF_TOP + 4, 1, 12)
-    g.fillRect(172, ROOF_TOP + 4, 9, 1)
-
-    // weathervane on the water tank, pointing east because it always is
-    g.fillStyle = T.railDark
-    g.fillRect(52, ROOF_TOP + 8, 1, 14)
-    g.fillRect(46, ROOF_TOP + 12, 13, 1)
-    g.fillStyle = T.roofLit
-    g.fillRect(56, ROOF_TOP + 9, 4, 3)
-
-    /* Everything below lives between y 452 and 494 — the strip of deck
-       between the foot of the parapet and the lowest row that survives
-       the crop on a wide viewport. It is only forty pixels tall, which
-       is the real constraint on this whole scene: the closest, most
-       detailed part of it is also the thinnest. */
-
-    // a bike, leaning on the hutch
-    g.fillStyle = T.railDark
-    for (const wx of [210, 228]) {
-      for (let a = 0; a < 22; a++) {
-        const th = (a / 22) * Math.PI * 2
-        g.fillRect(Math.round(wx + Math.cos(th) * 6), Math.round(484 + Math.sin(th) * 6), 1, 1)
-      }
-    }
-    g.fillRect(212, 476, 15, 1)
-    g.fillRect(216, 478, 1, 7)
-    g.fillRect(224, 478, 1, 7)
-    g.fillRect(226, 473, 5, 1) // bars
-    g.fillRect(213, 474, 4, 1) // saddle
-
-    /* Telescope on a tripod, pointed up and to the left — at the moon,
-       which is up and to the left. */
-    g.fillStyle = T.railDark
-    g.fillRect(386, 478, 1, 14)
-    g.fillRect(380, 480, 1, 12)
-    g.fillRect(392, 480, 1, 12)
-    g.fillRect(380, 486, 13, 1)
-    for (let k = 0; k < 16; k++) g.fillRect(392 - k, 476 - Math.round(k * 0.6), 2, 3)
-    g.fillStyle = T.roofLit
-    g.fillRect(376, 466, 3, 3) // the objective end, catching light
-    g.fillRect(390, 476, 3, 1)
-
-    // deck chair, striped
-    g.fillStyle = T.railDark
-    g.fillRect(414, 484, 2, 9)
-    g.fillRect(430, 484, 2, 9)
-    for (let k = 0; k < 14; k++) {
-      g.fillStyle = k & 2 ? T.cloth[1] : T.cloth[2]
-      g.fillRect(416 + k, 474 + Math.round(k * 0.62), 1, 10)
-    }
-
-    /* A planter run — somebody is growing tomatoes up here. Each plant
-       is a cane, a stem and two leaves, which at this size is a plant. */
-    box(482, 482, 70, 11)
-    for (let p = 0; p < 5; p++) {
-      const cane = 488 + p * 13
-      g.fillStyle = T.railDark
-      g.fillRect(cane, 462, 1, 21)
-      // The third one did not make it. Four thriving plants is a
-      // planter; three thriving and one brown stick is a person.
-      const dead = p === 2
-      g.fillStyle = dead ? '#7a6038' : '#3d7a3a'
-      g.fillRect(cane - 3, dead ? 474 : 470, 3, 1)
-      if (!dead) {
-        g.fillRect(cane + 1, 466, 3, 1)
-        g.fillRect(cane - 2, 476, 3, 1)
-      }
-      if (!dead && p % 2) {
-        g.fillStyle = '#c8402c'
-        g.fillRect(cane + 1, 473, 2, 2)
-      }
-    }
-
-    // a skateboard, left where it was stepped off
-    g.fillStyle = T.railDark
-    g.fillRect(572, 488, 18, 2)
-    g.fillRect(574, 490, 2, 2)
-    g.fillRect(586, 490, 2, 2)
-    g.fillStyle = T.cloth[0]
-    g.fillRect(572, 487, 18, 1)
-
-    // a boombox, and the coffee nobody finished
-    box(600, 478, 22, 11, false)
-    g.fillStyle = T.railDark
-    for (const sx of [604, 615]) {
-      for (let a = 0; a < 14; a++) {
-        const th = (a / 14) * Math.PI * 2
-        g.fillRect(Math.round(sx + Math.cos(th) * 3), Math.round(484 + Math.sin(th) * 3), 1, 1)
-      }
-    }
-    g.fillStyle = T.lamp
-    g.fillRect(607, 480, 5, 1)
-
-    /* A chess game on a crate. Nobody has moved in a while. */
-    box(638, 470, 26, 23)
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        g.fillStyle = (r + c) & 1 ? T.roofLit : T.railDark
-        g.fillRect(641 + c * 5, 473 + r * 4, 5, 4)
-      }
-    }
-    g.fillStyle = T.roofLit
-    g.fillRect(643, 471, 2, 3)
-    g.fillRect(658, 483, 2, 3)
-    g.fillStyle = T.railDark
-    g.fillRect(653, 475, 2, 3)
-    g.fillStyle = T.cloth[2] // a mug on the corner
-    g.fillRect(660, 467, 3, 4)
-
-    // paint cans and a ladder lying flat
-    box(676, 480, 9, 10, false)
-    box(687, 484, 8, 7, false)
-    g.fillStyle = T.roofLit
-    g.fillRect(676, 480, 9, 2)
-    g.fillStyle = T.railDark
-    g.fillRect(672, 492, 32, 1)
-    for (let k = 0; k < 5; k++) g.fillRect(675 + k * 7, 492, 1, 3)
-
-    // traffic cones, because there is always a reason
-    for (const cone of [716, 730]) {
-      for (let k = 0; k < 10; k++) {
-        const half = Math.round((k / 10) * 4)
-        g.fillStyle = k > 3 && k < 6 ? T.roofLit : '#c85a2a'
-        g.fillRect(cone - half, 482 + k, half * 2 + 1, 1)
-      }
-      g.fillStyle = '#c85a2a'
-      g.fillRect(cone - 5, 492, 11, 2)
-    }
-
-    // a stack of tyres
-    for (let k = 0; k < 3; k++) {
-      g.fillStyle = T.railDark
-      g.fillRect(748, 488 - k * 5, 22, 5)
-      g.fillStyle = T.roofSpeck
-      g.fillRect(748, 488 - k * 5, 22, 1)
-      g.fillStyle = T.rail
-      g.fillRect(755, 490 - k * 5, 8, 2)
-    }
-
-    // the cat's bowl, directly under where the cat sits
-    g.fillStyle = T.railDark
-    g.fillRect(778, 488, 12, 5)
-    g.fillStyle = T.roofLit
-    g.fillRect(778, 488, 12, 1)
-    g.fillStyle = T.catCollar
-    g.fillRect(782, 490, 4, 1)
-
-    /* ---- the small ones ----
-       None of these is bigger than a few pixels and none of them is on
-       the path your eye takes the first time. That is the point: the
-       scene should still have something left in it on the fourth look.
-       ---------------------------------------------------------------- */
-
-    // A spider has taken the corner where the parapet meets the hutch.
-    g.fillStyle = T.roofSpeck
-    for (let k = 1; k <= 7; k++) {
-      g.fillRect(96, 452 + k, 1, 1)
-      g.fillRect(96 + k, 452, 1, 1)
-      g.fillRect(96 + k, 452 + (8 - k), 1, 1)
-    }
-    g.fillStyle = T.railDark
-    g.fillRect(99, 455, 2, 2)
-
-    // A mouse hole in the hutch skirting, and a trail of crumbs.
-    g.fillStyle = T.railDark
-    g.fillRect(196, 483, 5, 5)
-    g.fillStyle = T.roofDark
-    g.fillRect(197, 484, 3, 4)
-    g.fillStyle = T.roofLit
-    for (let k = 0; k < 4; k++) g.fillRect(203 + k * 5, 486 + (k & 1), 1, 1)
-
-    // A doormat at the hutch door, and the key nobody hides well.
-    g.fillStyle = T.railDark
-    g.fillRect(138, 489, 26, 5)
-    g.fillStyle = T.roofSpeck
-    for (let k = 0; k < 12; k++) g.fillRect(140 + k * 2, 490, 1, 3)
-    g.fillStyle = T.lamp
-    g.fillRect(166, 492, 3, 1)
-    g.fillRect(169, 491, 1, 3)
-
-    // The cat's toy mouse, nowhere near the cat.
-    g.fillStyle = T.roofSpeck
-    g.fillRect(796, 490, 5, 3)
-    g.fillStyle = T.catCollar
-    g.fillRect(801, 491, 4, 1) // tail
-
-    /* Pawprints, crossing the deck and stopping at the parapet, which
-       is where the cat is. */
-    g.fillStyle = T.roofDark
-    for (let k = 0; k < 9; k++) {
-      const fx = 700 - k * 13
-      const fy = 490 - k * 3 - (k & 1 ? 3 : 0)
-      if (fy < 456) break
-      g.fillRect(fx, fy, 2, 2)
-      g.fillRect(fx - 2, fy - 1, 1, 1)
-      g.fillRect(fx + 2, fy - 1, 1, 1)
-    }
-
-    // One slice of last night's pizza, still in the box.
-    g.fillStyle = T.roofSpeck
-    g.fillRect(626, 490, 12, 4)
-    g.fillStyle = T.lamp
-    g.fillRect(628, 491, 8, 2)
-    g.fillStyle = '#c8402c'
-    g.fillRect(630, 492, 1, 1)
-    g.fillRect(634, 491, 1, 1)
-
-    // A coin, on its edge in a crack. It has been there a while.
-    g.fillStyle = T.lamp
-    g.fillRect(470, 492, 1, 3)
-    g.fillStyle = T.lampDim
-    g.fillRect(471, 493, 1, 2)
-
-    /* A rubber duck. There is no explaining a rubber duck. */
-    g.fillStyle = '#e8c23a'
-    g.fillRect(928, 484, 11, 7)
-    g.fillRect(935, 479, 6, 5)
-    g.fillStyle = '#c8942a'
-    g.fillRect(928, 490, 11, 1)
-    g.fillStyle = '#e0662a'
-    g.fillRect(941, 481, 3, 2)
-    g.fillStyle = T.railDark
-    g.fillRect(939, 480, 1, 1)
-
-    /* Steam vent. The plume itself is drawn per frame; this is the pipe
-       it comes out of. */
-    g.fillStyle = T.rail
-    g.fillRect(468, ROOF_TOP + 66, 12, 26)
-    g.fillStyle = T.roofLit
-    g.fillRect(468, ROOF_TOP + 66, 12, 2)
-    g.fillRect(468, ROOF_TOP + 66, 2, 26)
-    g.fillStyle = T.railDark
-    g.fillRect(466, ROOF_TOP + 64, 16, 3)
+       What is left is the deck, the parapet and the brazier — and the
+       brazier is drawn per frame in drawFire, not here. */
   }
 
   function buildStatic() {
@@ -2918,19 +3369,67 @@
   }
 
   /* ==================================================================
+     REBUILDING WITHOUT A STALL
+
+     Toggling the rain rebuilds every static layer, because rain
+     changes them: the sky carries a wash, the roof is wet, and the
+     colour the whole city recedes toward is different. That is right,
+     and it is also about 134ms of synchronous canvas work — eight
+     frames dropped in a row, landing at the exact moment the weather
+     changes, which is the exact moment you are watching. That stall
+     was the jitter. Not the ramp, not the dissolve: a hang.
+
+     So the work is queued instead, one piece per frame, and the
+     dissolve snapshot is HELD over the top while it drains. The
+     snapshot is a picture of the world as it was, so the fact that the
+     layers underneath are half old and half new for a few frames is
+     invisible — and the falling weather is on its own canvas at 60fps,
+     so the frame never actually freezes. When the queue empties the
+     dissolve is released and plays out normally.
+
+     Nine steps at roughly 15ms each, under a full frame budget. */
+  let rebuildQueue = []
+
+  function stageRebuild() {
+    // Before first paint, and under reduced motion, there is nothing to
+    // hide behind and nothing watching — just do it.
+    if (!ready || !animating) {
+      rebuildQueue = []
+      buildStatic()
+      return
+    }
+    beginDissolve()
+    rebuildQueue = [
+      buildSky,
+      ...skylineSteps(),
+      buildClouds,
+      buildViaduct,
+      buildRoof,
+    ]
+  }
+
+  function drainRebuild() {
+    if (!rebuildQueue.length) return false
+    rebuildQueue.shift()()
+    // hold the dissolve at full while there is more to do
+    if (rebuildQueue.length) dissolveT0 = performance.now()
+    return true
+  }
+
+  /* ==================================================================
      PARTICLES
      ================================================================== */
   const stars = (function () {
     const rnd = mulberry32(9271)
     const out = []
-    for (let i = 0; i < 900; i++) {
+    for (let i = 0; i < 420; i++) {
       const x = Math.floor(rnd() * W)
       const y = Math.floor(rnd() * (SKYLINE - 130))
       if (rnd() < y / (SKYLINE - 130)) continue
       if (Math.hypot(x - ORB_X, y - ORB_Y) < ORB_R + 22) continue
       out.push({
         x, y,
-        bright: rnd(),
+        bright: rnd() * 0.72,
         warm: rnd() < 0.06,
         phase: Math.floor(rnd() * 40),
         rate: 16 + Math.floor(rnd() * 30),
@@ -2968,17 +3467,6 @@
      them tumbling so it winks out every few seconds. They are the
      smallest possible thing in the scene, and the sky needs something
      that moves at almost no speed at all to sit against the clouds. */
-  /* Felis Minor. Ears, head, chest, back, rump, tail. */
-  const CAT_NODES = [
-    [688, 100], [698, 86], [708, 100], [690, 118],
-    [712, 124], [734, 138], [754, 128], [766, 104],
-  ]
-  const CAT_LINES = [
-    [688, 100, 698, 86], [698, 86, 708, 100], [688, 100, 690, 118],
-    [708, 100, 712, 124], [690, 118, 712, 124], [712, 124, 734, 138],
-    [734, 138, 754, 128], [754, 128, 766, 104],
-  ]
-
   const satellites = [
     { y: 38, sp: 0.20, off: 120, blink: 0 },
     { y: 88, sp: -0.14, off: 640, blink: 17 },
@@ -3329,11 +3817,14 @@
 
   /* A landing adds GROW pixels, not one. A single pixel per flake is
      what a simulation would do; at 12fps with a couple of hundred
-     flakes it takes several minutes for a ledge to read as covered,
-     which is several minutes of the scene looking like it has only
-     just started snowing. The bank has to build while you are watching
-     it, so each flake is worth a few. */
-  const GROW = 4
+     flakes it takes several minutes for a ledge to read as covered.
+
+     But four was the other end of the same mistake. Two hundred flakes
+     landing at four pixels each fills an eighteen-pixel cap in about
+     two seconds — so the bank did not build, it appeared, which is
+     most of what made the snow read as arriving all at once. Two is
+     the number that lets you watch it happen. */
+  const GROW = 2
 
   function settle(pile, cx, cap) {
     for (let k = 0; k < GROW; k++) {
@@ -3347,19 +3838,32 @@
     }
   }
 
-  /* When the snow is switched on the roof already carries a blanket, so
-     the ledges cannot start bare — the parapet and the window lip are
-     seeded with a shallow, slightly uneven bank and grow from there. */
+  /* The ledges are seeded so they do not start bare — but only in
+     proportion to how much snow has actually fallen.
+
+     They used to be seeded flat, at a fixed depth, the instant the
+     weather swapped: press the button and there was already a bank on
+     the parapet and a bank on the window before one flake had landed.
+     Scaling the seed by snowLevel — which is zero at the moment of the
+     swap and climbs with the fall — means the first frame of snow has
+     nothing lying on it, and everything you see afterwards got there
+     by falling. */
   function seedPanelPile() {
     const p = panelRect()
     if (!p || p.y0 <= 0) return
     const from = Math.max(0, Math.ceil(p.x0))
     const to = Math.min(W - 1, Math.floor(p.x1))
-    for (let x = from; x <= to; x++) panelPile[x] = 3 + ((x >> 2) % 4 === 0 ? 1 : 0)
+    const d = 3 * snowLevel
+    for (let x = from; x <= to; x++) {
+      panelPile[x] = Math.round(d + ((x >> 2) % 4 === 0 ? snowLevel : 0))
+    }
   }
 
   function seedPiles() {
-    for (let x = 0; x < W; x++) snowPile[x] = 2 + ((x >> 2) % 3 === 0 ? 1 : 0)
+    const d = 2 * snowLevel
+    for (let x = 0; x < W; x++) {
+      snowPile[x] = Math.round(d + ((x >> 2) % 3 === 0 ? snowLevel : 0))
+    }
     seedPanelPile()
   }
 
@@ -3505,10 +4009,106 @@
   let frame = 0
   let last = 0
 
-  function blit(buf, offset) {
+  function blit(buf, offset, lift) {
     const o = ((offset % W) + W) % W
-    ctx.drawImage(buf.c, o, 0, W, H, 0, 0, W, H)
+    // source rect is in device pixels, destination in authored ones —
+    // the context transform scales the latter back up, so the copy is
+    // 1:1 and nothing is resampled
+    ctx.drawImage(buf.c, dev(o), 0, dev(W), dev(H), 0, -(lift || 0), W, H)
   }
+
+  /* ---- the ground line ----
+
+     Every skyline was standing on the SAME line. Four ranks of
+     buildings, all with their feet at y = SKYLINE, which is not what
+     distance does: the further away a thing is, the higher its base
+     sits in your view. That single shared baseline was doing more to
+     flatten this picture than any amount of haze, because no amount of
+     value separation can undo the statement "all of these are the same
+     distance away" made by four feet on one floor.
+
+     Each layer is lifted now, furthest highest. Below its feet goes a
+     band of its own darkest value — the undifferentiated mass of city
+     at that distance — so a gap between near towers shows the layer
+     behind it going down to the ground rather than showing sky at
+     street level. The nearer layer draws over the top of all of it. */
+  /* ==================================================================
+     SEPARATING THE NEAR PLANE
+
+     The rooftop and the city behind it were sitting in the same space.
+     Not because the values were wrong — the layers recede properly now
+     — but because there was nothing marking the BOUNDARY between the
+     furthest thing you are standing in and the nearest thing you are
+     looking at. Two planes at similar value with a hard edge between
+     them read as one flat picture with a line on it, which is exactly
+     what was happening.
+
+     Real depth at that boundary comes from two things, and both are
+     gradients, and both were impossible here until light got real
+     alpha. Now that it has:
+
+     ONE — the city falls into shadow as it comes down to meet the
+     parapet. Distance does not only desaturate, it also darkens at the
+     base where the air is thickest and no light is getting out. A
+     smooth fall into `edge` over the last fifty pixels does more to
+     push the skyline back than any amount of haze on the buildings
+     themselves, because it is the only cue in the frame that says
+     "this stops here and something else starts".
+
+     TWO — the deck recedes. A rooftop seen from standing height is a
+     plane going away from you, so it is darkest at the far edge and
+     opens up toward your feet. It was painted at one flat value from
+     the parapet to the bottom of the frame, which is a wall, not a
+     floor.
+
+     Both are drawn as linear gradients rather than dithered, and that
+     is deliberate: a dither is a texture, and a texture laid over the
+     most detailed part of the picture is what caused every problem
+     this scene has had. These are pure value, no pattern, invisible as
+     an effect and only legible as space. */
+  function separateCity() {
+    /* Taller and much deeper than the first attempt. Half a stop of
+       shadow was polite and did not separate anything; the city has to
+       genuinely go out as it comes down to the near plane, so the last
+       few pixels above the coping are nearly solid. Against that, the
+       catch light on the coping has something to be bright against —
+       the two cues only work as a pair. */
+    const top = ROOF_TOP - 74
+    const grd = ctx.createLinearGradient(0, top, 0, ROOF_TOP + 4)
+    grd.addColorStop(0, rgba(T.edge, 0))
+    grd.addColorStop(0.4, rgba(T.edge, 0.18))
+    grd.addColorStop(0.75, rgba(T.edge, 0.52))
+    grd.addColorStop(1, rgba(T.edge, 0.88))
+    ctx.fillStyle = grd
+    ctx.fillRect(0, top, W, ROOF_TOP + 4 - top)
+  }
+
+  function recedeDeck() {
+    // starts below the parapet's foot so the coping keeps its own
+    // modelling — the rail is an object, not part of the floor
+    /* Kept deliberately light. The first pass ran this to 0.5 and the
+       deck read as space beautifully — and every object standing on it
+       went to silhouette, because the props are modelled in three
+       close values and half a stop of black eats all three. The floor
+       only has to fall away enough to be a floor; the things on it
+       have to stay readable, and that is the more important of the
+       two. */
+    const from = ROOF_TOP + 48
+    const grd = ctx.createLinearGradient(0, from, 0, H)
+    grd.addColorStop(0, rgba(T.edge, 0.3))
+    grd.addColorStop(0.5, rgba(T.edge, 0.09))
+    grd.addColorStop(1, rgba(T.edge, 0))
+    ctx.fillStyle = grd
+    ctx.fillRect(0, from, W, H - from)
+  }
+
+  function ground(colour, lift) {
+    if (!lift) return
+    ctx.fillStyle = colour
+    ctx.fillRect(0, SKYLINE - lift, W, lift + 2)
+  }
+
+  const LIFT = [20, 13, 6, 0] // ridge, city 0..2 — in authored pixels
 
   function drawStars() {
     for (const s of stars) {
@@ -3538,23 +4138,9 @@
       px(Math.round(x) - 30, s.y, T.starDim)
     }
 
-    /* A constellation, in the shape of a sitting cat. The stars are the
-       bright part; the lines between them are dithered down almost to
-       nothing, so it reads as an ordinary patch of sky until you notice
-       it doesn't. */
-    for (const [ax, ay, bx, by] of CAT_LINES) {
-      const steps = Math.max(Math.abs(bx - ax), Math.abs(by - ay))
-      for (let k = 1; k < steps; k++) {
-        dot(ctx, Math.round(ax + ((bx - ax) * k) / steps), Math.round(ay + ((by - ay) * k) / steps), 0.16, T.starDim)
-      }
-    }
-    for (const [sx2, sy2] of CAT_NODES) {
-      px(sx2, sy2, T.star)
-      if ((frame + sx2) % 34 > 4) {
-        px(sx2 - 1, sy2, T.starDim)
-        px(sx2 + 1, sy2, T.starDim)
-      }
-    }
+    /* The cat constellation used to be drawn here — eight nodes with
+       dithered lines between them. It was a nice thing to find and it
+       was one more thing in a sky that already had too much in it. */
 
     /* A shooting star, rarely. Six frames, then the sky is empty again
        for the best part of a minute — which is the only thing that
@@ -3603,102 +4189,6 @@
      the city rather than part of the interface. */
   const SHIP_CYCLE = 2100
   const SHIP_RUN = 760
-
-  function drawAirship() {
-    const t = frame % SHIP_CYCLE
-    if (t >= SHIP_RUN) return
-    const x = Math.round(-130 + (t / SHIP_RUN) * (W + 260))
-    const y = 146 + Math.round(Math.sin(t * 0.02) * 5)
-
-    const L = 52 // half length. The nose is at +x: it flies left to right.
-    const V = 13 // half height
-    const tail = x - L + 2
-
-    /* Hull, three values down the section: a crown catching the sky, a
-       body, and a belly in shadow. A lozenge filled at one value is
-       what made this read as a sticker rather than as a volume. */
-    for (let dy = -V; dy <= V; dy++) {
-      const s = Math.round(L * Math.sqrt(Math.max(0, 1 - (dy / V) ** 2)))
-      if (!s) continue
-      ctx.fillStyle = dy < -V * 0.5 ? T.shipLit : dy > V * 0.45 ? T.shipDark : T.ship
-      ctx.fillRect(x - s, y + dy, s * 2, 1)
-    }
-
-    /* Ring frames — the hoops the envelope is built around. Dashed, so
-       they read as structure showing through fabric rather than as
-       stripes painted on it. Plus one longitudinal seam. */
-    ctx.fillStyle = T.shipDark
-    for (let k = -3; k <= 3; k++) {
-      const rx = k * 15
-      const h = Math.round(V * Math.sqrt(Math.max(0, 1 - (rx / L) ** 2)))
-      for (let dy = -h; dy <= h; dy++) {
-        if ((dy + 100) & 1) continue
-        ctx.fillRect(x + rx, y + dy, 1, 1)
-      }
-    }
-    ctx.fillStyle = T.shipLit
-    ctx.fillRect(x - L + 8, y - 2, L * 2 - 16, 1)
-
-    // nose cap and mooring cone
-    ctx.fillStyle = T.shipDark
-    ctx.fillRect(x + L - 5, y - 4, 5, 8)
-    ctx.fillRect(x + L, y - 1, 4, 2)
-
-    // cruciform tail: an upper fin, a lower fin, and the side fin seen
-    // almost edge-on
-    ctx.fillStyle = T.ship
-    ctx.fillRect(tail, y - V - 9, 17, 11)
-    ctx.fillRect(tail, y + V - 2, 17, 11)
-    ctx.fillStyle = T.shipLit
-    ctx.fillRect(tail, y - V - 9, 17, 1)
-    ctx.fillRect(tail, y + V + 8, 17, 1)
-    ctx.fillStyle = T.shipDark
-    ctx.fillRect(tail, y - 2, 15, 4)
-    ctx.fillRect(tail + 12, y - V - 9, 1, 11) // rudder hinges
-    ctx.fillRect(tail + 12, y + V - 2, 1, 11)
-
-    // engine nacelles, with two-frame propellers
-    for (const ex of [x - 26, x + 12]) {
-      ctx.fillStyle = T.shipDark
-      ctx.fillRect(ex, y + V - 3, 11, 7)
-      ctx.fillStyle = T.ship
-      ctx.fillRect(ex, y + V - 3, 11, 1)
-      ctx.fillStyle = T.shipLit
-      if (frame & 1) ctx.fillRect(ex + 12, y + V - 6, 1, 13)
-      else {
-        ctx.fillRect(ex + 12, y + V - 4, 1, 3)
-        ctx.fillRect(ex + 12, y + V + 2, 1, 3)
-      }
-    }
-
-    // gondola, slung under on two struts
-    ctx.fillStyle = T.shipDark
-    ctx.fillRect(x - 13, y + V - 1, 1, 3)
-    ctx.fillRect(x + 14, y + V - 1, 1, 3)
-    ctx.fillRect(x - 15, y + V + 2, 31, 8)
-    ctx.fillStyle = T.ship
-    ctx.fillRect(x - 15, y + V + 2, 31, 1)
-    ctx.fillStyle = T.trainWin
-    for (let k = 0; k < 5; k++) ctx.fillRect(x - 12 + k * 6, y + V + 4, 3, 3)
-
-    /* The banner is a lit sign board mounted on the flank — framed,
-       with its own bezel — not type painted straight onto the envelope.
-       That was the other half of why the words sat on top of the
-       airship instead of on it. */
-    const s = BANNERS[Math.floor(frame / SHIP_CYCLE) % BANNERS.length]
-    const bw = textW(s) + 7
-    const bx = x - Math.round(bw / 2)
-    ctx.fillStyle = T.shipDark
-    ctx.fillRect(bx - 1, y - 7, bw + 2, 13)
-    ctx.fillStyle = T.shipTrim
-    ctx.fillRect(bx - 1, y - 7, bw + 2, 1)
-    ctx.fillRect(bx - 1, y + 5, bw + 2, 1)
-    text(ctx, s, bx + 3, y - 4, T.shipTrim)
-
-    // navigation lights, out of phase: starboard at the nose, port aft
-    if (frame % 12 < 5) px(x + L + 4, y, '#3ef0ff')
-    if ((frame + 6) % 12 < 5) px(tail - 1, y, '#ff3ea5')
-  }
 
   /* The lighthouse beams. Drawn at buffer-x minus the near layer's
      offset, so they stay on their tower as it parallaxes. The beam
@@ -3767,14 +4257,13 @@
         for (let k = 0; k < 5; k++) {
           if ((frame + k) % 5 === 0) px(x - 13 + k * 6, y + 3, T.neon[k % T.neon.length])
         }
-        // a tractor beam, while it is parked
+        /* A tractor beam, while it is parked. It opens and closes
+           rather than snapping on, because a light that arrives at
+           full width is a rectangle appearing, not a beam. */
         if (t > 54 && t < 100) {
-          for (let k = 0; k < 60; k++) {
-            const w2 = 2 + k * 0.22
-            for (let d = -w2; d <= w2; d++) {
-              dot(ctx, Math.round(x + d), y + 4 + k, (1 - k / 60) * 0.5, T.trainWin)
-            }
-          }
+          const k = Math.min(1, (t - 54) / 10, (100 - t) / 10)
+          beam(ctx, x, y + 4, 16 * k, 62, T.trainWin, 1.5 * k)
+          glow(ctx, x - 5, y + 2, 10, 3, 8, T.trainWin, 1.2 * k)
         }
       },
     },
@@ -3843,33 +4332,6 @@
             dot(ctx, Math.round(cxk + d), y + 9 + k, (1 - k / 120) * 0.45, T.lamp)
           }
         }
-      },
-    },
-    {
-      // A little plane towing a banner. The banner is the joke.
-      run: 420,
-      draw(t, seed) {
-        const x = Math.round(W + 120 - (t / 420) * (W + 280))
-        const y = 108 + Math.round(Math.sin(t * 0.04) * 4)
-        const c = T.city[2]
-        ctx.fillStyle = c.fill
-        ctx.fillRect(x, y, 14, 4)
-        ctx.fillRect(x + 12, y - 2, 4, 3)
-        ctx.fillStyle = c.lit
-        ctx.fillRect(x + 3, y - 3, 7, 2) // wing
-        ctx.fillRect(x + 1, y + 4, 6, 2)
-        ctx.fillRect(x - 1, y - 4, 2, 5) // tailplane
-        if (frame % 6 < 3) px(x + 16, y, T.neon[3])
-
-        const s = BANNERS[seed % BANNERS.length]
-        const bw = textW(s) + 8
-        ctx.fillStyle = c.dark
-        ctx.fillRect(x - 12 - bw, y - 5, bw, 13)
-        ctx.fillStyle = c.lit
-        ctx.fillRect(x - 12 - bw, y - 5, bw, 1)
-        ctx.fillRect(x - 12 - bw, y + 7, bw, 1)
-        for (let k = 0; k < 10; k++) dot(ctx, x - 2 - k, y + 1, 1, c.lit) // tow line
-        text(ctx, s, x - 8 - bw, y - 2, T.neon[1])
       },
     },
     {
@@ -3950,7 +4412,8 @@
      individual cells is how a tile engine would do it — far cheaper than
      regenerating the layer, and it reads as a city going about its
      night. Beacons invert: they blink ON rather than off. */
-  function flicker(layer, offset) {
+  function flicker(layer, offset, lift) {
+    const ly = lift || 0
     const o = ((offset % W) + W) % W
     const list = layer.windows
     for (let i = 0; i < list.length; i++) {
@@ -3974,7 +4437,7 @@
         const sx2 = wnd.x - o
         if (sx2 < -40 || sx2 >= W) continue
         ctx.fillStyle = dark ? wnd.off : wnd.col
-        ctx.fillRect(sx2, wnd.y, wnd.w, wnd.h)
+        ctx.fillRect(sx2, wnd.y - ly, wnd.w, wnd.h)
         continue
       }
 
@@ -3990,7 +4453,7 @@
          started carrying their own tint is no longer the same as the
          layer's fill. Landmarks have no tint and fall back to it. */
       ctx.fillStyle = beacon ? '#ff5a4a' : wnd.wall || layer.fill
-      ctx.fillRect(sx, wnd.y, wnd.w, wnd.h)
+      ctx.fillRect(sx, wnd.y - ly, wnd.w, wnd.h)
     }
   }
 
@@ -4130,7 +4593,44 @@
   const CAT_BASE = ROOF_TOP + 6
 
   let pokeAt = -999
+  let pokes = 0
   let secret = false
+
+  /* What it says when you poke it.
+
+     The first line is fixed, because the first poke is the one
+     everybody makes and it should always land the same joke. After
+     that it is drawn at random from the pool, never repeating the line
+     just used — so a second visitor gets a different cat, and somebody
+     who keeps poking gets a cat with opinions rather than a list they
+     can reach the end of.
+
+     The last entry is not in the random pool. It is the reward for
+     eight pokes, and once it is reached it stays. */
+  const CAT_SAYS = [
+    'DO NOT TOUCH ME',
+    'I SAID DO NOT',
+    'THIS IS MY ROOF',
+    'I AM WORKING',
+    'RUDE',
+    'PAWS OFF',
+    'GO READ THE MENU',
+    'THE DUCK LIKES THIS',
+    'I WAS HERE FIRST',
+    'ASK THE PIGEON',
+    'NOT A BUTTON',
+    'HMPH',
+  ]
+  const CAT_RELENTS = 'FINE. ONE PAT.'
+
+  let catLine = CAT_SAYS[0]
+
+  /* What it DOES, on top of what it says. One of three, picked with
+     the line: a paw swipe, a full turn of the back, or an ear-flat
+     hunch. The action is what makes the poke feel answered — a speech
+     bubble on a motionless cat is a caption, not a reaction. */
+  const CAT_ACTS = ['swipe', 'turn', 'hunch']
+  let catAct = 'swipe'
 
   /* Click the cat and it notices you. The hit test undoes the same
      object-fit: cover mapping the panel uses, and it listens on the
@@ -4139,96 +4639,324 @@
     const { scale, ox, oy } = viewMap()
     const cx = (e.clientX - ox) / scale
     const cy = (e.clientY - oy) / scale
-    if (Math.abs(cx - CAT_X) > 18) return
-    if (cy < CAT_BASE - 58 || cy > CAT_BASE + 4) return
-    pokeAt = frame
+
+    // the cat
+    if (Math.abs(cx - CAT_X) <= 18 && cy >= CAT_BASE - 58 && cy <= CAT_BASE + 4) {
+      pokeAt = frame
+      pokes++
+      if (pokes >= 8) {
+        catLine = CAT_RELENTS
+        catAct = 'turn'
+      } else if (pokes === 1) {
+        catLine = CAT_SAYS[0]
+        catAct = 'hunch'
+      } else {
+        let next = catLine
+        while (next === catLine) next = CAT_SAYS[Math.floor(Math.random() * CAT_SAYS.length)]
+        catLine = next
+        catAct = CAT_ACTS[Math.floor(Math.random() * CAT_ACTS.length)]
+      }
+    }
   })
+
+  /* A speech bubble in the pixel font, with a tail pointing down at
+     whoever is talking. Hard edges and a one-pixel rim, like every
+     other box in this project — the bubble is a UI element that has to
+     live inside the picture, so it is built out of the picture's
+     vocabulary rather than out of a rounded rectangle. */
+  function bubble(cx, baseY, line, col) {
+    const tw = textW(line)
+    const bw = tw + 10
+    const bh = 15
+    const bx = Math.round(cx - bw / 2)
+    const by = baseY - bh
+
+    ctx.fillStyle = T.signBox
+    ctx.fillRect(bx, by, bw, bh)
+    ctx.fillStyle = col
+    ctx.fillRect(bx, by, bw, 1)
+    ctx.fillRect(bx, by + bh - 1, bw, 1)
+    ctx.fillRect(bx, by, 1, bh)
+    ctx.fillRect(bx + bw - 1, by, 1, bh)
+
+    // the tail, three stepped rows narrowing to a point
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = T.signBox
+      ctx.fillRect(cx - 3 + i, by + bh + i, 6 - i * 2, 1)
+      ctx.fillStyle = col
+      ctx.fillRect(cx - 3 + i, by + bh + i, 1, 1)
+      ctx.fillRect(cx + 2 - i, by + bh + i, 1, 1)
+    }
+
+    text(ctx, line, bx + 5, by + 5, col)
+  }
 
   function drawCat() {
     const c = T.cat
     const rim = T.catRim
     ctx.fillStyle = c
 
-    // tail, curling right — two frames
-    const flickTail = (frame % 26) < 13 ? 0 : -2
+    const poked = frame - pokeAt
+    const cross = poked < 72 && !secret
+    const noticed = poked < 30 || cross || secret
+
+    /* Turning its back is the most withering thing a cat can do and it
+       costs almost nothing to draw: take away the muzzle, the whiskers,
+       the nose and the eyes, and what is left is the back of a head.
+       The absence IS the animation. */
+    const turned = cross && catAct === 'turn'
+
+    // tail, curling right — two frames, and lashing twice as fast when
+    // it is cross, because that is the other thing a cross cat does
+    const flickTail = (frame % (cross ? 12 : 26)) < (cross ? 6 : 13) ? 0 : -2
     for (let i = 0; i < 22; i++) {
       const tx = CAT_X + 11 + i
       const ty = CAT_BASE - 1 - Math.round(Math.sin((i / 22) * 2.1) * 13) - (i > 14 ? flickTail : 0)
       ctx.fillRect(tx, ty, 2, 3)
     }
 
-    // haunches and body
+    /* ---- the body ----
+       Two stacked cones with a waist between them was a snowman. A
+       sitting cat has a HEAVY seat that flares at the floor, a waist
+       that pulls in above it, and a chest that comes forward again —
+       so the profile is a shallow S, not a triangle. Driving the width
+       off a curve rather than a straight taper is the whole
+       difference, and it costs one sine. */
     for (let i = 0; i < 30; i++) {
       const y = CAT_BASE - 1 - i
-      const half = Math.round(13 - (i / 30) * 6.5)
+      const u = i / 30
+      const half = Math.round(14 - u * 8 + Math.sin(u * 3.0) * 1.8)
       ctx.fillRect(CAT_X - half, y, half * 2, 1)
     }
 
-    // shoulders into head
+    // shoulders into head, with a neck that actually narrows
     for (let i = 0; i < 16; i++) {
       const y = CAT_BASE - 31 - i
-      const half = Math.round(7 + Math.sin((i / 16) * 3.14) * 2.5)
+      const u = i / 16
+      const half = Math.round(6.5 + Math.sin(u * 3.14) * 2.2 + u * 1.8)
       ctx.fillRect(CAT_X - half, y, half * 2, 1)
+    }
+
+    /* Cheek ruff. A cat's face is wider than its skull because of the
+       fur either side of it, and squaring that off is what stops the
+       head reading as a ball on a neck. Two stepped pixels a side. */
+    if (!turned) {
+      ctx.fillRect(CAT_X - 11, CAT_BASE - 42, 2, 4)
+      ctx.fillRect(CAT_X + 9, CAT_BASE - 42, 2, 4)
+      ctx.fillRect(CAT_X - 10, CAT_BASE - 38, 2, 2)
+      ctx.fillRect(CAT_X + 8, CAT_BASE - 38, 2, 2)
     }
 
     // the head is turned a little to the left, so a muzzle breaks the
     // profile and one eye can catch the city
-    ctx.fillRect(CAT_X - 11, CAT_BASE - 44, 4, 5)
+    if (!turned) ctx.fillRect(CAT_X - 11, CAT_BASE - 44, 4, 5)
+
+    /* ---- detail without breaking the cut-out ----
+
+       The first attempt at this put a pale chest, a haunch crescent
+       and four tabby bars INSIDE the body, and it destroyed the cat:
+       the whole animal works because it is one unbroken dark shape
+       against a lit city, and every mid-value patch laid into it read
+       as a hole rather than as fur.
+
+       So the detail goes on the EDGE instead, where a silhouette can
+       actually carry it. A notch between the forelegs, toes bitten out
+       of the paws, a rim down the near leg and round the haunch. Same
+       amount of information, none of it costing the cut-out — which is
+       the only reason the cat reads at all from across the roof. */
+
+    // forelegs: one dark seam between them, and toes cut into the paws
+    ctx.fillStyle = T.catShade || c
+    ctx.fillRect(CAT_X - 1, CAT_BASE - 14, 1, 12)
+    ctx.fillRect(CAT_X - 4, CAT_BASE - 2, 1, 2)
+    ctx.fillRect(CAT_X + 3, CAT_BASE - 2, 1, 2)
+
+    // the haunch crease, a short arc rather than a filled crescent
+    for (let i = 0; i < 9; i++) {
+      const r = Math.round(Math.sin((i / 9) * 3.14) * 4)
+      ctx.fillRect(CAT_X + 6 + r, CAT_BASE - 13 + i, 1, 1)
+    }
+
+    /* Tabby bars over the back. One pixel, and only on the shadowed
+       flank where they sit against body colour rather than against the
+       skyline — a bar that reaches the silhouette edge would notch it. */
+    for (let b = 0; b < 4; b++) {
+      const y = CAT_BASE - 27 + b * 5
+      ctx.fillRect(CAT_X + 3, y, Math.round(7 - b * 1.1), 1)
+    }
 
     /* Ears. The far one twitches every few seconds — one pixel, for two
        frames. It is the smallest possible thing that can happen and it
        is most of why the cat reads as alive rather than as a decal. */
     const twitch = frame % 83 < 2 ? 1 : 0
-    for (let i = 0; i < 8; i++) {
-      const y = CAT_BASE - 47 - i
-      const w = 4 - Math.floor(i / 2)
-      ctx.fillRect(CAT_X - 8, y, w, 1)
-      ctx.fillRect(CAT_X + 8 - w, y - twitch, w, 1)
+    if (!cross && !turned) {
+      /* Taller than they were and tapering a pixel every other row, so
+         they read as ears rather than as two square tabs. */
+      for (let i = 0; i < 9; i++) {
+        const y = CAT_BASE - 48 - i
+        const w = Math.max(1, 5 - Math.floor(i / 2))
+        ctx.fillRect(CAT_X - 9, y, w, 1)
+        ctx.fillRect(CAT_X + 9 - w, y - twitch, w, 1)
+      }
+      // and a slice of pink inside each. An ear with no inner ear is a horn.
+      ctx.fillStyle = T.catNose || rim
+      for (let i = 0; i < 4; i++) {
+        const w = Math.max(1, 3 - Math.floor(i / 2))
+        ctx.fillRect(CAT_X - 8, CAT_BASE - 47 - i, w, 1)
+        ctx.fillRect(CAT_X + 8 - w, CAT_BASE - 47 - i - twitch, w, 1)
+      }
+      ctx.fillStyle = c
     }
 
-    // moonlit rim down the left side
+    /* Moonlit rim down the left side. It has to follow exactly the
+       same curves the body was built from or it drifts off the
+       silhouette and reads as a scratch. */
     ctx.fillStyle = rim
     for (let i = 0; i < 30; i++) {
       const y = CAT_BASE - 1 - i
-      const half = Math.round(13 - (i / 30) * 6.5)
+      const u = i / 30
+      const half = Math.round(14 - u * 8 + Math.sin(u * 3.0) * 1.8)
       ctx.fillRect(CAT_X - half, y, 1, 1)
+      // the rim doubles where the form turns hardest, at the shoulder
+      if (i > 20 && i < 27) ctx.fillRect(CAT_X - half + 1, y, 1, 1)
     }
     for (let i = 0; i < 16; i++) {
       const y = CAT_BASE - 31 - i
-      const half = Math.round(7 + Math.sin((i / 16) * 3.14) * 2.5)
+      const u = i / 16
+      const half = Math.round(6.5 + Math.sin(u * 3.14) * 2.2 + u * 1.8)
       ctx.fillRect(CAT_X - half, y, 1, 1)
     }
-    ctx.fillRect(CAT_X - 8, CAT_BASE - 54, 1, 8)
-    ctx.fillRect(CAT_X - 11, CAT_BASE - 44, 1, 5) // muzzle edge
-    ctx.fillRect(CAT_X - 7, CAT_BASE - 46, 1, 1) // inner ear
-    ctx.fillRect(CAT_X + 6, CAT_BASE - 46, 1, 1)
-    // whiskers, on the lit side only
-    ctx.fillRect(CAT_X - 14, CAT_BASE - 43, 3, 1)
-    ctx.fillRect(CAT_X - 14, CAT_BASE - 41, 2, 1)
+    if (!cross) {
+      // rim up the outer edge of the near ear, following its new taper
+      for (let i = 0; i < 9; i++) ctx.fillRect(CAT_X - 9, CAT_BASE - 48 - i, 1, 1)
+    }
+
+    /* Rim down the near foreleg and along the top of the front paw.
+       This is the leg's only definition and it has to be on the lit
+       side, because that is the side the moon and the city are on. */
+    ctx.fillRect(CAT_X - 6, CAT_BASE - 14, 1, 12)
+    ctx.fillRect(CAT_X - 7, CAT_BASE - 3, 6, 1)
+    // and the curve of the chest, three pixels of it
+    ctx.fillRect(CAT_X - 9, CAT_BASE - 28, 1, 3)
+    ctx.fillRect(CAT_X - 10, CAT_BASE - 25, 1, 4)
+    if (!turned) {
+      ctx.fillRect(CAT_X - 11, CAT_BASE - 44, 1, 5) // muzzle edge
+      // whiskers — three a side now, and they fan rather than sit
+      // parallel, which is the difference between whiskers and a barcode
+      ctx.fillRect(CAT_X - 15, CAT_BASE - 44, 4, 1)
+      ctx.fillRect(CAT_X - 16, CAT_BASE - 42, 5, 1)
+      ctx.fillRect(CAT_X - 15, CAT_BASE - 40, 4, 1)
+
+      // nose and the line of the mouth under it
+      ctx.fillStyle = T.catNose || rim
+      ctx.fillRect(CAT_X - 10, CAT_BASE - 42, 2, 2)
+      ctx.fillStyle = T.catShade || c
+      ctx.fillRect(CAT_X - 9, CAT_BASE - 40, 1, 2)
+      ctx.fillRect(CAT_X - 11, CAT_BASE - 39, 2, 1)
+      ctx.fillRect(CAT_X - 8, CAT_BASE - 39, 2, 1)
+    } else {
+      // the back of the skull: one soft crease down the centre, and
+      // both ears now read from behind rather than in profile
+      ctx.fillStyle = T.catShade || c
+      ctx.fillRect(CAT_X - 1, CAT_BASE - 46, 2, 10)
+      ctx.fillStyle = c
+      for (let i = 0; i < 8; i++) {
+        const y = CAT_BASE - 47 - i
+        const w2 = 4 - Math.floor(i / 2)
+        ctx.fillRect(CAT_X - 9, y, w2, 1)
+        ctx.fillRect(CAT_X + 9 - w2, y, w2, 1)
+      }
+    }
+
+    // three rings down the tail, spaced wider as it thins
+    ctx.fillStyle = T.catShade || c
+    for (let r = 0; r < 3; r++) {
+      const i = 6 + r * 5
+      const tx = CAT_X + 11 + i
+      const ty = CAT_BASE - 1 - Math.round(Math.sin((i / 22) * 2.1) * 13)
+      ctx.fillRect(tx, ty, 2, 2)
+    }
 
     // a collar with a lit tag, and one eye, blinking
     ctx.fillStyle = T.catCollar
     ctx.fillRect(CAT_X - 7, CAT_BASE - 32, 14, 1)
     ctx.fillRect(CAT_X - 1, CAT_BASE - 31, 2, 2)
 
-    /* Say hello to it and it turns round to look at you. Two eyes
-       instead of one is the whole animation — the head does not need to
-       move for the gaze to. */
-    const noticed = frame - pokeAt < 30 || secret
-    if (noticed || frame % 47 > 1) {
-      ctx.fillStyle = T.catEye
-      ctx.fillRect(CAT_X - 8, CAT_BASE - 44, 2, 2)
-      if (noticed) ctx.fillRect(CAT_X - 3, CAT_BASE - 44, 2, 2)
+    /* Poke it and it turns round to look at you. Two eyes instead of
+       one is the whole animation — the head does not need to move for
+       the gaze to.
+
+       Being LOOKED at and being GLARED at are different things, so the
+       poke and the Konami code diverge here: the secret keeps the cat
+       adoring and floats a heart, while a poke narrows its eyes, flattens
+       its ears and gives it something to say. */
+    if (cross) {
+      /* Ears back. Two flat wedges laid along the top of the skull
+         instead of the two upright triangles drawn above — the single
+         clearest thing a cat does when it has had enough, and it costs
+         eight pixels. */
+      ctx.fillStyle = c
+      ctx.fillRect(CAT_X - 12, CAT_BASE - 49, 6, 3)
+      ctx.fillRect(CAT_X + 6, CAT_BASE - 49, 6, 3)
+      ctx.fillStyle = rim
+      ctx.fillRect(CAT_X - 12, CAT_BASE - 49, 1, 3)
     }
 
-    if (noticed) {
+    if (!turned && (noticed || frame % 47 > 1)) {
+      ctx.fillStyle = T.catEye
+      if (cross) {
+        // narrowed to slits, and angled inward. One row, not two.
+        ctx.fillRect(CAT_X - 8, CAT_BASE - 43, 3, 1)
+        ctx.fillRect(CAT_X - 3, CAT_BASE - 43, 3, 1)
+        ctx.fillStyle = c
+        ctx.fillRect(CAT_X - 8, CAT_BASE - 44, 2, 1)
+        ctx.fillRect(CAT_X - 1, CAT_BASE - 44, 2, 1)
+      } else {
+        ctx.fillRect(CAT_X - 8, CAT_BASE - 44, 2, 2)
+        if (noticed) ctx.fillRect(CAT_X - 3, CAT_BASE - 44, 2, 2)
+      }
+    }
+
+    /* ---- what it DOES ----
+       The action runs over the first third of the reaction, before the
+       bubble has finished being read, so the cat moves and then holds
+       its glare while you read what it said. */
+    if (cross && poked < 26) {
+      if (catAct === 'swipe') {
+        /* A paw comes off the floor, out, and back. Three positions,
+           no interpolation — the whole gesture is over in half a
+           second and that is exactly how a cat does it. */
+        const k = poked < 8 ? 0 : poked < 17 ? 1 : 2
+        const ox = [0, -7, -3][k]
+        const oy = [0, -9, -5][k]
+        ctx.fillStyle = c
+        ctx.fillRect(CAT_X - 7 + ox, CAT_BASE - 15 + oy, 4, 12 - oy)
+        ctx.fillRect(CAT_X - 8 + ox, CAT_BASE - 16 + oy, 6, 3)
+        if (k === 1) {
+          // three claws out at full extension
+          ctx.fillStyle = rim
+          for (let i = 0; i < 3; i++) ctx.fillRect(CAT_X - 11 + ox + i * 2, CAT_BASE - 19 + oy, 1, 2)
+        }
+      } else if (catAct === 'hunch') {
+        // shoulders up: one row of body pushed above the shoulder line
+        ctx.fillStyle = c
+        ctx.fillRect(CAT_X - 10, CAT_BASE - 34, 20, 3)
+        ctx.fillStyle = rim
+        ctx.fillRect(CAT_X - 10, CAT_BASE - 34, 1, 3)
+      }
+    }
+
+    if (cross) {
+      const soft = catLine === CAT_RELENTS
+      bubble(CAT_X, CAT_BASE - 58, catLine, soft ? T.catCollar : T.neon[0])
+    } else if (noticed) {
       // 7x6 heart, floating up a pixel at a time
       const HEART = [0b0110110, 0b1111111, 0b1111111, 0b0111110, 0b0011100, 0b0001000]
-      const rise = secret ? Math.round(Math.sin(frame * 0.3)) : Math.floor((frame - pokeAt) / 5)
+      const rise = secret ? Math.round(Math.sin(frame * 0.3)) : Math.floor(poked / 5)
       ctx.fillStyle = T.catCollar
       for (let r = 0; r < 6; r++) {
-        for (let c = 0; c < 7; c++) {
-          if (HEART[r] & (64 >> c)) ctx.fillRect(CAT_X - 3 + c, CAT_BASE - 64 - rise + r, 1, 1)
+        for (let ci = 0; ci < 7; ci++) {
+          if (HEART[r] & (64 >> ci)) ctx.fillRect(CAT_X - 3 + ci, CAT_BASE - 64 - rise + r, 1, 1)
         }
       }
     }
@@ -4245,6 +4973,102 @@
       }
     }
   }
+
+  /* ==================================================================
+     FIREWORKS
+
+     Click the sky. One goes up.
+
+     This replaced, in order, a step sequencer, a drawing pad, a
+     falling-block puzzle and a rooftop runner — and the reason it beat
+     all four is that it has no rules, no failure state, nothing to
+     learn and nothing to read. You click, and something lovely
+     happens, and you understand the whole thing before the first one
+     has finished bursting. Every one of the others needed a sentence
+     of explanation first, and a portfolio is not a place anybody has
+     agreed to be taught something.
+
+     It is also the only one that happens IN the city rather than in a
+     box on the page. That is the thing worth showing off here: the
+     backdrop is a program, so it can answer you.
+
+     Each shell is a rise, a burst and a fall. Thirty sparks on a
+     circle, each with its own drag, all of them fading through the
+     same three-stop ramp — hot core, sign colour, ember — which is
+     what makes a burst read as burning rather than as a scatter of
+     dots that happen to be moving apart.
+     ================================================================== */
+  const shells = []
+  const SHELL_RISE = 26
+  const SHELL_LIVE = 62
+
+  function firework(sx, sy, col, power) {
+    if (shells.length > 6) return
+    shells.push({
+      x: Math.max(20, Math.min(W - 20, sx)),
+      y: Math.max(30, Math.min(SKYLINE - 30, sy)),
+      t: 0,
+      col: col || T.neon[Math.floor(Math.random() * T.neon.length)],
+      pow: power || 1,
+      spin: Math.random() * Math.PI,
+    })
+  }
+
+  function drawShells() {
+    for (let i = shells.length - 1; i >= 0; i--) {
+      const s = shells[i]
+      s.t++
+      if (s.t > SHELL_LIVE) {
+        shells.splice(i, 1)
+        continue
+      }
+
+      if (s.t < SHELL_RISE) {
+        // the shell going up, with a short tail behind it
+        const k = s.t / SHELL_RISE
+        const y = SKYLINE - (SKYLINE - s.y) * k
+        ctx.fillStyle = T.lamp
+        ctx.fillRect(s.x, Math.round(y), 1, 3)
+        for (let n = 1; n < 6; n++) {
+          dot(ctx, s.x, Math.round(y + n * 2), (1 - n / 6) * 0.6, T.lamp)
+        }
+        if (s.t === SHELL_RISE - 1) glow(ctx, s.x - 2, s.y - 2, 4, 4, 14, s.col, 1.4)
+        continue
+      }
+
+      /* The burst. Age runs 0..1 across the remaining frames; the
+         sparks fly out on a curve that flattens, which is drag, and
+         then fall, which is gravity — two lines of arithmetic that are
+         the whole difference between fireworks and a starburst. */
+      const age = (s.t - SHELL_RISE) / (SHELL_LIVE - SHELL_RISE)
+      const reach = (1 - Math.pow(1 - age, 2.4)) * 46 * s.pow
+      const fade = 1 - age
+
+      glow(ctx, s.x - 6, s.y - 6, 12, 12, Math.round(30 * fade * s.pow), s.col, fade * 1.8)
+
+      for (let n = 0; n < 30; n++) {
+        const a = s.spin + (n / 30) * Math.PI * 2
+        const spread = 0.72 + ((n * 7) % 5) / 9
+        const px2 = Math.round(s.x + Math.cos(a) * reach * spread)
+        const py2 = Math.round(s.y + Math.sin(a) * reach * spread + age * age * 26)
+        if (px2 < 0 || px2 >= W || py2 < 0 || py2 >= SKYLINE + 10) continue
+        ctx.fillStyle = age < 0.22 ? '#ffffff' : age < 0.62 ? s.col : T.lamp
+        ctx.fillRect(px2, py2, 2, 2)
+      }
+    }
+  }
+
+  /* Click anywhere that is not the page's own column. The hit test
+     undoes the same object-fit mapping the weather uses. */
+  window.addEventListener('pointerdown', (e) => {
+    /* `target` is only guaranteed to be an Element for a real click —
+       an event dispatched at window has window as its target, and
+       window has no closest(). Guarding it rather than assuming. */
+    const t = e.target
+    if (t && t.closest && t.closest('.col, .controls, .page__head')) return
+    const { scale, ox, oy } = viewMap()
+    firework((e.clientX - ox) / scale, (e.clientY - oy) / scale)
+  })
 
   /* ---- Campfire on the roof ----
      It used to be an oil drum: twenty-six pixels across, eighteen
@@ -4266,7 +5090,16 @@
      sprite: each row tapers toward the tip, is displaced by two
      out-of-phase sines, and is filled in four bands from a dark red
      rim to a near-white core. */
-  const FIRE_X = 268
+  /* Moved in from 268. The brazier is sheltered by whatever window is
+     up — that is the whole reason it goes out when you drag one off it
+     — and the title screen is a good deal narrower than it used to be,
+     which left the fire standing out in the rain on first load. A
+     landing shot with a dead fire in it is not the landing shot.
+
+     460 sits inside the window's footprint at every viewport width the
+     clamp produces, and in the clear stretch of deck between the
+     crates and the pipe. */
+  const FIRE_X = 812
   const FIRE_BASE = ROOF_TOP + 78
   const FIRE_H = 44
 
@@ -4342,16 +5175,125 @@
   const fireSheltered = (p) =>
     !!p && FIRE_X >= p.x0 && FIRE_X <= p.x1 && p.y0 < FIRE_BASE - FIRE_H
 
-  /* Ticked from the 60fps side against real elapsed time, so "a couple
-     of seconds" is a couple of seconds and not a count of 12fps frames
-     that a slow machine would stretch. */
+  /* ---- putting it out, and getting it lit again ----
+
+     Moving the window off the brazier used to relight it. The rain
+     stopped falling on the wood, so the wood simply caught: no spark,
+     no cause, a fire that reassembled itself because the geometry said
+     it could. It was the one event on the roof that happened for no
+     reason.
+
+     Going out is still physics and still gradual — rain reaches it,
+     it gutters, it dies. Coming back is now an EVENT. Wet wood sits
+     there dead until something ignites it, and the only thing on this
+     roof capable of that is the weather: a strike comes down on the
+     brazier, the frame goes white, and the wood catches from it.
+
+     `fireArmed` is the wood being ready to take a spark — exposed but
+     unlit. `igniteAt` is the frame the bolt lands on. */
+  let fireArmed = false
+  let igniteAt = -1
+  let igniteFrom = 0
+
   function stepFire(dt, p) {
-    const exposed = weather !== 'none' && T.fire && !fireSheltered(p)
-    const step = dt / 1000 / (exposed ? FIRE_DIE : FIRE_CATCH)
-    fireLife = Math.max(0, Math.min(1, fireLife + (exposed ? -step : step)))
+    const sheltered = fireSheltered(p)
+    const wetted = weather !== 'none' && T.fire && !sheltered
+
+    if (wetted) {
+      // rain is getting to it: it dies, and stays dead
+      fireLife = Math.max(0, fireLife - dt / 1000 / FIRE_DIE)
+      if (fireLife <= 0) {
+        fireArmed = true
+        if (igniteAt < 0) {
+          // a strike is coming, but not immediately — the wait is what
+          // makes it read as weather rather than as a switch
+          igniteAt = frame + 90 + Math.floor(Math.random() * 170)
+        }
+      }
+      return
+    }
+
+    /* Sheltered, or clear weather. If it was already burning it
+       recovers; if the rain killed it, it needs the strike first. */
+    if (!fireArmed) {
+      fireLife = Math.min(1, fireLife + dt / 1000 / FIRE_CATCH)
+      return
+    }
+    /* Out of the rain with dead wood. The wood is dry now but it is
+       still dead, and dry wood does not light itself — so it waits for
+       the strike. The wait is a second or two, long enough that the
+       relight is clearly an event with a cause rather than a
+       consequence of having moved the window. */
+    if (igniteAt < 0) igniteAt = frame + 60 + Math.floor(Math.random() * 120)
+    if (frame >= igniteAt) {
+      fireArmed = false
+      igniteFrom = frame
+      igniteAt = -1
+    }
   }
 
+  /* The strike itself. A single channel down onto the brazier, stepped
+     three pixels at a time with one kink in it, and a hard white flash
+     across the whole roof on the frame it lands. Six frames, total —
+     lightning is over before you have finished seeing it. */
+  function drawIgnition() {
+    const age = frame - igniteFrom
+    if (igniteFrom <= 0 || age > 6) return
+
+    if (age < 2) {
+      ctx.fillStyle = rgba(T.lightning, age === 0 ? 0.5 : 0.2)
+      ctx.fillRect(0, ROOF_TOP - 20, W, H - ROOF_TOP + 20)
+    }
+    if (age > 3) return
+
+    let bx = FIRE_X + 6
+    ctx.fillStyle = age === 0 ? T.boltCore : T.lightning
+    for (let y = 0; y < FIRE_BASE - FIRE_H - 2; y += 3) {
+      const swing = ((y >> 3) % 2 ? 1 : -1) * (1 + ((y >> 4) % 2))
+      bx += swing
+      ctx.fillRect(bx, y, age === 0 ? 2 : 1, 3)
+    }
+    // where it lands, a burst of embers
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2
+      ctx.fillStyle = k % 2 ? '#ffd21f' : '#ff7a1a'
+      ctx.fillRect(
+        Math.round(FIRE_X + Math.cos(a) * (4 + age * 4)),
+        Math.round(FIRE_BASE - 6 + Math.sin(a) * (3 + age * 2)),
+        2,
+        2
+      )
+    }
+  }
+
+  /* ---- how big the fire is ----
+
+     It is the only object left on the terrace, so it has to carry the
+     whole foreground on its own — and at its old size it was a
+     forty-four pixel brazier alone on a hundred-and-thirty pixel deck,
+     which read as abandoned rather than as quiet.
+
+     Five thirds, and the fraction is the point. At S = 3 every
+     authored pixel is backed by three device pixels, so a scale of
+     5/3 makes each one exactly five — a whole number. Any scale that
+     is not a multiple of 1/S puts the flame's edges on fractions of a
+     device pixel and the one object in the frame that is supposed to
+     be the sharpest thing in it comes out soft.
+
+     Anchored at the foot, so it grows upward out of the deck rather
+     than away from it. */
+  const FIRE_SCALE = 5 / 3
+
   function drawFire() {
+    ctx.save()
+    ctx.translate(FIRE_X, FIRE_BASE)
+    ctx.scale(FIRE_SCALE, FIRE_SCALE)
+    ctx.translate(-FIRE_X, -FIRE_BASE)
+    drawFireAt()
+    ctx.restore()
+  }
+
+  function drawFireAt() {
     /* The fire reads the weather harder than anything else on the roof,
        because a fire is the one object whose whole purpose changes with
        it. In snow it is banked right up and throwing twice the light —
@@ -4700,7 +5642,16 @@
     ctx.fillRect(x - 4, y + 4, 8, 6)
     ctx.fillStyle = T.railDark
     ctx.fillRect(x - 4, y + 6, 8, 1)
-    if (frame % 8 < 3) px(x, y + 11, T.neon[0])
+
+    /* A searchlight down onto the roof, and a beacon that pulses. The
+       beacon used to be a single pixel appearing and vanishing, which
+       at this distance is indistinguishable from a dead pixel — it now
+       carries a glow, so it reads as a lamp. */
+    beam(ctx, x, y + 10, 13, 54, T.lamp, T.fire ? 1 : 0.4)
+    if (frame % 8 < 3) {
+      px(x, y + 11, T.neon[0])
+      glow(ctx, x - 1, y + 10, 3, 3, 7, T.neon[0], 1.4)
+    }
   }
 
   /* ---- three small things that move ---- */
@@ -4795,32 +5746,39 @@
     }
   }
 
-  /* ---- the dissolve ----
+  /* ---- the cross-fade ----
+
      A rebuild swaps the world in a single frame, which lands as a cut
      however gently the particles are ramped. So the old frame is
-     snapshotted first and then dithered away over the next second — a
-     dissolve, which is exactly how eight-bit hardware did a transition
-     and the only kind of fade this scene is allowed to use. There is no
-     opacity anywhere in it: at each step a few more of the old pixels
-     simply stop being drawn.
+     snapshotted first and taken away over the next second.
 
-     It is kept short. The snapshot is a still, so anything moving
-     underneath it ghosts, and a long dissolve turns that ghost into a
-     stutter — which is the very thing this is here to remove. */
-  const DISSOLVE_MS = 600
+     This WAS a Bayer dissolve — the old frame eroded through the same
+     ordered kernel as everything else, on the reasoning that a hard
+     mask is what eight-bit hardware would have done and opacity was
+     not allowed anywhere.
+
+     It is a real fade now, and the reason is the same one that applied
+     to the neon and to the beams. An ordered dither is a fixed lattice
+     at every level between the ends: erode a whole frame through it
+     and what you see is not a picture becoming another picture, it is
+     a grid crawling across the screen. At sixty frames a second that
+     grid is the most obviously moving thing in the transition, which
+     is precisely backwards — a transition's job is to be the one thing
+     you do not notice.
+
+     One drawImage at a falling alpha. Cheaper than the mask it
+     replaces, which needed a second full-size buffer, a clear, a copy
+     and a composited pattern fill every frame — that buffer is gone. */
+  const DISSOLVE_MS = 620
   let dissolveT0 = 0
   let snapA = null
-  let snapB = null
   let ready = false
 
   function beginDissolve() {
     if (!ready || !animating) return
-    if (!snapA) {
-      snapA = makeBuffer(W, H)
-      snapB = makeBuffer(W, H)
-    }
+    if (!snapA) snapA = makeBuffer(W, H)
     snapA.x.clearRect(0, 0, W, H)
-    snapA.x.drawImage(sceneCv, 0, 0)
+    snapA.x.drawImage(sceneCv, 0, 0, W, H)
     dissolveT0 = performance.now()
   }
 
@@ -4831,20 +5789,18 @@
       dissolveT0 = 0
       return
     }
-    /* At 60fps over 600ms the mask walks ~36 of the kernel's 64 levels
-       — the same ordered dither, four times finer in time. Still no
-       opacity anywhere: every frame is a hard mask. */
-    const lvl = Math.round((1 - el / DISSOLVE_MS) * BAYER_N)
-    if (lvl <= 0) return
-    const b = snapB.x
-    b.clearRect(0, 0, W, H)
-    b.drawImage(snapA.c, 0, 0)
-    // keep the snapshot only where the Bayer mask passes
-    b.globalCompositeOperation = 'destination-in'
-    b.fillStyle = washPattern('#ffffff', lvl)
-    b.fillRect(0, 0, W, H)
-    b.globalCompositeOperation = 'source-over'
-    screenCtx.drawImage(snapB.c, 0, 0)
+    /* Eased out rather than linear. A straight ramp holds the old
+       frame at half strength right through the middle of the fade,
+       which is where a cross-fade is most visible; pushing the curve
+       forward gets the bulk of the change done early and lets the last
+       third arrive as almost nothing. */
+    const t = el / DISSOLVE_MS
+    const a = (1 - t) * (1 - t)
+    if (a <= 0.002) return
+    screenCtx.save()
+    screenCtx.globalAlpha = a
+    screenCtx.drawImage(snapA.c, 0, 0, W, H)
+    screenCtx.restore()
   }
 
   /* ---- presenting through the tube ----
@@ -4860,9 +5816,36 @@
      size, and it costs thirty-two drawImage calls a frame instead of
      the per-pixel warp a filter would need. */
   const BANDS = 32
-  const BOW = 0.018 // how far the glass bulges. Past ~0.03 it reads as a fishbowl.
+
+  /* BOW is OFF, and this is the single biggest thing that was costing
+     the scene its crispness.
+
+     The bow cannot be done on a pixel grid. Every band was drawn from
+     960 source pixels into 960 x (1 + bulge) destination pixels — a
+     fractional ratio — with smoothing disabled, so nearest-neighbour
+     duplicated whichever columns happened to fall on the seams. A
+     different set of columns per band, at a fractional vertical offset,
+     re-resampled every frame, and then the browser upscaled the result
+     to the viewport at a second fractional ratio. Two stacked
+     non-integer resamples is precisely how a hard-edged picture turns
+     into a soft one, and no amount of `image-rendering: pixelated`
+     downstream can undo it: the damage is already baked into the
+     buffer by the time CSS sees it.
+
+     So the frame is presented 1:1 now — one blit, whole pixels, the
+     grid intact all the way to the CSS upscale. The curved-glass
+     reading is carried by the `.crt` overlay instead, which does it
+     with a vignette and a glare and costs the picture nothing.
+
+     Set BOW back above zero to restore the warp; the banded path is
+     kept intact below it. It will soften the picture again. */
+  const BOW = 0
 
   function present(src) {
+    if (!BOW) {
+      screenCtx.drawImage(src, 0, 0, W, H)
+      return
+    }
     const bh = H / BANDS
     for (let i = 0; i < BANDS; i++) {
       const sy = i * bh
@@ -4880,25 +5863,40 @@
 
   function swapWorld() {
     weather = target
-    snowLevel = weather === 'snow' ? wx : 0
+    /* Accumulation starts from nothing and is built by the fall — that
+       is the whole point of settling. Reduced motion has no fall and no
+       ramp to settle over, though, so there the world has to arrive
+       already finished or it would arrive permanently bare. */
+    snowDepth = animating ? 0 : weather === 'snow' ? 1 : 0
+    snowLevel = snowDepth
     splashes.length = 0
     runners.length = 0
     snowPile.fill(0)
     panelPile.fill(0)
-    beginDissolve()
-    buildStatic()
+    // stageRebuild takes the snapshot itself
+    stageRebuild()
     if (weather === 'snow') seedPiles()
   }
+
+  /* Accumulation is stepped against this, not against the fall. Each
+     step is a full rebuild of every static layer, so the number is a
+     straight trade: finer steps mean a smoother whitening and more
+     rebuilds. An eighth is under the threshold where a step reads as a
+     jump, and eight rebuilds spread over SETTLE_MS is nothing. */
+  const SNOW_STEP = 1 / 8
 
   function stepTransition(dt) {
     if (target !== weather) {
       // thin out what is already falling before swapping the world
       if (wx > 0) {
         wx = Math.max(0, wx - dt / RAMP_DOWN_MS)
-        // melting: the blanket recedes with the fall, in quarter steps
-        if (weather === 'snow' && Math.abs(wx - snowLevel) >= 0.25) {
-          snowLevel = wx
-          buildStatic()
+        // melting: the blanket recedes with the fall
+        if (weather === 'snow') {
+          snowDepth = Math.min(snowDepth, wx)
+          if (snowLevel - snowDepth >= SNOW_STEP || (!snowDepth && snowLevel)) {
+            snowLevel = snowDepth
+            stageRebuild()
+          }
         }
         return
       }
@@ -4909,12 +5907,26 @@
     if (wx < want) wx = Math.min(want, wx + dt / RAMP_UP_MS)
     else if (wx > want) wx = Math.max(want, wx - dt / RAMP_DOWN_MS)
 
-    /* settling: as the fall builds, the world whitens in quarter steps
-       behind it — accumulation is the evidence, so it is the thing
-       that has to arrive gradually */
-    if (weather === 'snow' && Math.abs(wx - snowLevel) >= 0.25) {
-      snowLevel = wx
-      buildStatic()
+    if (weather !== 'snow') return
+
+    /* ---- settling ----
+
+       The fall and the accumulation are two different clocks, and
+       running them off one is what made the snow arrive all at once.
+       `wx` is how hard it is coming down: that fills the air in five
+       and a half seconds, which is right, because a snowfall does
+       start quickly. `snowDepth` is how much is LYING there, and it
+       chases the fall at its own much slower rate — so the air fills,
+       and then, over the better part of a minute, the ledges and the
+       crowns and the roof go white underneath it while you watch.
+
+       That order is the whole effect. Snow reads from surfaces, and a
+       surface that is already white when the first flake lands has
+       told you it was never snowing at all. */
+    snowDepth = Math.min(wx, snowDepth + dt / SETTLE_MS)
+    if (snowDepth - snowLevel >= SNOW_STEP || (snowDepth >= 1 && snowLevel < 1)) {
+      snowLevel = snowDepth
+      stageRebuild()
     }
   }
 
@@ -4929,7 +5941,7 @@
     ctx.fillStyle = T.roof
     ctx.fillRect(0, 0, W, H)
 
-    ctx.drawImage(sky.c, 0, 0)
+    ctx.drawImage(sky.c, 0, 0, W, H)
 
     /* The flash goes in over the sky and under everything else, so the
        skyline stays a silhouette against it rather than being washed
@@ -4941,8 +5953,23 @@
     if (T.stars && (weather === 'none' || snowLevel < 0.5)) drawStars()
     blit(clouds, -Math.floor(frame / 7))
     if (flash > 0.5) drawBolt(strikeSeed)
-    drawCraft()
-    drawCameo()
+    /* ---- the events ----
+       Everything with a beginning and an end goes quiet in reading
+       mode: the airship and its banner, the saucer, the meteors, the
+       train, the drone, the paper plane. Those are what actually pull
+       an eye off a paragraph — not movement as such, but a thing
+       arriving and leaving.
+
+       The CITY keeps running underneath, at a third speed: windows
+       flicker, the cat breathes, the fire burns. That is texture
+       rather than event, and a frozen city behind a page stops being
+       a place and becomes a screenshot. */
+    const quiet = focus > 0.5
+
+    if (!quiet) {
+      drawCraft()
+      drawCameo()
+    }
     if (!T.stars) drawBirds()
 
     /* The camera catches up in steps, never smoothly: this scene has
@@ -4953,42 +5980,65 @@
       panX = Math.abs(d) <= Math.abs(step) ? panTo : panX + step
     }
 
-    // Parallax: furthest layer slowest. The ridge barely moves at all.
-    if (ridge) blit(ridge.buf, -Math.floor(frame / 40) - Math.round(panX * 0.10))
-    const o0 = -Math.floor(frame / 26) - Math.round(panX * 0.22)
-    const o1 = -Math.floor(frame / 17) - Math.round(panX * 0.42)
-    const o2 = -Math.floor(frame / 11) - Math.round(panX * 0.68)
+    /* Parallax: furthest layer slowest. The ridge barely moves at all.
+       Each layer is blitted at its own lifted ground line and then has
+       its mass painted in underneath, before the next one nearer
+       covers the top of it. */
+    /* Order matters: the mass goes down FIRST and the layer is blitted
+       on top of it, so the buildings stand ON their ground line. Drawn
+       the other way round the band's top edge cuts every tower in the
+       layer at the same height and reads as a rule ruled across the
+       city, which is the one thing it must not look like. */
+    if (ridge) {
+      ground(ridge.fill, LIFT[0])
+      blit(ridge.buf, drift(0) - Math.round(panX * 0.10), LIFT[0])
+    }
+    const o0 = drift(1) - Math.round(panX * 0.22)
+    const o1 = drift(2) - Math.round(panX * 0.42)
+    const o2 = drift(3) - Math.round(panX * 0.68)
 
-    blit(city[0].buf, o0)
-    flicker(city[0], o0)
-    blit(city[1].buf, o1)
-    flicker(city[1], o1)
-    blit(city[2].buf, o2)
-    flicker(city[2], o2)
+    ground(city[0].fill, LIFT[1])
+    blit(city[0].buf, o0, LIFT[1])
+    flicker(city[0], o0, LIFT[1])
+    ground(city[1].fill, LIFT[2])
+    blit(city[1].buf, o1, LIFT[2])
+    flicker(city[1], o1, LIFT[2])
+    blit(city[2].buf, o2, LIFT[3])
+    flicker(city[2], o2, LIFT[3])
     if (T.stars) drawLightBeams(o2) // a lighthouse beam by day is a smudge
 
     // In front of the skyline, behind the elevated line — it is flying
     // over the city, not through it.
-    drawAirship()
+    // The airship is gone: it carried a lit banner with words on it,
+    // and words in the backdrop compete with words on the page.
 
-    // The elevated line sits in front of the city and behind the roof.
-    // It drifts at its own rate, faster than the nearest buildings, so
-    // it reads as the closest thing that is still far away.
-    blit(viaduct, -Math.floor(frame / 8))
-    drawTrain()
+    /* The elevated line sits in front of the city and behind the roof.
+       It does NOT drift: it is thirty feet away and bolted down, and
+       the camera is a fixed shot from one rooftop. Only the train on
+       it moves. */
+    blit(viaduct, drift(4))
+    if (!quiet) drawTrain()
+
+    drawShells()
+
+    // everything behind the near plane now falls away into it
+    separateCity()
 
     // The rooftop is deliberately static — the cat and the brazier stand
     // on it, so it cannot scroll underneath them.
     blit(roof, 0)
-    drawWashing()
-    drawRoofLights()
-    drawTreeLights()
-    drawMoths()
-    drawSteam()
-    drawRat()
-    drawPaperPlane()
-    drawDrone()
-    drawPigeon()
+    recedeDeck()
+
+    /* ---- a clean roof ----
+       The washing line, the string lights, the tree, the moths, the
+       steam vent, the rat, the pigeon, the paper plane and the drone
+       all used to run here. Individually every one of them was a nice
+       detail; together they were nine separate small movements in the
+       bottom fifth of the frame, directly under a column of text.
+
+       A rooftop with one fire on it is a place. A rooftop with nine
+       things happening on it is a screensaver, and a screensaver is
+       the wrong thing to put behind something you want read. */
 
     /* Anything that has *landed* belongs on this canvas, behind the
        panel. Only what is still falling goes on the overlay. */
@@ -4998,8 +6048,10 @@
       drawRipples()
     }
 
-    drawCat()
-    if (T.fire) drawFire()
+    if (T.fire) {
+      drawFire()
+      drawIgnition()
+    }
 
     /* No second flash pass here. An earlier version also washed the
        city and the roof on a strike, which is what lightning physically
@@ -5063,8 +6115,7 @@
      ================================================================== */
   function setTheme(name) {
     T = THEMES[name] || THEMES.night
-    beginDissolve()
-    buildStatic()
+    stageRebuild()
     render()
   }
 
@@ -5141,6 +6192,24 @@
       render()
     },
     secret: () => secret,
+
+    /* ---- reading mode ----
+       Called by the router when it leaves home. The city dims and
+       stops; coming back brings it up again. Both over half a second,
+       because a scene that snaps to a halt reads as a crash and one
+       that snaps back reads as a jump-cut. */
+    /* Send one up. `frac` is a position across the sky from 0 to 1 and
+       `power` scales the burst, so the page can fire one without
+       knowing anything about scene coordinates. */
+    launch(frac, power, col) {
+      firework(60 + (W - 120) * frac, 74 + Math.random() * 86, col, power)
+      render()
+    },
+
+    setFocus(on) {
+      focusTo = on ? 1 : 0
+      if (!animating) focus = focusTo
+    },
   }
 
   /* ==================================================================
@@ -5153,18 +6222,67 @@
     const dt = Math.min(120, lastRaf ? t - lastRaf : 1000 / 60)
     lastRaf = t
 
-    overlay(dt)
+    // ease toward the current focus state, then let it scale motion
+    if (focus !== focusTo) {
+      const step = dt / FOCUS_MS
+      focus = focusTo > focus ? Math.min(focusTo, focus + step) : Math.max(focusTo, focus - step)
+    }
+    /* Everything stops. The frame counter included — the fire, the
+       cat and the window flicker are all counted in frames, so
+       holding it is what actually makes the picture still rather
+       than making eleven separate things individually still. */
+    const live = focus > 0.5 ? 0 : 1
 
-    if (t - last >= 1000 / FPS) {
+
+    /* One slice of any pending rebuild, before anything else this
+       frame. The dissolve snapshot is covering the screen while this
+       drains, so a layer being swapped underneath is never seen. */
+    drainRebuild()
+
+    overlay(dt * live)
+
+    /* ONE reason to repaint: the 12fps content tick.
+
+       There used to be a second — a parallax layer having crossed a
+       whole pixel — which meant renders happened at two unrelated
+       cadences that drifted against each other. The city moved on one
+       clock and everything in it on another, and the interference
+       between them is what read as jitter. One clock now, and the
+       parallax is a division of it. */
+    /* `live` gates the content tick outright. At zero the frame
+       counter holds, nothing re-renders, and present() goes on
+       showing the last painted frame — which is exactly the still
+       picture reading mode wants, and costs nothing to hold. */
+    if (live > 0) {
+      if (t - last >= 1000 / FPS) {
+        last = t
+        frame++
+        render()
+      }
+    } else {
+      // keep the clock from banking time while stopped, so coming back
+      // does not fire a burst of catch-up frames
       last = t
-      frame++
-      render()
     }
 
-    // present: the offscreen scene through the curve of the glass,
-    // then the dissolve mask over it
+    // present the offscreen scene, then the cross-fade over it
     present(sceneCv)
     drawDissolve()
+
+    /* ---- lights out ----
+       Over the FINISHED frame, so it takes the cat and the fire down
+       with the city. An L2 page is for reading, and a fire is the
+       most animated thing on this roof — leaving it burning at full
+       strength in front of a dark city made it the brightest object
+       on a page it was not supposed to be part of. Everything goes
+       behind the glass together. */
+    if (focus > 0.002) {
+      screenCtx.save()
+      screenCtx.globalAlpha = focus * LIGHTS_OUT
+      screenCtx.fillStyle = T.edge
+      screenCtx.fillRect(0, 0, W, H)
+      screenCtx.restore()
+    }
   }
 
   if (animating) requestAnimationFrame(loop)
