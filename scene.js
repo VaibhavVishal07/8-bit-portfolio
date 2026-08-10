@@ -669,26 +669,31 @@
      ================================================================== */
   const THEMES = {
     night: {
-      /* ---- NEO-GOTHAM ----
+      /* ---- CYBERPUNK ----
 
-         The ramp used to walk up the violet axis into a magenta
-         skyline, which is a pretty cyberpunk night and the wrong one
-         for this city. A Batman Beyond sky is not lilac: it is
-         near-black overhead and it BURNS at the horizon — a deep
-         oxblood red sitting on the rooftops, because the whole
-         drawing is one silhouette against one hot band of light.
+         This ramp was Batman Beyond: near-black overhead burning to
+         oxblood red on the rooftops. That is a beautiful sky and it
+         is a *comic book* sky — one silhouette against one hot band
+         of firelight, and firelight is warm, which is the one thing
+         cyberpunk is not.
 
-         Nine stops, same as before. Blue-black at the zenith, through
-         a bruised indigo, into crimson at the skyline. The colour is
-         all at the bottom of the frame where the city is, which is
-         also why the picture reads as calmer: the top two thirds are
-         nearly empty. */
+         Cyberpunk is COLD light in a dark place. The city is not lit
+         by a sunset behind it, it is lit by itself: mercury vapour,
+         argon tubes, a hundred storeys of fluorescent glass throwing
+         magenta and cyan up into the smog. So the ramp keeps its
+         shape — dark at the zenith, bright at the skyline, all the
+         colour down where the buildings are — and rotates the whole
+         thing off the red axis onto the violet one.
+
+         Nine stops. Ink blue overhead, through indigo and electric
+         violet, into a magenta glow sitting on the rooftops. The red
+         is gone entirely; nothing in this sky is warmer than pink. */
       sky: [
-        '#03040e', '#07061a', '#0d0722', '#16082c', '#210937',
-        '#340c3a', '#4e0f36', '#6d132e', '#8e1a26',
+        '#04041c', '#07082c', '#0b0b40', '#120e56', '#1d116c',
+        '#31147f', '#4e188c', '#761f92', '#a52590',
       ],
-      haze: '#c8412c',
-      smog: '#7a1a2a',
+      haze: '#d63ba6',
+      smog: '#4a1a72',
       fog: '#3a1880',
       fogAmt: [0.26, 0.11, 0.0],
       rainSky: '#0d0520',
@@ -703,8 +708,8 @@
          The underside was the same violet as the body, which made every
          cloud a flat cut-out. */
       cloud: '#2e1257', cloudLit: '#66259b', cloudDark: '#180835',
-      // cold teal, deep indigo, one thin rose — see the high pools
-      high: ['#123a63', '#241a66', '#54184e'],
+      // cold teal, deep indigo, one thin violet — see the high pools
+      high: ['#0f3a6b', '#241a72', '#521a8c'],
       /* Four tiers, not three. A sky of white dots and a few amber ones
          is a texture; adding a blue-white tier between them is what
          makes it read as stars at different temperatures. No extra
@@ -748,22 +753,31 @@
          values to draw in. The near layer is still the darkest thing in
          the frame and still reads as the nearest; it is just no longer
          a silhouette of itself. */
+      /* The glass ramps rotate with the sky. They were built for the
+         oxblood horizon, so the dominant window colour on every layer
+         was a warm one — coral, sodium, ember — and a city whose
+         windows are all firelight is a city on fire, not a cyberpunk
+         one. The repeated (dominant) entry is now cold on every
+         layer: cyan on the near towers, blue-white far away. Warm
+         stays in as the RARE draw, one or two slots out of eight,
+         which is what makes a lit kitchen at 2am read as a lit
+         kitchen instead of as the general weather. */
       cityFar: {
-        fill: '#33203c', lit: '#4a2c4c', dark: '#22152a', window: '#7a5470', warm: '#a86e66',
-        glass: ['#8a5c86', '#8a5c86', '#8a5c86', '#a06a80', '#7a5070', '#b07a72', '#96667c', '#8a5c86'],
+        fill: '#2c2450', lit: '#3e3470', dark: '#1c1838', window: '#6e7cc4', warm: '#9a76c8',
+        glass: ['#7c8ad4', '#7c8ad4', '#7c8ad4', '#8a7ccc', '#6e7cc4', '#a47cc8', '#7e94dc', '#7c8ad4'],
       },
       city: [
         {
-          fill: '#2a1533', lit: '#472344', dark: '#180b1e', window: '#c86a7a', warm: '#ff8a5c',
-          glass: ['#c86a7a', '#c86a7a', '#e0806a', '#ffb45c', '#7fd8ff', '#ff8a5c', '#a05a70', '#ffd08a'],
+          fill: '#241a48', lit: '#3c2c6e', dark: '#160f30', window: '#6ad8ff', warm: '#ff8ad0',
+          glass: ['#6ad8ff', '#6ad8ff', '#8ae8ff', '#ffd88a', '#ff6ad0', '#b06aff', '#5a9ad8', '#e8f4ff'],
         },
         {
-          fill: '#1b0f24', lit: '#3a1c34', dark: '#0d0612', window: '#e0705c', warm: '#ffb45c',
-          glass: ['#e0705c', '#e0705c', '#ff9a5c', '#ffc46b', '#6bd8ff', '#ff5c6b', '#c25a68', '#fff0c0'],
+          fill: '#170f3a', lit: '#2e1c5c', dark: '#0b0722', window: '#6ae4ff', warm: '#ffc46b',
+          glass: ['#6ae4ff', '#6ae4ff', '#9af0ff', '#ffc46b', '#ff5cc8', '#c26aff', '#4a86d8', '#fff0c0'],
         },
         {
-          fill: '#0e0716', lit: '#2a1228', dark: '#040209', window: '#ff7a5c', warm: '#ffc46b',
-          glass: ['#ff7a5c', '#ff7a5c', '#ffb06a', '#ffd88a', '#8affff', '#ff4a5c', '#ffe0a8', '#d8607a'],
+          fill: '#0c0828', lit: '#22144c', dark: '#030210', window: '#7aeaff', warm: '#ffd88a',
+          glass: ['#7aeaff', '#7aeaff', '#aaf4ff', '#ffd88a', '#ff4ad0', '#d06aff', '#5a96e8', '#ffe0a8'],
         },
       ],
       // hot pink, cyan, neon purple, electric yellow, neon green,
@@ -773,13 +787,13 @@
       neon: ['#ff2bb0', '#00f0ff', '#b026ff', '#faff00', '#00ff9d', '#ff7a1a', '#ff2d55'],
       halo: 0.5,
 
-      roof: '#0a0510', roofLit: '#2c1526', roofSpeck: '#160a18', roofDark: '#030106',
-      rail: '#170c1c', railLit: '#7a3f4c', railGlint: '#ffd0b0', railDark: '#050106',
+      roof: '#08061a', roofLit: '#241a44', roofSpeck: '#130f2c', roofDark: '#020210',
+      rail: '#140e28', railLit: '#5a3f8c', railGlint: '#e8c8ff', railDark: '#040210',
       /* `edge` is the foreground's silhouette line and is used for
          nothing else, so it can be pushed as dark as it needs to go
          without dragging any other surface down with it. `sep` is the
          haze the city is lifted with just behind that line. */
-      edge: '#050108', sep: '#8a2f3a', sepDark: '#1c0a12',
+      edge: '#040210', sep: '#7a2f9e', sepDark: '#170a26',
       bounce: ['#ff2bb0', '#00f0ff', '#b026ff'],
       wet: ['#ff2bb0', '#00f0ff', '#b026ff'],
       wetDeck: '#0d0526', wetGloss: '#5a3ba8',

@@ -79,12 +79,23 @@
      breakpoints. It never interpolates. The body face (Pixelify Sans)
      is more forgiving and only needs whole integers.
      ================================================================== */
-  --d1: 8px;    /* micro labels, paths, footers */
-  --d2: 16px;   /* meta, chips, buttons, card titles */
-  --d3: 24px;   /* section headings */
-  --d4: 32px;   /* numerals */
-  --wm: 40px;   /* wordmark, lower line */
-  --wm-a: 24px; /* wordmark, upper line */
+  /* ---- down 40% ----
+     The whole scale was set one step too loud. A 940px column with a
+     26px monospace in it holds about fifty characters a line, which is
+     a large-print edition, not a portfolio — and the wordmark at 72px
+     was a title screen sitting on top of a document.
+
+     Every token below is the old value x0.6, rounded to a whole pixel.
+     Two floors are enforced against that multiplier: the bitmap face
+     stops resolving below 8px (its glyphs are 5x7) and the reading
+     face stops being comfortable below 11px, so --d1 and --b1/--b2
+     clamp there rather than following the ratio down into mush. */
+  --d1: 8px;    /* micro labels, paths, footers  (floor) */
+  --d2: 10px;   /* meta, chips, buttons, card titles */
+  --d3: 14px;   /* section headings */
+  --d4: 20px;   /* numerals */
+  --wm: 24px;   /* wordmark, lower line */
+  --wm-a: 16px; /* wordmark, upper line */
   --wmo: 2px;   /* one step of the extrusion */
 
   /* ---- the reading scale ----
@@ -97,10 +108,10 @@
      --t1 and --t2 are aliases. Rules written against the page layout
      use them so the prose scale can move without hunting through
      every component. */
-  --b1: 14px;
-  --b2: 18px;
-  --b3: 20px;
-  --b4: 34px;
+  --b1: 11px;
+  --b2: 11px;
+  --b3: 12px;
+  --b4: 20px;
 
   --t1: var(--b1);
   --t2: var(--b3);
@@ -151,33 +162,33 @@
 @media (min-width: 1500px) {
   :root {
     --d1: 8px;
-    --d2: 16px;
-    --d3: 24px;
-    --d4: 40px;
-    --wm: 56px;
-    --wm-a: 32px;
-    --wmo: 3px;
-    --b1: 15px;
-    --b2: 18px;
-    --b3: 20px;
-    --b4: 34px;
+    --d2: 10px;
+    --d3: 14px;
+    --d4: 24px;
+    --wm: 34px;
+    --wm-a: 20px;
+    --wmo: 2px;
+    --b1: 11px;
+    --b2: 11px;
+    --b3: 13px;
+    --b4: 20px;
     --dicon: 80px;
   }
 }
 
 @media (min-width: 2400px) {
   :root {
-    --d1: 16px;
-    --d2: 24px;
-    --d3: 32px;
-    --d4: 48px;
-    --wm: 72px;
-    --wm-a: 48px;
-    --wmo: 4px;
-    --b1: 17px;
-    --b2: 21px;
-    --b3: 26px;
-    --b4: 39px;
+    --d1: 10px;
+    --d2: 14px;
+    --d3: 20px;
+    --d4: 28px;
+    --wm: 44px;
+    --wm-a: 28px;
+    --wmo: 3px;
+    --b1: 11px;
+    --b2: 13px;
+    --b3: 16px;
+    --b4: 23px;
     --taskbar-h: 62px;
     --dicon: 96px;
   }
@@ -251,7 +262,7 @@ svg { display: block; image-rendering: pixelated; }
   margin: 0 0 clamp(20px, 2.4vw, 40px);
   font-family: var(--font-display);
   font-size: var(--wm);
-  line-height: 1.14;
+  line-height: 1.05;
   color: var(--wm-face);
   /* The logotype holds still — only its colour snaps. An idle hop and a
      glitch jolt both read as the title shaking, which it should not. */
@@ -316,8 +327,8 @@ svg { display: block; image-rendering: pixelated; }
 .role {
   margin: 0 0 clamp(26px, 3vw, 50px);
   font-family: var(--font-display);
-  font-size: clamp(9px, 0.85vw, 14px);
-  line-height: 1.9;
+  font-size: clamp(8px, 0.5vw, 10px);
+  line-height: 1.4;
   letter-spacing: 2px;
   color: var(--moon);
 }
@@ -1950,7 +1961,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 .prose {
   max-width: 68ch;
   font-size: var(--b3);
-  line-height: 1.65;
+  line-height: 1.5;
   letter-spacing: 0;
   color: var(--panel-text);
 }
@@ -1994,7 +2005,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   /* The opening line is the one place the reading face goes big. It is
      a sentence, not a heading - it stays in Satoshi. */
   font-size: var(--b4);
-  line-height: 1.4;
+  line-height: 1.25;
   letter-spacing: -0.01em;
   color: var(--cream);
 }
@@ -2880,7 +2891,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 .intro {
   margin: var(--s5) 0 var(--s6);
   font-size: var(--t2);
-  line-height: 1.85;
+  line-height: 1.5;
   color: var(--panel-text);
 }
 
@@ -3107,7 +3118,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   color: var(--cream);
   text-decoration: none;
   font-size: var(--t2);
-  line-height: 1.6;
+  line-height: 1.35;
 }
 
 .reads a:hover,
@@ -3405,10 +3416,14 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 .links a:hover .links__name,
 .links a:focus-visible .links__name { color: var(--panel-edge); }
 
-/* ---- prose, at the new scale ---- */
-.intro { font-size: var(--b3); line-height: 1.9; }
-.prose { font-size: var(--b3); line-height: 1.85; }
-.reads a { font-size: var(--b3); }
+/* ---- prose, at the new scale ----
+   Leading down with the sizes. 1.9 was set for a face two steps
+   larger; at 16px it opens a gap between lines wide enough that a
+   paragraph stops reading as a block and starts reading as a list of
+   sentences. 1.5 is the mono's own comfortable measure. */
+.intro { font-size: var(--b3); line-height: 1.5; }
+.prose { font-size: var(--b3); line-height: 1.5; }
+.reads a { font-size: var(--b3); line-height: 1.35; }
 .reads__meta { font-size: var(--b1); }
 .card__name { font-size: var(--d2); }
 .card__meta { font-size: var(--b1); }
@@ -3466,7 +3481,22 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
    ================================================================== */
 .page--home .intro { margin: var(--s7) 0; }
 .page--home .cards { margin: var(--s7) 0; gap: var(--s5); }
-.page--home .sect { margin: calc(var(--s7) * 1.5) 0 var(--s5); }
+/* ---- a heading belongs to what it heads ----
+   The gap under ABOUT was the same 48px as the gap between two
+   unrelated blocks — .sect closed with --s5 and the .intro under it
+   opened with --s7, the two collapsed to the larger, and the label
+   ended up floating equidistant between the paragraph above it and
+   the one below. A heading that is not visibly attached to its own
+   text is doing the opposite of its job.
+
+   Down 60%: 48px becomes 19. The silence stays in FRONT of the
+   heading, where it separates the sections. */
+.page--home .sect { margin: calc(var(--s7) * 1.5) 0 calc(var(--s7) * 0.4); }
+
+/* Whatever follows a section label — a paragraph, the writing list —
+   opens with the same short gap, so the collapse resolves to 19px
+   instead of snapping back to --s7. */
+.page--home .sect + * { margin-top: calc(var(--s7) * 0.4); }
 .page--home .reads { margin-bottom: var(--s7); }
 .page--home .links { margin-top: calc(var(--s7) * 1.5); padding-top: var(--s6); }
 .page--home .copyright { margin-top: var(--s7); }
@@ -3547,7 +3577,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
    top of a document that is forty pixels tall is shouting. Down a
    third, still left-aligned — centring it would turn the column into
    a poster, and everything under it is ranged left. */
-.page--home .wordmark { --wm: 60px; --wm-a: 36px; --wmo: 4px; }
+.page--home .wordmark { --wm: 36px; --wm-a: 22px; --wmo: 2px; }
 
 /* ==================================================================
    THE READOUT
@@ -3572,7 +3602,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
   margin: 0 0 var(--s3);
   font-family: var(--font-body);
   font-size: var(--b2);
-  line-height: 1.7;
+  line-height: 1.45;
   color: var(--cream);
 }
 
@@ -3663,8 +3693,11 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 .page--home .col,
 .col--doc { padding-top: clamp(36px, 4.5vw, 76px); }
 
-/* ---- the name, larger again ---- */
-.page--home .wordmark { --wm: 72px; --wm-a: 42px; --wmo: 4px; }
+/* ---- the name, at the new scale ----
+   Local override, so it does NOT follow --wm from :root. It has to be
+   cut here too or the wordmark stays at its old size while everything
+   under it comes down. */
+.page--home .wordmark { --wm: 44px; --wm-a: 26px; --wmo: 3px; }
 
 /* ==================================================================
    THE SHELF
