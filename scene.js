@@ -89,7 +89,17 @@
      should never be asked for. */
   const S = (() => {
     const up = Math.max(window.innerWidth / W, window.innerHeight / H)
-    return up >= 2.6 ? 3 : up >= 1.7 ? 2 : 1
+    /* Render the city at three times the pixels wherever the display and
+       the device can take it. This is where the detail lives — not more
+       buildings, but every gradient, glow and dithered edge resolving
+       instead of stepping, so the artwork reads finer and cleaner.
+
+       The 3x buffers are large (the two looping city planes alone are
+       5760x1620), so a low-memory device is held at 2, and a viewport
+       too small to actually show the extra pixels drops to 1. */
+    const cap = (navigator.deviceMemory || 8) <= 4 ? 2 : 3
+    const want = up >= 1.3 ? 3 : up >= 0.9 ? 2 : 1
+    return Math.min(want, cap)
   })()
 
   // authored units -> device pixels, for anything compositing whole buffers
