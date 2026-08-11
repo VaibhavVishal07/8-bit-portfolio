@@ -1734,12 +1734,13 @@ html[data-city='dubai']:not([data-mode='day']) .col {
 
   .obj__art { margin: 48px var(--s3) 0; }
 
-  /* ---- controls drop their labels ----
-     Three labelled buttons cover a third of a phone screen. The glyphs
-     carry the meaning; pressed-state colour carries the state. */
-  .controls { top: var(--s3); right: var(--s3); min-width: 0; gap: var(--s1); }
-  .btn { padding: var(--s2); }
-  .btn__label { display: none; }
+  /* ---- controls go away entirely ----
+     On a phone the landing shot is the whole experience, not a thing to
+     reconfigure. The city picker and the rain toggle both leave: one
+     skyline, one sky, no chrome over a third of the screen. The scene is
+     built with weather off by default, so nothing has to be turned back
+     down — there is simply no rain and no way to change the city here. */
+  .controls { display: none; }
 
   /* The taskbar keeps tasks and the clock; the brand is decoration. */
 
@@ -1770,6 +1771,14 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   #weather {
     object-position: 72% 72%;
   }
+}
+
+/* Touch devices get the simplified world regardless of width — a phone
+   held sideways is wider than the 760px phone breakpoint but is still a
+   phone, and has no business showing the rain toggle or the city picker.
+   Coarse pointer + no hover is the honest test for "this is a finger". */
+@media (hover: none) and (pointer: coarse) {
+  .controls { display: none; }
 }
 /* ==================================================================
    REDUCED MOTION
