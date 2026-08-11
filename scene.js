@@ -4246,10 +4246,10 @@
       shape: { ziggurat: 0.14, needle: 0.03, slab: -0.04 },
       roofKit: 'tank',
       stock: [
-        { gapChance: 0.34, gap: 4, minH: 62, maxH: 150 },
-        { gapChance: 0.34, gap: 4, minH: 84, maxH: 190 },
-        { gapChance: 0.32, gap: 5, minH: 100, maxH: 224 },
-        { gapChance: 0.36, gap: 6, minH: 58, maxH: 142 },
+        { gapChance: 0.46, gap: 6, minH: 58, maxH: 128 },
+        { gapChance: 0.46, gap: 6, minH: 76, maxH: 160 },
+        { gapChance: 0.44, gap: 7, minH: 88, maxH: 188 },
+        { gapChance: 0.48, gap: 8, minH: 54, maxH: 122 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 420)
@@ -4259,25 +4259,16 @@
       layer1: (g, o, windows) => {
         clockTower(g, o, 430)
         rooftopPool(g, o, 950, SKYLINE - 126)
-        rocket(g, o, 1480)
       },
       layer2: (g, o, windows) => {
         empireState(g, o, 260, windows)
-        crane(g, o, 700, windows)
         chrysler(g, o, 1130, windows)
-        ferrisWheel(g, o, 1580, windows)
-        triforceSign(g, 1450, SKYLINE - 196)
-        windowWashers(g, o, 960, SKYLINE - 190, SKYLINE - 96)
         rooftopPool(g, o, 500, SKYLINE - 152)
       },
       layer3: (g, o, windows, beams) => {
         liberty(g, o, 200)
-        driveIn(g, o, 640, windows)
-        dinosaur(g, o, 1080)
         observatory(g, o, 1520)
         lighthouse(g, o, 1780, beams)
-        gargoyle(g, o, 940, SKYLINE - 118)
-        windowCat(g, o, 1666, SKYLINE - 74)
       },
     },
 
@@ -4328,10 +4319,10 @@
       shape: { zakkyo: 0.30, ziggurat: -0.26, banded: 0.04, needle: 0.02, slab: 0.03 },
       roofKit: 'billboard',
       stock: [
-        { gapChance: 0.28, gap: 3, minW: 11, maxW: 22, minH: 54, maxH: 112 },
-        { gapChance: 0.28, gap: 3, minW: 13, maxW: 27, minH: 68, maxH: 140 },
-        { gapChance: 0.30, gap: 4, minW: 16, maxW: 33, minH: 82, maxH: 178 },
-        { gapChance: 0.32, gap: 5, minW: 21, maxW: 43, minH: 54, maxH: 128 },
+        { gapChance: 0.40, gap: 5, minW: 11, maxW: 22, minH: 50, maxH: 96 },
+        { gapChance: 0.40, gap: 5, minW: 13, maxW: 27, minH: 62, maxH: 120 },
+        { gapChance: 0.42, gap: 6, minW: 16, maxW: 33, minH: 74, maxH: 150 },
+        { gapChance: 0.44, gap: 7, minW: 21, maxW: 43, minH: 50, maxH: 110 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 380)
@@ -4346,19 +4337,13 @@
       layer2: (g, o, windows) => {
         tokyoTower(g, o, 300, windows)
         skytree(g, o, 920, windows)
-        ferrisWheel(g, o, 1440, windows)
-        crane(g, o, 1720, windows)
-        windowWashers(g, o, 640, SKYLINE - 190, SKYLINE - 96)
-        triforceSign(g, 1180, SKYLINE - 200)
       },
       layer3: (g, o, windows) => {
         pagoda(g, o, 240)
         precinct(g, o, 600, 132)
-        driveIn(g, o, 1000, windows)
         precinct(g, o, 1420, 104)
         sakuraTree(g, o, 860, SKYLINE, 1)
         sakuraTree(g, o, 1180, SKYLINE, 0.85)
-        windowCat(g, o, 1760, SKYLINE - 74)
       },
     },
 
@@ -4398,10 +4383,10 @@
       shape: { slab: 0.20, dome: 0.10, ziggurat: -0.24, needle: -0.05, drum: 0.03 },
       roofKit: 'cistern',
       stock: [
-        { gapChance: 0.46, gap: 6, minW: 18, maxW: 36, minH: 46, maxH: 104 },
-        { gapChance: 0.46, gap: 6, minW: 22, maxW: 44, minH: 56, maxH: 126 },
-        { gapChance: 0.48, gap: 7, minW: 26, maxW: 54, minH: 66, maxH: 158 },
-        { gapChance: 0.50, gap: 8, minW: 33, maxW: 66, minH: 52, maxH: 122 },
+        { gapChance: 0.54, gap: 8, minW: 18, maxW: 36, minH: 44, maxH: 92 },
+        { gapChance: 0.54, gap: 8, minW: 22, maxW: 44, minH: 52, maxH: 110 },
+        { gapChance: 0.56, gap: 9, minW: 26, maxW: 54, minH: 60, maxH: 136 },
+        { gapChance: 0.58, gap: 10, minW: 33, maxW: 66, minH: 48, maxH: 106 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 400)
@@ -4417,17 +4402,12 @@
         torreLatino(g, o, 320, windows)
         angelColumn(g, o, 800)
         revolutionDome(g, o, 1200)
-        crane(g, o, 1620, windows)
         rooftopPool(g, o, 1000, SKYLINE - 152)
-        windowWashers(g, o, 560, SKYLINE - 180, SKYLINE - 96)
       },
       layer3: (g, o, windows) => {
         stepPyramid(g, o, 300)
         papelPicado(g, o, 620, SKYLINE - 104, 6)
-        driveIn(g, o, 1120, windows)
         papelPicado(g, o, 1420, SKYLINE - 88, 5)
-        gargoyle(g, o, 900, SKYLINE - 112)
-        windowCat(g, o, 1700, SKYLINE - 74)
       },
     },
 
@@ -4476,10 +4456,10 @@
       },
       roofKit: 'pots',
       stock: [
-        { gapChance: 0.34, gap: 4, minW: 21, maxW: 42, minH: 52, maxH: 96 },
-        { gapChance: 0.34, gap: 4, minW: 24, maxW: 48, minH: 62, maxH: 116 },
-        { gapChance: 0.36, gap: 5, minW: 27, maxW: 56, minH: 74, maxH: 148 },
-        { gapChance: 0.38, gap: 6, minW: 36, maxW: 72, minH: 58, maxH: 126 },
+        { gapChance: 0.44, gap: 6, minW: 21, maxW: 42, minH: 48, maxH: 86 },
+        { gapChance: 0.44, gap: 6, minW: 24, maxW: 48, minH: 56, maxH: 102 },
+        { gapChance: 0.46, gap: 7, minW: 27, maxW: 56, minH: 66, maxH: 128 },
+        { gapChance: 0.48, gap: 8, minW: 36, maxW: 72, minH: 52, maxH: 110 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 430)
@@ -4487,7 +4467,6 @@
         radioDish(g, o, 1650)
       },
       layer1: (g, o, windows) => {
-        ferrisWheel(g, o, 450, windows)
         rooftopPool(g, o, 980, SKYLINE - 122)
         radioDish(g, o, 1500)
       },
@@ -4495,18 +4474,12 @@
         eiffel(g, o, 320, windows)
         sacreCoeur(g, o, 880)
         clockTower(g, o, 1260)
-        crane(g, o, 1640, windows)
         rooftopPool(g, o, 640, SKYLINE - 148)
-        windowWashers(g, o, 1480, SKYLINE - 170, SKYLINE - 96)
       },
       layer3: (g, o, windows, beams) => {
         arcDeTriomphe(g, o, 260)
-        driveIn(g, o, 700, windows)
         observatory(g, o, 1120)
         lighthouse(g, o, 1760, beams)
-        gargoyle(g, o, 900, SKYLINE - 118)
-        gargoyle(g, o, 930, SKYLINE - 104)
-        windowCat(g, o, 1480, SKYLINE - 74)
       },
     },
 
@@ -4546,10 +4519,10 @@
       shape: { needle: 0.26, drum: 0.10, ziggurat: -0.22, slab: -0.05, banded: 0.04 },
       roofKit: 'dish',
       stock: [
-        { gapChance: 0.68, gap: 13, minW: 11, maxW: 23, minH: 66, maxH: 168 },
-        { gapChance: 0.68, gap: 14, minW: 13, maxW: 28, minH: 88, maxH: 208 },
-        { gapChance: 0.66, gap: 16, minW: 16, maxW: 34, minH: 104, maxH: 246 },
-        { gapChance: 0.64, gap: 15, minW: 21, maxW: 45, minH: 58, maxH: 150 },
+        { gapChance: 0.72, gap: 15, minW: 11, maxW: 23, minH: 60, maxH: 146 },
+        { gapChance: 0.72, gap: 16, minW: 13, maxW: 28, minH: 78, maxH: 178 },
+        { gapChance: 0.70, gap: 18, minW: 16, maxW: 34, minH: 92, maxH: 210 },
+        { gapChance: 0.70, gap: 17, minW: 21, maxW: 45, minH: 52, maxH: 132 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 400)
@@ -4564,17 +4537,11 @@
       layer2: (g, o, windows) => {
         burjKhalifa(g, o, 340, windows)
         dubaiFrame(g, o, 900)
-        crane(g, o, 1320, windows)
-        ferrisWheel(g, o, 1680, windows)
-        windowWashers(g, o, 620, SKYLINE - 200, SKYLINE - 96)
         rooftopPool(g, o, 1120, SKYLINE - 158)
       },
       layer3: (g, o, windows) => {
         burjAlArab(g, o, 320)
-        driveIn(g, o, 780, windows)
         observatory(g, o, 1200)
-        rocket(g, o, 1560)
-        windowCat(g, o, 1720, SKYLINE - 74)
       },
     },
   }
@@ -4645,7 +4612,7 @@
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
-      minW: 30, maxW: 68, minH: 18, maxH: 64, gapChance: 0.4, gap: 6,
+      minW: 30, maxW: 68, minH: 16, maxH: 54, gapChance: 0.5, gap: 8,
       step: 3, ww: 1, wh: 1, litChance: 0.1,
       neon: T.neon, neonChance: 0, halo: 0, fog: 0.11,
       ...localGlass(recede(T.cityFar, 0.5)),
