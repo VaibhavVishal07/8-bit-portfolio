@@ -125,6 +125,22 @@
      ================================================================== -->
 <main class="app">
 
+  <!-- ---- the section rail ----
+       Hidden on home, it appears the moment any page opens and is the
+       whole navigation from there: four sections, each an icon and a
+       label, and the wordmark back home. No HOME button lives on the
+       pages themselves any more — this is it. The city keeps moving at
+       half light behind it. -->
+  <nav class="sidenav" aria-label="Sections">
+    <a class="sidenav__brand" href="#home" aria-label="Home"><span>VV</span></a>
+    <ul class="sidenav__list">
+      <li><a href="#projects" data-nav="projects"><span class="sidenav__ico" data-ico="projects" aria-hidden="true"></span><span class="sidenav__label">Projects</span></a></li>
+      <li><a href="#about" data-nav="about"><span class="sidenav__ico" data-ico="about" aria-hidden="true"></span><span class="sidenav__label">About</span></a></li>
+      <li><a href="#writing" data-nav="writing"><span class="sidenav__ico" data-ico="writing" aria-hidden="true"></span><span class="sidenav__label">Writing</span></a></li>
+      <li><a href="#contact" data-nav="contact"><span class="sidenav__ico" data-ico="contact" aria-hidden="true"></span><span class="sidenav__label">Contact</span></a></li>
+    </ul>
+  </nav>
+
   <section class="page page--home is-on" data-page="home">
     <div class="col">
 
@@ -250,113 +266,213 @@
     </div>
   </section>
 
-  <section class="page" data-page="w1" hidden>
-    <header class="page__head">
-      <a class="home-btn" href="#home">HOME</a>
-    </header>
+  <!-- ==== PROJECTS INDEX ==== -->
+  <section class="page" data-page="projects" hidden>
     <div class="col col--doc">
-      <p class="level__meta">ROLE &middot; CLIENT &middot; 2025</p>
-      <h2 class="level__title">PROJECT ONE</h2>
-      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="3" aria-hidden="true"></canvas></span>
-      <div class="prose">
-        <p>One or two sentences. What it was, and what you did on it.</p>
-        <p>A second paragraph with the part you are actually proud of.</p>
-      </div>
+      <p class="sect">PROJECTS</p>
+      <p class="doc__lede">Selected work. Four pieces, each a case study — what it was, what I did, and the part I'm actually proud of.</p>
+      <ul class="cards cards--index">
+        <li><a class="tile tile--index" href="#w1">
+          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="3" aria-hidden="true"></canvas></span>
+          <span class="tile__meta">PRODUCT DESIGN · 2025</span>
+          <span class="tile__title">PROJECT ONE</span></a></li>
+        <li><a class="tile tile--index" href="#w2">
+          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="17" aria-hidden="true"></canvas></span>
+          <span class="tile__meta">DESIGN SYSTEMS · 2024</span>
+          <span class="tile__title">PROJECT TWO</span></a></li>
+        <li><a class="tile tile--index" href="#w3">
+          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="41" aria-hidden="true"></canvas></span>
+          <span class="tile__meta">MOBILE · 2023</span>
+          <span class="tile__title">PROJECT THREE</span></a></li>
+        <li><a class="tile tile--index" href="#w4">
+          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="88" aria-hidden="true"></canvas></span>
+          <span class="tile__meta">BRAND · 2022</span>
+          <span class="tile__title">PROJECT FOUR</span></a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ==== CASE STUDIES ==== -->
+  <section class="page" data-page="w1" hidden>
+    <article class="col col--doc cs">
+      <p class="cs__eyebrow">PROJECT 01 &middot; PRODUCT DESIGN &middot; 2025</p>
+      <h2 class="cs__title">PROJECT ONE</h2>
+      <p class="cs__lede">A one-line summary of the outcome — the result in a sentence, not the brief.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="3" aria-hidden="true"></canvas></span>
+      <dl class="cs__meta">
+        <div><dt>Role</dt><dd>Lead Product Designer</dd></div>
+        <div><dt>Timeline</dt><dd>2025 · 4 months</dd></div>
+        <div><dt>Team</dt><dd>2 designers · 4 engineers</dd></div>
+        <div><dt>Platform</dt><dd>Web · iOS</dd></div>
+      </dl>
+      <h3 class="cs__h">Overview</h3>
+      <div class="prose"><p>Two or three sentences on what the product was and who it was for. Set the context before the problem.</p></div>
+      <h3 class="cs__h">The problem</h3>
+      <div class="prose"><p>The specific challenge you were handed, and why it mattered — ideally with the constraint that made it hard.</p></div>
       <div class="gallery">
         <span class="slot media" aria-hidden="true"><i>IMG</i></span>
         <span class="slot media" aria-hidden="true"><i>IMG</i></span>
       </div>
-    </div>
+      <h3 class="cs__h">What I did</h3>
+      <div class="prose"><p>The approach: how you framed it, what you tried, what you threw away. This is the part hiring managers actually read.</p></div>
+      <h3 class="cs__h">Outcome</h3>
+      <div class="prose"><p>What shipped and what changed because of it — a number if you have one, a learning if you don't.</p></div>
+      <a class="cs__next" href="#w2">Next → PROJECT TWO</a>
+    </article>
   </section>
 
   <section class="page" data-page="w2" hidden>
-    <header class="page__head">
-      <a class="home-btn" href="#home">HOME</a>
-    </header>
-    <div class="col col--doc">
-      <p class="level__meta">ROLE &middot; CLIENT &middot; 2024</p>
-      <h2 class="level__title">PROJECT TWO</h2>
-      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="17" aria-hidden="true"></canvas></span>
-      <div class="prose">
-        <p>One or two sentences. What it was, and what you did on it.</p>
-      </div>
+    <article class="col col--doc cs">
+      <p class="cs__eyebrow">PROJECT 02 &middot; DESIGN SYSTEMS &middot; 2024</p>
+      <h2 class="cs__title">PROJECT TWO</h2>
+      <p class="cs__lede">A one-line summary of the outcome.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="17" aria-hidden="true"></canvas></span>
+      <dl class="cs__meta">
+        <div><dt>Role</dt><dd>Design Systems Lead</dd></div>
+        <div><dt>Timeline</dt><dd>2024 · 6 months</dd></div>
+        <div><dt>Team</dt><dd>Design + Platform</dd></div>
+        <div><dt>Platform</dt><dd>Web</dd></div>
+      </dl>
+      <h3 class="cs__h">Overview</h3>
+      <div class="prose"><p>What it was and who it was for.</p></div>
+      <h3 class="cs__h">The problem</h3>
+      <div class="prose"><p>The challenge.</p></div>
       <div class="gallery">
         <span class="slot media" aria-hidden="true"><i>IMG</i></span>
         <span class="slot media" aria-hidden="true"><i>IMG</i></span>
       </div>
-    </div>
+      <h3 class="cs__h">What I did</h3>
+      <div class="prose"><p>The approach.</p></div>
+      <h3 class="cs__h">Outcome</h3>
+      <div class="prose"><p>The result.</p></div>
+      <a class="cs__next" href="#w3">Next → PROJECT THREE</a>
+    </article>
   </section>
 
   <section class="page" data-page="w3" hidden>
-    <header class="page__head">
-      <a class="home-btn" href="#home">HOME</a>
-    </header>
+    <article class="col col--doc cs">
+      <p class="cs__eyebrow">PROJECT 03 &middot; MOBILE &middot; 2023</p>
+      <h2 class="cs__title">PROJECT THREE</h2>
+      <p class="cs__lede">A one-line summary of the outcome.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="41" aria-hidden="true"></canvas></span>
+      <dl class="cs__meta">
+        <div><dt>Role</dt><dd>Product Designer</dd></div>
+        <div><dt>Timeline</dt><dd>2023 · 3 months</dd></div>
+        <div><dt>Team</dt><dd>Solo design</dd></div>
+        <div><dt>Platform</dt><dd>iOS · Android</dd></div>
+      </dl>
+      <h3 class="cs__h">Overview</h3>
+      <div class="prose"><p>What it was and who it was for.</p></div>
+      <h3 class="cs__h">The problem</h3>
+      <div class="prose"><p>The challenge.</p></div>
+      <h3 class="cs__h">What I did</h3>
+      <div class="prose"><p>The approach.</p></div>
+      <h3 class="cs__h">Outcome</h3>
+      <div class="prose"><p>The result.</p></div>
+      <a class="cs__next" href="#w4">Next → PROJECT FOUR</a>
+    </article>
+  </section>
+
+  <section class="page" data-page="w4" hidden>
+    <article class="col col--doc cs">
+      <p class="cs__eyebrow">PROJECT 04 &middot; BRAND &middot; 2022</p>
+      <h2 class="cs__title">PROJECT FOUR</h2>
+      <p class="cs__lede">A one-line summary of the outcome.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="88" aria-hidden="true"></canvas></span>
+      <dl class="cs__meta">
+        <div><dt>Role</dt><dd>Designer</dd></div>
+        <div><dt>Timeline</dt><dd>2022 · 2 months</dd></div>
+        <div><dt>Team</dt><dd>With founders</dd></div>
+        <div><dt>Platform</dt><dd>Brand · Web</dd></div>
+      </dl>
+      <h3 class="cs__h">Overview</h3>
+      <div class="prose"><p>What it was and who it was for.</p></div>
+      <h3 class="cs__h">The problem</h3>
+      <div class="prose"><p>The challenge.</p></div>
+      <h3 class="cs__h">What I did</h3>
+      <div class="prose"><p>The approach.</p></div>
+      <h3 class="cs__h">Outcome</h3>
+      <div class="prose"><p>The result.</p></div>
+      <a class="cs__next" href="#projects">← All projects</a>
+    </article>
+  </section>
+
+  <!-- ==== ABOUT ==== -->
+  <section class="page" data-page="about" hidden>
     <div class="col col--doc">
-      <p class="level__meta">ROLE &middot; CLIENT &middot; 2023</p>
-      <h2 class="level__title">PROJECT THREE</h2>
-      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="41" aria-hidden="true"></canvas></span>
+      <p class="sect">ABOUT</p>
       <div class="prose">
-        <p>One or two sentences. What it was, and what you did on it.</p>
+        <p>I'm a product designer who got here through engineering, which is why I still care more about how a thing is built than how it presents.</p>
+        <p>Previously in-house on design systems, and before that freelance with small teams who needed one person to do all of it.</p>
+      </div>
+      <ul class="shelf">
+        <li data-cover="book" data-seed="7"><span>READING</span><b>BOOK TITLE</b><i>Author</i></li>
+        <li data-cover="game" data-seed="12"><span>PLAYING</span><b>GAME TITLE</b><i>Platform</i></li>
+        <li data-cover="film" data-seed="23"><span>WATCHING</span><b>FILM OR SHOW</b><i>Director</i></li>
+        <li data-cover="music" data-seed="31"><span>LISTENING</span><b>ALBUM TITLE</b><i>Artist</i></li>
+      </ul>
+      <div class="prose">
+        <p>Things I'm bad at: estimating, letting a draft go, and saying no to a side project. Away from the desk it's bouldering, too many podcasts, and a standing argument about whether filter coffee counts.</p>
       </div>
     </div>
   </section>
 
-  <section class="page" data-page="w4" hidden>
-    <header class="page__head">
-      <a class="home-btn" href="#home">HOME</a>
-    </header>
+  <!-- ==== WRITING INDEX ==== -->
+  <section class="page" data-page="writing" hidden>
     <div class="col col--doc">
-      <p class="level__meta">ROLE &middot; CLIENT &middot; 2022</p>
-      <h2 class="level__title">PROJECT FOUR</h2>
-      <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="88" aria-hidden="true"></canvas></span>
-      <div class="prose">
-        <p>One or two sentences. What it was, and what you did on it.</p>
-      </div>
+      <p class="sect">WRITING</p>
+      <p class="doc__lede">Occasional notes on design, motion, and the small decisions nobody asks about.</p>
+      <ul class="reads">
+        <li><a href="#r1"><span class="reads__title">Why every gradient in this city is a lie</span><span class="reads__meta">2026 &middot; 6 min</span></a></li>
+        <li><a href="#r2"><span class="reads__title">Stepped motion, and when to break it</span><span class="reads__meta">2025 &middot; 4 min</span></a></li>
+        <li><a href="#r3"><span class="reads__title">The case against the hamburger menu</span><span class="reads__meta">2025 &middot; 8 min</span></a></li>
+      </ul>
     </div>
   </section>
 
   <section class="page" data-page="r1" hidden>
-    <header class="page__head">
-      <a class="home-btn" href="#home">HOME</a>
-    </header>
     <div class="col col--doc">
       <p class="level__meta">2026 &middot; 6 MIN</p>
       <h2 class="level__title">Why every gradient in this city is a lie</h2>
       <div class="prose">
-        <p>Opening paragraph. What you are about to argue, in one
-           sentence, before anybody has to decide whether to keep
-           reading.</p>
-        <p>Replace all of this. The container is the point: a column of
-           readable measure, one voice, no sidebar.</p>
+        <p>Opening paragraph. What you are about to argue, in one sentence, before anybody has to decide whether to keep reading.</p>
+        <p>Replace all of this. The container is the point: a column of readable measure, one voice, no sidebar.</p>
       </div>
     </div>
   </section>
 
   <section class="page" data-page="r2" hidden>
-    <header class="page__head">
-      <a class="home-btn" href="#home">HOME</a>
-    </header>
     <div class="col col--doc">
       <p class="level__meta">2025 &middot; 4 MIN</p>
       <h2 class="level__title">Stepped motion, and when to break it</h2>
-      <div class="prose">
-        <p>Opening paragraph.</p>
-        <p>Replace all of this.</p>
-      </div>
+      <div class="prose"><p>Opening paragraph.</p><p>Replace all of this.</p></div>
     </div>
   </section>
 
   <section class="page" data-page="r3" hidden>
-    <header class="page__head">
-      <a class="home-btn" href="#home">HOME</a>
-    </header>
     <div class="col col--doc">
       <p class="level__meta">2025 &middot; 8 MIN</p>
       <h2 class="level__title">The case against the hamburger menu</h2>
-      <div class="prose">
-        <p>Opening paragraph.</p>
-        <p>Replace all of this.</p>
-      </div>
+      <div class="prose"><p>Opening paragraph.</p><p>Replace all of this.</p></div>
+    </div>
+  </section>
+
+  <!-- ==== CONTACT ==== -->
+  <section class="page" data-page="contact" hidden>
+    <div class="col col--doc">
+      <p class="sect">CONTACT</p>
+      <p class="doc__lede">Want to work together, or just want to say hello? Here are the ways to reach me.</p>
+      <ul class="links">
+        <li><a href="mailto:you@example.com" title="you@example.com">
+          <canvas class="links__art" data-icon="mail" aria-hidden="true"></canvas>
+          <span class="links__name">EMAIL</span></a></li>
+        <li><a href="https://linkedin.com/in/handle" title="linkedin.com/in/handle">
+          <canvas class="links__art" data-icon="linkedin" aria-hidden="true"></canvas>
+          <span class="links__name">LINKEDIN</span></a></li>
+        <li><a href="resume.pdf" download title="one page, PDF">
+          <canvas class="links__art" data-icon="resume" aria-hidden="true"></canvas>
+          <span class="links__name">RESUME</span></a></li>
+      </ul>
     </div>
   </section>
 </main>

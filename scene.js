@@ -1100,6 +1100,13 @@
   let focus = 0
   let focusTo = 0
 
+  /* The stage wash: half strength, and it never stops the clock. The
+     city keeps crossing behind an open L2 page, just at half the
+     brightness so it reads as a backdrop rather than the subject. */
+  const STAGE_DIM = 0.5
+  let stage = 0
+  let stageTo = 0
+
   const drift = (i) => (DIV[i] ? -Math.floor(frame / DIV[i]) : 0)
 
   let roofLights = []
@@ -8576,6 +8583,16 @@
       focusTo = on ? 1 : 0
       if (!animating) focus = focusTo
     },
+
+    /* The stage. Unlike focus, which takes the city DARK and STILL for
+       reading, the stage keeps it moving and only turns the lights
+       down: a half-strength wash so the L2 content in front stays
+       legible while the city carries on behind it. Used when a page
+       opens beside the navigation rather than over the whole frame. */
+    setStage(on) {
+      stageTo = on ? 1 : 0
+      if (!animating) stage = stageTo
+    },
   }
 
   /* ==================================================================
@@ -8592,6 +8609,11 @@
     if (focus !== focusTo) {
       const step = dt / FOCUS_MS
       focus = focusTo > focus ? Math.min(focusTo, focus + step) : Math.max(focusTo, focus - step)
+    }
+    // the stage wash eases the same way, but never touches `live`
+    if (stage !== stageTo) {
+      const step = dt / FOCUS_MS
+      stage = stageTo > stage ? Math.min(stageTo, stage + step) : Math.max(stageTo, stage - step)
     }
     /* Everything stops. The frame counter included — the fire, the
        cat and the window flicker are all counted in frames, so
@@ -8653,6 +8675,16 @@
     if (focus > 0.002) {
       screenCtx.save()
       screenCtx.globalAlpha = focus * LIGHTS_OUT
+      screenCtx.fillStyle = T.edge
+      screenCtx.fillRect(0, 0, W, H)
+      screenCtx.restore()
+    }
+
+    /* The stage wash. Same dark glass, half the strength, and it does
+       not gate `live` — so the city keeps moving behind it. */
+    if (stage > 0.002) {
+      screenCtx.save()
+      screenCtx.globalAlpha = stage * STAGE_DIM
       screenCtx.fillStyle = T.edge
       screenCtx.fillRect(0, 0, W, H)
       screenCtx.restore()

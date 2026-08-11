@@ -654,11 +654,14 @@
   window.addEventListener(
     'wheel',
     (e) => {
-      const page = document.querySelector('.page.is-on')
-      if (!page || page.scrollHeight <= page.clientHeight) return
-      if (page.contains(e.target)) return
-      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? page.clientHeight : 1
-      page.scrollTop += e.deltaY * unit
+      // on home the whole page scrolls; on an L2 page the framed panel
+      // (the .col--doc) is the scroller, so forward to whichever it is
+      const onPage = document.querySelector('.page.is-on')
+      const el = (onPage && onPage.querySelector('.col--doc')) || onPage
+      if (!el || el.scrollHeight <= el.clientHeight) return
+      if (el.contains(e.target)) return
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientHeight : 1
+      el.scrollTop += e.deltaY * unit
       e.preventDefault()
     },
     { passive: false }
@@ -726,18 +729,20 @@
        scroll, and reset the view to its deck — landing on a stage you
        opened ten minutes ago is disorienting in a way that landing on
        the rack never is. */
+    /* Which section rail item a route belongs under: every project and
+       the projects index light PROJECTS; every article and the writing
+       index light WRITING; about and contact are themselves. */
+    const SECTION_OF = {
+      projects: 'projects', w1: 'projects', w2: 'projects', w3: 'projects', w4: 'projects',
+      writing: 'writing', r1: 'writing', r2: 'writing', r3: 'writing',
+      about: 'about', contact: 'contact',
+    }
+
     function show(id) {
-      /* Off home, the home column does not go away — it minifies into
-         the left-hand navigation rail while the chosen page opens on the
-         right. So home stays mounted (as the rail) whenever an L2 page
-         is up; only the inactive L2 pages are put away. */
-      const rail = id !== 'home'
       pages.forEach((el, key) => {
-        const isHome = key === 'home'
         const on = key === id
-        el.hidden = !on && !(isHome && rail)
+        el.hidden = !on
         el.classList.toggle('is-on', on)
-        el.classList.toggle('is-rail', isHome && rail)
         if (on) {
           showDeck(el)
           el.scrollTop = 0
@@ -750,15 +755,18 @@
       pages.forEach((el) => el.removeAttribute('data-active'))
       if (live) live.setAttribute('data-active', '')
 
-      /* Away from home, the city goes quiet. An L2 page is something
-         you are meant to READ, and a rooftop with rain on it, a train
-         crossing it and eleven neon signs guttering behind the text is
-         competing for exactly the attention the text needs. The scene
-         dims and comes to a stop — over half a second, so it reads as
-         the lights going down rather than as the page freezing. */
-      if (window.__scene && window.__scene.setFocus) {
-        window.__scene.setFocus(id !== 'home')
+      /* Away from home the city does NOT stop — it keeps crossing, at
+         half light, behind the open page. The stage wash turns the neon
+         down without freezing the frame, which is what was asked for:
+         things still move, the lights just come down. */
+      if (window.__scene && window.__scene.setStage) {
+        window.__scene.setStage(id !== 'home')
       }
+
+      /* Light the section the route belongs to on the rail. */
+      const section = SECTION_OF[id] || id
+      document.querySelectorAll('.sidenav [data-nav]').forEach((a) =>
+        a.classList.toggle('is-active', a.dataset.nav === section))
     }
 
     /* A plain swap. The page used to arrive behind a full-frame wipe;
