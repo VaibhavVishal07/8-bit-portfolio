@@ -169,6 +169,13 @@
      also open source, which the display face's obvious partner
      (Mondwest) is not. */
   --font-body: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
+
+  /* ---- the reading face ----
+     A monospace column is calm but tiring over several paragraphs, and a
+     case study is the one place on this site that asks for sustained
+     reading. Satoshi carries the long prose; the interface, the labels
+     and everything on home stay on the mono. */
+  --font-read: 'Satoshi', var(--font-body);
 }
 
 @media (min-width: 1500px) {
@@ -3122,16 +3129,103 @@ html:not([data-page='home']) .l2-home {
 }
 html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); }
 
-/* ---- the case study ---- */
-.cs__eyebrow { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 2px; color: var(--panel-accent); margin: 0 0 var(--s3); }
-.cs__title { font-family: var(--font-display); font-size: var(--d4); color: var(--cream); margin: 0 0 var(--s3); line-height: 1.3; }
-.cs__lede { font-size: var(--b4); line-height: 1.4; color: var(--panel-text); margin: 0 0 var(--s5); max-width: 46ch; }
-.cs__hero { display: block; width: 100%; margin: 0 0 var(--s5); }
-.cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); margin: 0 0 var(--s6); padding: var(--s4) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
-.cs__meta dt { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 1px; color: var(--panel-quiet); margin: 0 0 var(--s1); }
+/* ==================================================================
+   THE CASE STUDY
+
+   Roomier than the rest of the site on purpose — a case study is read,
+   not scanned. The long prose sets in Satoshi; every label, heading and
+   number stays on the pixel/mono so the page still reads as this place.
+   ================================================================== */
+.cs { padding-bottom: var(--s7); }
+
+.cs__eyebrow { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 2px; color: var(--panel-accent); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.cs__title { font-family: var(--font-display); font-size: var(--d4); color: var(--cream); margin: 0 0 var(--s4); line-height: 1.35; }
+.cs__lede { font-family: var(--font-read); font-size: var(--b4); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 40ch; }
+.cs__hero { display: block; width: 100%; margin: 0 0 var(--s6); }
+.cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5) var(--s4); margin: 0 0 var(--s6); padding: var(--s5) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
+.cs__meta dt { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 1px; color: var(--panel-quiet); margin: 0 0 var(--s2); }
 .cs__meta dd { margin: 0; font-size: var(--b2); color: var(--panel-text); }
-.cs__h { font-family: var(--font-display); font-size: var(--d3); color: var(--panel-edge); margin: var(--s6) 0 var(--s3); }
-.cs__next { display: inline-block; margin-top: var(--s7); font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--panel-accent); text-decoration: none; }
+.cs__h { font-family: var(--font-display); font-size: var(--d3); color: var(--panel-edge); margin: var(--s7) 0 var(--s4); }
+
+/* long prose reads in Satoshi, with more line and paragraph spacing */
+.cs .prose { font-family: var(--font-read); }
+.cs .prose p { font-size: var(--b3); line-height: 1.65; color: var(--cream); margin: 0 0 var(--s4); max-width: 64ch; }
+
+/* ---- the NDA badge, note and redacted screens ---- */
+.cs__nda {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--ink);
+  background: var(--panel-accent);
+  padding: 3px 7px;
+  box-shadow: 2px 2px 0 var(--panel-cast-2);
+}
+.cs__note {
+  font-family: var(--font-read);
+  font-size: var(--b2);
+  line-height: 1.55;
+  color: var(--panel-text);
+  margin: 0 0 var(--s6);
+  padding: var(--s4);
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+  background: var(--panel-bar);
+  border: 2px solid var(--panel-dim);
+  box-shadow: inset 3px 0 0 var(--panel-accent);
+}
+.cs__note__ico {
+  flex: none;
+  width: 16px; height: 18px;
+  margin-top: 1px;
+  background: var(--panel-accent);
+  -webkit-mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%23000'%3E%3Crect x='4' y='2' width='2' height='2'/%3E%3Crect x='10' y='2' width='2' height='2'/%3E%3Crect x='5' y='1' width='6' height='2'/%3E%3Crect x='4' y='3' width='2' height='4'/%3E%3Crect x='10' y='3' width='2' height='4'/%3E%3Crect x='2' y='7' width='12' height='9'/%3E%3C/g%3E%3C/svg%3E");
+  mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%23000'%3E%3Crect x='4' y='2' width='2' height='2'/%3E%3Crect x='10' y='2' width='2' height='2'/%3E%3Crect x='5' y='1' width='6' height='2'/%3E%3Crect x='4' y='3' width='2' height='4'/%3E%3Crect x='10' y='3' width='2' height='4'/%3E%3Crect x='2' y='7' width='12' height='9'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* four screens, back to back, each redacted behind a coarse dither and
+   a lock — the shape of the work without the pixels */
+.cs__shots { display: grid; grid-template-columns: 1fr; gap: var(--s2); margin: 0 0 var(--s5); }
+.cs__shot {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 16 / 7;
+  border: 2px solid var(--panel-dim);
+  background-color: var(--panel);
+  background-image: repeating-linear-gradient(45deg, var(--panel) 0 7px, var(--panel-bar) 7px 14px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.cs__shot__tag {
+  position: absolute; top: 0; left: 0;
+  padding: 3px 7px;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+.cs__shot__lock {
+  width: 24px; height: 27px;
+  background: var(--panel-quiet);
+  -webkit-mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%23000'%3E%3Crect x='4' y='2' width='2' height='2'/%3E%3Crect x='10' y='2' width='2' height='2'/%3E%3Crect x='5' y='1' width='6' height='2'/%3E%3Crect x='4' y='3' width='2' height='4'/%3E%3Crect x='10' y='3' width='2' height='4'/%3E%3Crect x='2' y='7' width='12' height='9'/%3E%3C/g%3E%3C/svg%3E");
+  mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%23000'%3E%3Crect x='4' y='2' width='2' height='2'/%3E%3Crect x='10' y='2' width='2' height='2'/%3E%3Crect x='5' y='1' width='6' height='2'/%3E%3Crect x='4' y='3' width='2' height='4'/%3E%3Crect x='10' y='3' width='2' height='4'/%3E%3Crect x='2' y='7' width='12' height='9'/%3E%3C/g%3E%3C/svg%3E");
+}
+.cs__shot figcaption {
+  position: absolute; bottom: 0; right: 0;
+  padding: 3px 7px;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+
+.cs__cta { margin: var(--s6) 0 0; }
+.cs__cta a { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--ink); background: var(--panel-edge); padding: var(--s3) var(--s4); text-decoration: none; box-shadow: 2px 2px 0 var(--panel-cast-2); display: inline-block; }
+.cs__cta a:hover { background: var(--panel-accent); }
+
+.cs__next { display: inline-block; margin-top: var(--s6); font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--panel-accent); text-decoration: none; }
 .cs__next:hover { color: var(--panel-edge); }
 
 @media (max-width: 760px) {
