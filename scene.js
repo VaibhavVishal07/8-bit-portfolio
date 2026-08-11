@@ -4572,9 +4572,11 @@
 
   const CITY_ORDER = ['newyork', 'tokyo', 'mexico', 'paris', 'dubai']
 
-  /* New York is the shot the page was composed against, so it is what
-     every load opens on. */
-  let cityKey = 'newyork'
+  /* Tokyo is the shot the page opens on — a sakura night, and the
+     interface themes to it (see the per-city blocks in the CSS). New
+     York remains the authored palette that the others are departures
+     from; it is one pick away in the skyline menu. */
+  let cityKey = 'tokyo'
   const cityDef = () => CITIES[cityKey] || CITIES.newyork
 
   /* A landmark callback that survives a city not defining that layer. */
