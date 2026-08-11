@@ -752,14 +752,84 @@
       }
     }
 
-    /* A plain swap. The page used to arrive behind a full-frame wipe;
-       now that home stays put as the rail and the page opens beside it,
-       there is nothing to cover — the layout just changes. Simple is the
-       brief. (wipe/WIPE_MS/stepped are kept for the reduced-motion and
-       boot paths that still reference them.) */
+    /* ---- the iris ----
+       Moving between home and a page is a scene change, so it gets one.
+       A near-black circle rushes out from wherever you tapped; its edge
+       is a field of dither dots rather than a clean arc. At full black
+       the page swaps underneath, then the new page is uncovered by the
+       same circle opening back up. Chunky, pixelated and quick — under
+       half a second — so it reads as stepping into a world, not loading
+       a page. The Close button fires the same thing in reverse, so home
+       and a project feel like one place entered and left. */
+    const iris = document.createElement('canvas')
+    iris.className = 'iris'
+    iris.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(iris)
+    const ictx = iris.getContext('2d')
+
+    let pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+    window.addEventListener('pointerdown', (e) => { pointer = { x: e.clientX, y: e.clientY } }, true)
+
+    // 8x8 ordered dither — the same kind of matrix the scene dithers
+    // with, so the edge of the wipe is made of the same dots as the city
+    const BAYER = [
+      0, 48, 12, 60, 3, 51, 15, 63,
+      32, 16, 44, 28, 35, 19, 47, 31,
+      8, 56, 4, 52, 11, 59, 7, 55,
+      40, 24, 36, 20, 43, 27, 39, 23,
+      2, 50, 14, 62, 1, 49, 13, 61,
+      34, 18, 46, 30, 33, 17, 45, 29,
+      10, 58, 6, 54, 9, 57, 5, 53,
+      42, 26, 38, 22, 41, 25, 37, 21,
+    ]
+    const CELL = 10
+    let irisBusy = false
+
+    function irisRun(id) {
+      irisBusy = true
+      const W = window.innerWidth, H = window.innerHeight
+      iris.width = W
+      iris.height = H
+      iris.classList.add('is-on')
+      const ox = pointer.x, oy = pointer.y
+      const maxR = Math.hypot(Math.max(ox, W - ox), Math.max(oy, H - oy)) + CELL * 3
+      const band = maxR * 0.16
+      const COVER = 210, HOLD = 30, REVEAL = 210
+      const cols = Math.ceil(W / CELL), rows = Math.ceil(H / CELL)
+      let t0 = null, swapped = false
+
+      function draw(now) {
+        if (t0 == null) t0 = now
+        const e = now - t0
+        let coverR, holeR
+        if (e < COVER) { coverR = (e / COVER) * maxR; holeR = 0 }
+        else if (e < COVER + HOLD) { coverR = maxR + band; holeR = 0 }
+        else if (e < COVER + HOLD + REVEAL) { coverR = maxR + band; holeR = ((e - COVER - HOLD) / REVEAL) * (maxR + band) }
+        else { iris.classList.remove('is-on'); irisBusy = false; return }
+
+        // swap the page while the frame is fully black
+        if (!swapped && e >= COVER) { swapped = true; show(id) }
+
+        ictx.clearRect(0, 0, W, H)
+        ictx.fillStyle = '#04030a'
+        for (let gy = 0; gy < rows; gy++) {
+          const by = (gy & 7) * 8
+          for (let gx = 0; gx < cols; gx++) {
+            const x = gx * CELL + CELL / 2, y = gy * CELL + CELL / 2
+            const d = Math.hypot(x - ox, y - oy)
+            const th = (BAYER[by + (gx & 7)] + 0.5) / 64 * band
+            if (d < coverR - th && !(d < holeR - th)) ictx.fillRect(gx * CELL, gy * CELL, CELL, CELL)
+          }
+        }
+        requestAnimationFrame(draw)
+      }
+      requestAnimationFrame(draw)
+    }
+
     function go(id, instant) {
       if (id === current) return
-      show(id)
+      if (instant || !stepped || irisBusy) { show(id); return }
+      irisRun(id)
     }
 
     window.addEventListener('hashchange', () => go(routeOf()))

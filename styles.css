@@ -267,6 +267,11 @@ svg { display: block; image-rendering: pixelated; }
 /* Above the panel, so weather falls in front of it. */
 #weather { z-index: 5; pointer-events: none; }
 
+/* The iris wipe. A full-frame canvas above EVERYTHING, drawn only while
+   a navigation is in flight (see the iris in script.js). */
+.iris { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 60; pointer-events: none; display: none; image-rendering: pixelated; }
+.iris.is-on { display: block; }
+
 @keyframes scanroll {
   from { transform: translateY(0); }
   to   { transform: translateY(4px); }
