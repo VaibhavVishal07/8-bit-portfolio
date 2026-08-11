@@ -4348,6 +4348,10 @@
           sep: '#a83a86', sepDark: '#2a0e22',
           bounce: ['#ff3d7a', '#ffd0e4', '#c04aff'],
           wet: ['#ff3d7a', '#ffd0e4', '#c04aff'],
+          /* The Yamanote line: stainless-steel car with the lime-green
+             band running its length. */
+          train: '#c2c8d0', trainLit: '#e8edf2', trainDark: '#6a7079',
+          trainWin: '#eaf6ff', trainHead: '#fff8d8', trainStripe: '#9acd32',
         },
       },
       glow: ['#ff9ac8', 0.22],
@@ -4417,6 +4421,10 @@
           sep: '#c27a3a', sepDark: '#241408',
           bounce: ['#ffd24a', '#ff8a1e', '#2fae52'],
           wet: ['#ffd24a', '#ff8a1e', '#4ad2e0'],
+          /* Delhi Metro: stainless-steel silver body, cool LED-white
+             windows against the warm city, and the Red Line stripe. */
+          train: '#aab2c0', trainLit: '#d8e0ea', trainDark: '#5a626e',
+          trainWin: '#eef4ff', trainHead: '#fff3c0', trainStripe: '#e23b2e',
         },
       },
       glow: ['#ffbe5c', 0.24],
@@ -4492,6 +4500,10 @@
           sep: '#c29a5a', sepDark: '#241a14',
           bounce: ['#ffd88a', '#fff0c8', '#7fc4d8'],
           wet: ['#ffd88a', '#fff0c8', '#7fc4d8'],
+          /* The Paris Metro: a cream car with the RATP wagon-green band,
+             warm interior light. */
+          train: '#d6d0c2', trainLit: '#f0ebde', trainDark: '#78705f',
+          trainWin: '#fff0d0', trainHead: '#fff6d0', trainStripe: '#2f9e5c',
         },
       },
       glow: ['#ffd88a', 0.26],
@@ -4563,6 +4575,10 @@
           sep: '#c2a04a', sepDark: '#141a14',
           bounce: ['#ffd24a', '#4adce8', '#ffffff'],
           wet: ['#ffd24a', '#4adce8', '#ffffff'],
+          /* Dubai Metro: driverless silver car with the Gold Class
+             band along it. */
+          train: '#b4bcc6', trainLit: '#dee6ef', trainDark: '#5c626e',
+          trainWin: '#eef6ff', trainHead: '#fff3c8', trainStripe: '#e0b24a',
         },
       },
       glow: ['#ffe4aa', 0.20],
