@@ -21,7 +21,16 @@
   if (boot) {
     const lines = boot.querySelectorAll('.boot__lines li')
     const bootBar = document.getElementById('bootBar')
-    const skip = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    /* Skip the whole POST on a phone. A loading screen is a thing you sit
+       through, and on a handset the landing shot IS the experience — it
+       should be there the instant the page is. Reduced-motion skips it
+       for the same reason it always did; the two mobile tests catch a
+       phone in portrait and one turned sideways (wider than the phone
+       breakpoint but still a phone). */
+    const skip =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      window.matchMedia('(max-width: 760px)').matches ||
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches
 
     const cat = document.getElementById('bootCat')
     const mouse = document.getElementById('bootMouse')

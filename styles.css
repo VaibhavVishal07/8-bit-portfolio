@@ -1371,7 +1371,13 @@ html[data-city='tokyo']:not([data-mode='day']) {
   --gold: #ff8ac0;
   --leaf: #c458ff;
   --moon: #ffd0e4;
-  --wm-face: #ff6fb0;
+  /* The mid-pink face sat at the same lightness as its own hot-pink
+     fringe and magenta extrusion, so the letters dissolved into their
+     own shadow — legible-ish but a smear. A bright rose face lifts off
+     both the dark panel and the saturated fringe; the pink identity now
+     lives in the fringe and the deep extrusion, the legibility in the
+     face. Same principle Delhi already uses with its white face. */
+  --wm-face: #ffd7ea;
   --wm-face-b: #ffffff;
   --wm-fringe-r: #c458ff;
   --wm-fringe-l: #ff2b6b;
@@ -1422,8 +1428,12 @@ html[data-city='paris']:not([data-mode='day']) {
   --gold: #ffd88a;
   --leaf: #7fc4d8;
   --moon: #fff0c8;
-  --wm-face: #ffd88a;
-  --wm-face-b: #fff0c8;
+  /* The gold face was the muddiest of the set: mid-gold on a gold
+     extrusion read as one soft slab. A pale champagne face pops off the
+     warm extrusion and keeps the Paris gold; the blue and rose fringe
+     carry the misregistration. */
+  --wm-face: #ffe7bf;
+  --wm-face-b: #fffbec;
   --wm-fringe-r: #7fc4d8;
   --wm-fringe-l: #ff8ab0;
   --wm-ext-1: #c29a4a;
@@ -1445,7 +1455,10 @@ html[data-city='dubai']:not([data-mode='day']) {
   --gold: #ffd24a;
   --leaf: #8affd0;
   --moon: #cfeaf0;
-  --wm-face: #4adce8;
+  /* Mid-cyan face on a teal extrusion — the same too-close pairing. A
+     pale ice-cyan face lifts clear of the deep teal slab; the gold and
+     mint fringe keep the Gulf-night identity. */
+  --wm-face: #c4f3f9;
   --wm-face-b: #ffffff;
   --wm-fringe-r: #ffd24a;
   --wm-fringe-l: #8affd0;
@@ -4366,6 +4379,34 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
 @media (max-width: 760px) {
   .shelf li { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
   .peek { width: 120px; }
+}
+
+/* ==================================================================
+   MOBILE — THE SIMPLIFIED WORLD
+
+   A phone gets the shot, not the whole arcade cabinet. No boot loader
+   to sit through, a name sized to the column rather than to a title
+   screen, and — set further up — no rain toggle and no city picker.
+
+   This block sits at the foot of the file on purpose: the wordmark size
+   is set unconditionally up in "A SMALLER NAME" (--wm: 53px), so the
+   mobile size has to come AFTER it to win, same specificity, later in
+   source. Both the width breakpoint and the touch-pointer test drive it,
+   so a handset held sideways — wider than 760px but still a phone — is
+   covered too.
+   ================================================================== */
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  /* No loader. script.js already skips its animation on these same
+     conditions; this makes sure it never paints for even one frame. */
+  #boot { display: none !important; }
+
+  /* The name, sized to a phone. At 53px "VISHAL" ran the full width of
+     the column and the top line's extrusion dropped into the bottom
+     line, which read as a smear rather than a logotype. 26px with a 2px
+     step fits the measure and keeps the two lines clear of each other;
+     the extra margin under the upper line clears its extrusion. */
+  .page--home .wordmark { --wm: 26px; --wm-a: 16px; --wmo: 2px; }
+  .page--home .wordmark__line--a { margin-bottom: var(--s3); }
 }
 
 
