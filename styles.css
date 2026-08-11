@@ -61,6 +61,11 @@
      that steps away from the window in two hard jumps rather than
      fading. Four flat colours doing the job of one blur. */
   --panel-lift: rgba(62, 240, 255, 0.32);
+  /* The panel scanline. Its own variable rather than a reuse of
+     --panel-lift, which is an edge highlight at a third opacity and
+     turns the surface into a set of stripes when it is tiled every
+     three pixels. This is the same hue at a twentieth of that. */
+  --panel-grain: rgba(62, 240, 255, 0.05);
   --panel-sink: rgba(0, 0, 0, 0.5);
   --panel-cast-1: rgba(255, 62, 165, 0.4);
   --panel-cast-2: rgba(2, 1, 6, 0.55);
@@ -358,12 +363,19 @@ svg { display: block; image-rendering: pixelated; }
    colour in a masthead and this is not it. A neutral line under a
    chromatic one reads as a caption; two coloured lines read as two
    competing titles. */
+/* The line under the name. It was set in the pixel face at 13px with
+   2px of tracking — the same treatment as every label and button on
+   the page, which made the one line that is actually ABOUT somebody
+   read as furniture. Satoshi, white, and big enough to be a sentence
+   rather than a caption. The tracking comes off with the pixel face;
+   a geometric sans does not need it. */
 .role {
   margin: 0 0 clamp(34px, 3.9vw, 65px);
-  font-family: var(--font-display);
-  font-size: clamp(10px, 0.65vw, 13px);
-  line-height: 1.4;
-  letter-spacing: 2px;
+  font-family: var(--font-read);
+  font-size: clamp(14px, 1.05vw, 19px);
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.6px;
   color: #ffffff;
 }
 
@@ -1367,6 +1379,7 @@ html[data-city='tokyo']:not([data-mode='day']) {
   --panel-text: #f3cfe4;
   --panel-quiet: #b98bc4;
   --panel-lift: rgba(255, 92, 156, 0.30);
+  --panel-grain: rgba(255, 92, 156, 0.055);
   --panel-cast-1: rgba(196, 88, 255, 0.40);
   --gold: #ff8ac0;
   --leaf: #c458ff;
@@ -1396,6 +1409,7 @@ html[data-city='delhi']:not([data-mode='day']) {
   --panel-text: #ffe6c2;
   --panel-quiet: #b09a86;
   --panel-lift: rgba(255, 154, 42, 0.26);
+  --panel-grain: rgba(255, 154, 42, 0.05);
   --panel-cast-1: rgba(47, 174, 82, 0.36);
   --gold: #ffca3a;
   --leaf: #2fae52;
@@ -1424,6 +1438,7 @@ html[data-city='paris']:not([data-mode='day']) {
   --panel-text: #f2e4c6;
   --panel-quiet: #b0a086;
   --panel-lift: rgba(232, 180, 90, 0.28);
+  --panel-grain: rgba(232, 180, 90, 0.05);
   --panel-cast-1: rgba(255, 138, 176, 0.35);
   --gold: #ffd88a;
   --leaf: #7fc4d8;
@@ -1451,6 +1466,7 @@ html[data-city='dubai']:not([data-mode='day']) {
   --panel-text: #d6eef2;
   --panel-quiet: #8fb0b8;
   --panel-lift: rgba(74, 220, 232, 0.28);
+  --panel-grain: rgba(74, 220, 232, 0.05);
   --panel-cast-1: rgba(255, 210, 74, 0.40);
   --gold: #ffd24a;
   --leaf: #8affd0;
@@ -3141,11 +3157,14 @@ html:not([data-page='home']) .l2-home {
   display: inline-block;
   position: fixed;
   z-index: 7;
-  /* pinned to the foot of the frame, centred — the one way out of a
-     page, always in the same place */
-  bottom: var(--s5);
-  left: 50%;
-  transform: translateX(-50%);
+  /* Top left, in the gutter beside the page rather than floating over
+     the middle of it. Centred at the foot it landed on whatever the
+     piece happened to end with — the Next link, the last paragraph —
+     and a control that sits on the content is a control you have to
+     read around. Out here it is on the city, where there is nothing
+     to cover. */
+  top: var(--s5);
+  left: var(--s5);
   padding: var(--s3) var(--s5);
   font-family: var(--font-display);
   font-size: var(--d2);
@@ -3160,10 +3179,16 @@ html:not([data-page='home']) .l2-home {
   box-shadow: 4px 4px 0 var(--ink);
 }
 html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); background: var(--panel-bar); }
-html:not([data-page='home']) .l2-home:active { transform: translateX(-50%) translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
-/* room at the foot of every open page so its last line clears the
-   floating CLOSE button */
-html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--s6)); }
+html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+
+/* Under about 1100px the gutter is too narrow to hold the button, so
+   it comes in over the page's own top padding instead. The column is
+   given the height back at the top, which is the one place on a page
+   where nothing is being read yet. */
+@media (max-width: 1099px) {
+  html:not([data-page='home']) .l2-home { top: var(--s3); left: var(--s3); }
+  html:not([data-page='home']) .col--doc { padding-top: calc(var(--s7) + var(--s5)); }
+}
 
 /* ==================================================================
    THE CASE STUDY
@@ -3176,14 +3201,15 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
    return to. (The rest of the site centres; this deliberately does not.) */
 .cs { text-align: left; padding: var(--s4) var(--s2) var(--s7); }
 
-.cs__eyebrow { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 2px; color: var(--panel-accent); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+/* Same rule as the reader: the kicker is quiet, the title is not. */
+.cs__eyebrow { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 2px; color: var(--panel-quiet); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
 .cs__title { font-family: var(--font-display); font-size: var(--d4); color: var(--cream); margin: 0 0 var(--s4); line-height: 1.4; }
 .cs__lede { font-family: var(--font-read); font-size: var(--b4); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 34ch; }
 .cs__hero { display: block; width: 100%; margin: 0 0 var(--s6); }
 .cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5) var(--s5); margin: 0 0 var(--s6); padding: var(--s5) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
 .cs__meta dt { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 1px; color: var(--panel-quiet); margin: 0 0 var(--s2); }
 .cs__meta dd { margin: 0; font-size: var(--b3); color: var(--panel-text); }
-.cs__h { font-family: var(--font-display); font-size: var(--d3); color: var(--panel-edge); margin: var(--s7) 0 var(--s4); }
+.cs__h { font-family: var(--font-display); font-size: var(--d3); color: var(--cream); margin: var(--s7) 0 var(--s4); }
 
 /* The reading prose. Satoshi by default, at a comfortable size; but the
    FIRST project stays fully pixel/mono, on the JetBrains face, so there
@@ -3294,14 +3320,20 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
    ================================================================== */
 .read { text-align: left; }
 
+/* The kicker, the subheads and the standfirst all used to carry a
+   colour of their own — accent, then edge, then panel-text — so a
+   reader met three different signals before the first sentence. The
+   title is the only thing on the page that gets to be loud now; the
+   furniture around it is one quiet colour, and the separators are the
+   same colour as the words they separate rather than a second one. */
 .read__eyebrow {
   font-family: var(--font-display);
   font-size: var(--d1);
   letter-spacing: 2px;
-  color: var(--panel-accent);
+  color: var(--panel-quiet);
   margin: 0 0 var(--s5);
 }
-.read__sep { opacity: 0.45; margin: 0 2px; }
+.read__sep { margin: 0 2px; }
 
 .read__title {
   font-family: var(--font-display);
@@ -3350,11 +3382,13 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
   max-width: 62ch;
 }
 .read__body p:last-child { margin-bottom: 0; }
+/* A subhead keeps the pixel face — it is still structure, and the
+   step in scale is what marks the turn — but not the neon. */
 .read__body h3 {
   font-family: var(--font-display);
   font-size: var(--d3);
   line-height: 1.4;
-  color: var(--panel-edge);
+  color: var(--cream);
   margin: var(--s7) 0 var(--s4);
 }
 .read__body ul {
@@ -3382,6 +3416,32 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
   line-height: 1.45;
   color: var(--panel-text);
   max-width: 46ch;
+}
+
+/* ---- figures ----
+   The case studies already open on a poster drawn by posters.js, so a
+   figure in an article is the same object at the same width as the
+   measure: art, then a caption that says the thing the art cannot.
+   Nothing here is a file — it is a canvas the poster generator paints
+   at load, like every other picture on this site. */
+.read__fig {
+  margin: var(--s6) 0;
+  max-width: 62ch;
+}
+.read__fig .card__art--wide { margin-bottom: var(--s4); }
+.read__figcap {
+  font-family: var(--font-body);
+  font-size: var(--b1);
+  line-height: 1.6;
+  color: var(--panel-quiet);
+  max-width: 58ch;
+}
+/* the figure number, set like the label it is */
+.read__figcap b {
+  color: var(--panel-text);
+  font-weight: 500;
+  letter-spacing: 1px;
+  margin-right: var(--s2);
 }
 
 /* a drop cap opens the body — one big letter in the reading face, in the
@@ -4649,6 +4709,89 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
 /* No garland — New York, or day, where the whole city theme is off.
    Close the reserve up rather than leave a hole under the copyright. */
 .page--home .col--bare { padding-bottom: var(--s6); }
+
+
+/* ==================================================================
+   COLOUR AND TEXTURE IN THE PANEL
+
+   The column was one flat near-black rectangle with centred grey type
+   down it. Every part of it was doing its job and the whole thing read
+   as a document — which is the one thing this page is not supposed to
+   be, given it is dressed as a machine standing in front of a city.
+
+   Three things, none of them decoration for its own sake:
+
+   a surface, so the panel reads as a lit screen rather than a hole cut
+   in the page; a rule either side of every section marker, so the long
+   scroll has joints instead of running on; and a colour per row on the
+   shelf, so four lines about four different things stop looking like
+   one list of the same thing.
+
+   All of it comes out of the city's own variables, so it re-themes
+   with the skyline like everything else does.
+   ================================================================== */
+
+/* ---- the surface ----
+   Scanlines at a three pixel pitch, the same figure the posters wear
+   under .card__art::after, so a poster on an L2 page and the panel
+   behind it are lit by the same tube. Hard stops only — a gradient
+   with a soft edge would be the one blurred thing on the page.
+
+   The tint is --panel-grain: the city's own edge colour at about a
+   twentieth opacity, which is enough to warm the black without
+   lifting it. Tokyo's panel goes faintly pink, Dubai's faintly cyan,
+   and neither costs a step of contrast under the body text. */
+.page--home .col {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      var(--panel-grain) 0 1px,
+      rgba(0, 0, 0, 0) 1px 3px
+    );
+}
+
+/* ---- the joints ----
+   A section marker was grey type floating in the middle of a column
+   with nothing either side of it. A rule out to both margins makes it
+   a joint in the page. The marker itself takes the city accent — one
+   piece of colour, on the word, rather than scattered along the rule. */
+.page--home .sect {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  color: var(--panel-edge);
+}
+.page--home .sect::before,
+.page--home .sect::after {
+  content: '';
+  flex: 1 1 0;
+  height: 2px;
+  background: var(--panel-dim);
+}
+
+/* ---- the shelf, one colour a row ----
+   Four labels in one accent read as a single field with four values
+   in it. Four labels in four colours read as four separate things
+   somebody is into, which is what the shelf is for. The row carries
+   its own colour so the label and its marker cannot drift apart. */
+.page--home .shelf li:nth-child(1) { --row: var(--panel-edge); }
+.page--home .shelf li:nth-child(2) { --row: var(--panel-accent); }
+.page--home .shelf li:nth-child(3) { --row: var(--gold); }
+.page--home .shelf li:nth-child(4) { --row: var(--leaf); }
+.page--home .shelf span { color: var(--row, var(--panel-edge)); }
+
+/* A whole-pixel tick in the row's colour, in front of the title. It
+   is the smallest mark that says 'this line is an entry', and it is
+   square because everything here is. */
+.page--home .shelf b::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: var(--s3);
+  vertical-align: 0.08em;
+  background: var(--row, var(--panel-edge));
+}
 @media (max-width: 760px) {
   .page--home .col { padding-bottom: 96px; }
 }

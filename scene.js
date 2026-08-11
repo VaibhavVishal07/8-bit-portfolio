@@ -1103,7 +1103,12 @@
   /* The stage wash: half strength, and it never stops the clock. The
      city keeps crossing behind an open L2 page, just at half the
      brightness so it reads as a backdrop rather than the subject. */
-  const STAGE_DIM = 0.5
+  /* Raised from a half. At half strength the city behind an open page
+     was still the brightest thing in the frame — a moving skyline in
+     full colour either side of a column of body text is a competition
+     the text loses. It still moves, it is still the same city, it is
+     just clearly behind the glass now. */
+  const STAGE_DIM = 0.78
   let stage = 0
   let stageTo = 0
 
