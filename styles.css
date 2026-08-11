@@ -4075,23 +4075,59 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
    what it is and it is the correct shape for whatever replaces it —
    drop an <img> in and it crops to fit.
    ================================================================== */
+/* The work cards are tactile buttons, the same as every other pressable
+   thing on the page: they sit proud on a hard offset shadow, they RISE
+   toward the light on hover, and they press DOWN onto their shadow when
+   clicked. The bevel (the two inset highlights) stays through all three
+   states so the object reads as one solid key the whole time; only the
+   drop shadow and the position change. The move is stepped, not eased —
+   three chunky frames — because nothing else in this scene tweens. */
 .tile {
   display: block;
   aspect-ratio: 1 / 1;
   background: var(--panel-bar);
   border: 3px solid var(--panel-dim);
+  /* The cast is the city's own neon (--panel-cast-1), not ink: the panel
+     behind these is near-black, so a dark shadow would be invisible and
+     the tactile move would not read. The same neon-cast language the
+     column uses to stand off the picture. */
   box-shadow:
     inset 2px 2px 0 var(--panel-lift),
-    inset -2px -2px 0 var(--panel-sink);
+    inset -2px -2px 0 var(--panel-sink),
+    4px 4px 0 var(--panel-cast-1);
+  transition: transform 90ms steps(3, end), box-shadow 90ms steps(3, end);
 }
 
+/* Hover / keyboard focus: the key lifts up and to the left, and its cast
+   deepens underneath it — the read of a button standing up off the
+   board. */
 .tile:hover,
 .tile:focus-visible {
   border-color: var(--panel-edge);
   outline: none;
+  transform: translate(-2px, -2px);
+  box-shadow:
+    inset 2px 2px 0 var(--panel-lift),
+    inset -2px -2px 0 var(--panel-sink),
+    8px 8px 0 var(--panel-cast-1);
 }
 
-.tile:active { transform: translate(2px, 2px); }
+/* Press: the key drops the full offset onto its cast and the cast goes to
+   nothing — pushed flat to the board, the instant before the wipe
+   carries you into the project. */
+.tile:active {
+  transform: translate(4px, 4px);
+  box-shadow:
+    inset 2px 2px 0 var(--panel-lift),
+    inset -2px -2px 0 var(--panel-sink),
+    0 0 0 var(--panel-cast-1);
+}
+
+/* Reduced motion keeps the tactile states — they answer a real hover and
+   a real press — but drops the tween, so they snap instead of stepping. */
+@media (prefers-reduced-motion: reduce) {
+  .tile { transition: none; }
+}
 
 .tile > img {
   display: block;
