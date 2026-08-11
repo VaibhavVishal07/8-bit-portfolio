@@ -654,14 +654,11 @@
   window.addEventListener(
     'wheel',
     (e) => {
-      // on home the whole page scrolls; on an L2 page the framed panel
-      // (the .col--doc) is the scroller, so forward to whichever it is
-      const onPage = document.querySelector('.page.is-on')
-      const el = (onPage && onPage.querySelector('.col--doc')) || onPage
-      if (!el || el.scrollHeight <= el.clientHeight) return
-      if (el.contains(e.target)) return
-      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientHeight : 1
-      el.scrollTop += e.deltaY * unit
+      const page = document.querySelector('.page.is-on')
+      if (!page || page.scrollHeight <= page.clientHeight) return
+      if (page.contains(e.target)) return
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? page.clientHeight : 1
+      page.scrollTop += e.deltaY * unit
       e.preventDefault()
     },
     { passive: false }
@@ -729,15 +726,6 @@
        scroll, and reset the view to its deck — landing on a stage you
        opened ten minutes ago is disorienting in a way that landing on
        the rack never is. */
-    /* Which section rail item a route belongs under: every project and
-       the projects index light PROJECTS; every article and the writing
-       index light WRITING; about and contact are themselves. */
-    const SECTION_OF = {
-      projects: 'projects', w1: 'projects', w2: 'projects', w3: 'projects', w4: 'projects',
-      writing: 'writing', r1: 'writing', r2: 'writing', r3: 'writing',
-      about: 'about', contact: 'contact',
-    }
-
     function show(id) {
       pages.forEach((el, key) => {
         const on = key === id
@@ -762,11 +750,6 @@
       if (window.__scene && window.__scene.setStage) {
         window.__scene.setStage(id !== 'home')
       }
-
-      /* Light the section the route belongs to on the rail. */
-      const section = SECTION_OF[id] || id
-      document.querySelectorAll('.sidenav [data-nav]').forEach((a) =>
-        a.classList.toggle('is-active', a.dataset.nav === section))
     }
 
     /* A plain swap. The page used to arrive behind a full-frame wipe;
