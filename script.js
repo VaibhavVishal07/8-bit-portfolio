@@ -727,10 +727,17 @@
        opened ten minutes ago is disorienting in a way that landing on
        the rack never is. */
     function show(id) {
+      /* Off home, the home column does not go away — it minifies into
+         the left-hand navigation rail while the chosen page opens on the
+         right. So home stays mounted (as the rail) whenever an L2 page
+         is up; only the inactive L2 pages are put away. */
+      const rail = id !== 'home'
       pages.forEach((el, key) => {
+        const isHome = key === 'home'
         const on = key === id
-        el.hidden = !on
+        el.hidden = !on && !(isHome && rail)
         el.classList.toggle('is-on', on)
+        el.classList.toggle('is-rail', isHome && rail)
         if (on) {
           showDeck(el)
           el.scrollTop = 0
@@ -754,19 +761,14 @@
       }
     }
 
+    /* A plain swap. The page used to arrive behind a full-frame wipe;
+       now that home stays put as the rail and the page opens beside it,
+       there is nothing to cover — the layout just changes. Simple is the
+       brief. (wipe/WIPE_MS/stepped are kept for the reduced-motion and
+       boot paths that still reference them.) */
     function go(id, instant) {
       if (id === current) return
-      if (!stepped || instant) {
-        show(id)
-        return
-      }
-      wipe.classList.add('is-closing')
-      setTimeout(() => {
-        show(id)
-        wipe.classList.remove('is-closing')
-        wipe.classList.add('is-opening')
-        setTimeout(() => wipe.classList.remove('is-opening'), WIPE_MS)
-      }, WIPE_MS)
+      show(id)
     }
 
     window.addEventListener('hashchange', () => go(routeOf()))
