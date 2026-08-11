@@ -123,6 +123,8 @@
       'THERE IS A RUBBER DUCK. NO, IT IS NOT EXPLAINED.',
       'WATCH THE PARAPET. SOMETHING RUNS ALONG IT.',
       'THE CHESS GAME HAS NOT MOVED IN WEEKS.',
+      'THE CITY IN THE CORNER CHANGES. FIVE OF THEM.',
+      'IT IS ALWAYS APRIL IN TOKYO.',
     ]
     const tip = TIPS[Math.floor(Math.random() * TIPS.length)]
 
@@ -564,6 +566,78 @@
      left on whatever the markup happened to say. */
   if (window.__scene) {
     document.documentElement.dataset.mode = window.__scene.current()
+  }
+
+  /* ---------------- the skyline picker ----------------
+
+     Five cities, built from the scene's own list. The markup ships an
+     empty <ul> on purpose: the skylines are declared once, in
+     scene.js, and this reads them rather than keeping a second copy
+     that can drift out of step with the first. */
+  const cityBtn = document.getElementById('cityToggle')
+  const cityMenu = document.getElementById('cityMenu')
+
+  if (cityBtn && cityMenu && window.__scene && window.__scene.cities) {
+    const cityLabel = cityBtn.querySelector('.btn__label')
+    const cities = window.__scene.cities()
+
+    const closeCities = () => {
+      cityMenu.hidden = true
+      cityBtn.setAttribute('aria-expanded', 'false')
+    }
+
+    const openCities = () => {
+      cityMenu.hidden = false
+      cityBtn.setAttribute('aria-expanded', 'true')
+    }
+
+    const paintCity = () => {
+      const cur = window.__scene.city()
+      const hit = cities.find((c) => c.key === cur)
+      if (cityLabel && hit) cityLabel.textContent = hit.label
+      for (const b of cityMenu.querySelectorAll('.picker__item')) {
+        b.setAttribute('aria-checked', b.dataset.city === cur ? 'true' : 'false')
+      }
+    }
+
+    for (const c of cities) {
+      const li = document.createElement('li')
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'picker__item'
+      b.dataset.city = c.key
+      b.setAttribute('role', 'menuitemradio')
+      b.setAttribute('aria-checked', 'false')
+      b.textContent = c.label
+      b.addEventListener('click', () => {
+        window.__scene.setCity(c.key)
+        paintCity()
+        closeCities()
+        cityBtn.focus()
+      })
+      li.appendChild(b)
+      cityMenu.appendChild(li)
+    }
+
+    paintCity()
+
+    cityBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (cityMenu.hidden) openCities()
+      else closeCities()
+    })
+
+    /* Anywhere else on the page shuts it, which is what every menu
+       ever built has done and what a visitor will try first. */
+    document.addEventListener('click', (e) => {
+      if (!cityMenu.hidden && !cityMenu.contains(e.target)) closeCities()
+    })
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || cityMenu.hidden) return
+      closeCities()
+      cityBtn.focus()
+    })
   }
 
   const rainBtn = document.getElementById('rainToggle')

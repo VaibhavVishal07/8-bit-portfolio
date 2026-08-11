@@ -46,7 +46,7 @@
     <ul class="boot__lines">
       <li><span>VIDEO</span><i>960 x 540, 64 LEVELS</i><b>OK</b></li>
       <li><span>WEATHER</span><i>RAIN, SNOW, LIGHTNING</i><b>OK</b></li>
-      <li><span>CITY</span><i>14 LANDMARKS</i><b>OK</b></li>
+      <li><span>CITY</span><i>5 SKYLINES, 30+ LANDMARKS</i><b>OK</b></li>
       <li><span>TRAIN</span><i>EXPRESS SERVICE</i><b class="warn">DELAYED</b></li>
       <li><span>COFFEE</span><i>POT 1 OF 1</i><b class="err">NOT FOUND</b></li>
       <li><span>BUGS</span><i>0 KNOWN</i><b class="warn">OPTIMISTIC</b></li>
@@ -77,12 +77,25 @@
      pass in front of it and can land on its top edge. -->
 <canvas id="weather" aria-hidden="true"></canvas>
 
-<!-- Rain is the only thing on offer. The scene opens at night in the
-     wet, which is it at its best, and the day palette and the snow are
-     still in scene.js behind __scene.setTheme / setSnow — there is just
-     no longer a control putting them one click away from the landing
-     shot. -->
+<!-- Two controls: which city you are standing over, and whether it is
+     raining on it. The day palette and the snow are still in scene.js
+     behind __scene.setTheme / setSnow — there is just no longer a
+     control putting them one click away from the landing shot.
+
+     The city list is NOT written out here. It is built at runtime from
+     __scene.cities(), so the skylines are declared in exactly one
+     place and adding a sixth is a change to scene.js alone. -->
 <div class="controls">
+  <div class="picker" id="cityPicker">
+    <button class="btn" id="cityToggle" type="button"
+            aria-haspopup="true" aria-expanded="false" aria-controls="cityMenu">
+      <span class="btn__glyph btn__glyph--city" aria-hidden="true"></span>
+      <span class="btn__label">NEW YORK</span>
+      <span class="btn__caret" aria-hidden="true"></span>
+    </button>
+    <ul class="picker__menu" id="cityMenu" role="menu" aria-label="Skyline" hidden></ul>
+  </div>
+
   <button class="btn" id="rainToggle" type="button" aria-pressed="false">
     <span class="btn__glyph btn__glyph--rain" aria-hidden="true"></span>
     <span class="btn__label">RAIN OFF</span>
