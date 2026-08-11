@@ -606,7 +606,7 @@
        column rather than stop politely a few pixels short of them. */
     const spots = []
     const tries = W * 15
-    for (let i = 0; i < tries && spots.length < 300; i++) {
+    for (let i = 0; i < tries && spots.length < 190; i++) {
       const x = -5 + rnd() * (W + 10)
       const y = H + 3 - rnd() * (geo.armRise + 6)
       const c = cover(x, y)
@@ -619,7 +619,7 @@
         const s = spots[j]
         const gx = s.x - x
         const gy = s.y - y
-        const gap = (s.R + R) * 0.58
+        const gap = (s.R + R) * 0.78
         if (gx * gx + gy * gy < gap * gap) { ok = false; break }
       }
       if (!ok) continue
@@ -630,7 +630,7 @@
        Leaves first, all of them, in a ramp two stops short of the full
        one so the foliage sits behind the blooms rather than competing
        with them. */
-    for (let i = 0; i < 4200; i++) {
+    for (let i = 0; i < 2500; i++) {
       const x = -5 + rnd() * (W + 10)
       const y = H + 3 - rnd() * (geo.armRise + 6)
       const c = cover(x, y)
@@ -720,12 +720,12 @@
       const x = -4 + rnd() * (W + 8)
       const y = H + 2 - rnd() * (geo.armRise + 4)
       const c = cover(x, y)
-      if (c <= 0.06 || rnd() > Math.pow(c, 1.5) * 0.22) continue
+      if (c <= 0.06 || rnd() > Math.pow(c, 1.5) * 0.13) continue
       bud(bed, x, y, def.size[0] * (0.34 + rnd() * 0.26), P, S, rnd, -0.06,
         outward(x, y) + Math.PI + (rnd() - 0.5) * 1.4)
     }
 
-    for (let i = 0; i < 420; i++) {
+    for (let i = 0; i < 260; i++) {
       const x = -4 + rnd() * (W + 8)
       const y = H + 2 - rnd() * (geo.baseDepth * 0.55)
       if (cover(x, y) < 0.5 || rnd() > 0.22) continue
@@ -796,18 +796,21 @@
 
   // how near the cursor has to be before a bloom notices, and how far
   // it will go to get out of the way — both in art pixels
-  const REACH = 52
-  const SHOVE = 8
+  const REACH = 66
+  const SHOVE = 13
   // a bloom leans sideways more readily than it lifts, because a stem
   // bends and does not jump
   const RISE = 0.62
+  // how far a bloom trembles once the cursor is on it
+  const SHIVER = 2.2
   const FPS = 12
-  const STEP = 2
+  const STEP = 3
 
   let pointerX = null
   let pointerY = null
   let running = false
   let lastStep = 0
+  let beat = 0
 
   function targets() {
     if (pointerX === null || !plants.length) return false
@@ -833,8 +836,9 @@
       // dead centre gives no direction to run in, so pick one
       const ux = d < 0.001 ? 0.7 : gx / d
       const uy = d < 0.001 ? -0.7 : gy / d
-      p.tx = Math.round(ux * push)
-      p.ty = Math.round(uy * push * RISE)
+      const shake = SHIVER * f
+      p.tx = Math.round(ux * push + Math.sin(beat * 1.7 + p.ph) * shake)
+      p.ty = Math.round(uy * push * RISE + Math.cos(beat * 2.3 + p.ph * 1.7) * shake * 0.7)
     }
     return true
   }
@@ -862,6 +866,7 @@
   function tick(t) {
     if (t - lastStep >= 1000 / FPS) {
       lastStep = t
+      beat++
       targets()
       /* Nothing moved this step, so the garland is wherever it was asked
          to be and there is no work left. Stop — a pointer resting near a
@@ -952,10 +957,12 @@
     artH = H
     const built = garland(W, H, def, { baseDepth: baseDepth, armDepth: armDepth, armRise: armRise })
     bedCanvas = toCanvas(built.bed)
-    plants = built.plants.map((p) => ({
+    plants = built.plants.map((p, i) => ({
       canvas: toCanvas(p.buf),
       ox: p.ox, oy: p.oy, cx: p.cx, cy: p.cy,
       dx: 0, dy: 0, tx: 0, ty: 0,
+      // golden angle, so no two neighbours shake together
+      ph: (i * 2.39996) % 6.28318,
     }))
 
     src.width = W

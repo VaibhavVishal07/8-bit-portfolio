@@ -45,15 +45,299 @@
     const STATUSES = [
       'WARMING UP THE NEON',
       'ORDERING RAIN (LARGE)',
-      'COUNTING WINDOWS... 14,203',
-      'DELAYING THE TRAIN',
+      'COUNTING PETALS... 5,000',
+      'DELAYING THE YAMANOTE',
       'TEACHING CAT TO SIT',
       'POLISHING THE MOON',
-      'UNTANGLING STRING LIGHTS',
-      'FEEDING THE CAT',
-      'HIDING EASTER EGGS',
-      'LOSING THE RUBBER DUCK',
+      'HANGING THE NOREN',
+      'RESTOCKING THE VENDING MACHINE',
+      'QUEUEING FOR RAMEN',
+      'FOLDING ONE THOUSAND CRANES',
     ]
+
+    /* ==================================================================
+       THE ATTRACT SCREEN, PAINTED
+
+       Authored on 960x540 and supersampled x3 to 2880x1620 — the exact
+       grid and the exact scale factor the main scene uses. The first
+       version of this drew on 480x270, a sixth of the density, which
+       is the whole reason it read as coarse next to the homepage: a
+       one-pixel rafter there is six device pixels here.
+
+       Back to front: sky, stars, moon, Fuji, the far bank, the town,
+       the pagodas, the torii, the water, and a sakura branch over the
+       top. Every number comes from a fixed sequence, so the same view
+       boots every time.
+       ================================================================== */
+    const art = document.getElementById('bootArt')
+    if (art) {
+      const AW = 960
+      const AH = 540
+      const HZ = 392 // the horizon
+      const K = 3 // supersample, as the scene does
+      art.width = AW * K
+      art.height = AH * K
+      const a = art.getContext('2d')
+      a.imageSmoothingEnabled = false
+      a.setTransform(K, 0, 0, K, 0, 0)
+
+      let as = 8814
+      const ar = () => {
+        as = (Math.imul(as, 1103515245) + 12345) >>> 0
+        return as / 4294967296
+      }
+      const px = (x, y, w, h, col) => { a.fillStyle = col; a.fillRect(x, y, w, h) }
+
+      /* ---- sky ----
+         Twenty stops rather than ten, because at this density a ten
+         stop ramp bands visibly across 392 rows. */
+      const RAMP = [
+        '#04050e', '#050713', '#060818', '#070a1d', '#090c22', '#0b0e28',
+        '#0d112e', '#0f1334', '#12163a', '#151940', '#181b45', '#1c1e4a',
+        '#20204e', '#252152', '#2a2354', '#2f2455', '#352554', '#3b2652',
+        '#41274f', '#46284b',
+      ]
+      for (let y = 0; y < HZ; y++) {
+        const t = Math.pow(y / HZ, 1.9)
+        px(0, y, AW, 1, RAMP[Math.min(RAMP.length - 1, Math.floor(t * RAMP.length))])
+      }
+      // a warm haze sitting right on the horizon
+      for (let y = HZ - 46; y < HZ; y++) {
+        a.fillStyle = 'rgba(210,120,130,' + (((y - (HZ - 46)) / 46) * 0.06).toFixed(3) + ')'
+        a.fillRect(0, y, AW, 1)
+      }
+
+      // ---- stars
+      for (let i = 0; i < 340; i++) {
+        const sx = Math.floor(ar() * AW)
+        const sy = Math.floor(Math.pow(ar(), 1.7) * (HZ - 70))
+        const r = ar()
+        px(sx, sy, 1, 1, r < 0.2 ? '#ffd9ec' : '#e8ecff')
+        if (r > 0.97) { // a few bright ones get a cross
+          px(sx - 1, sy, 1, 1, '#9fb4ff'); px(sx + 1, sy, 1, 1, '#9fb4ff')
+          px(sx, sy - 1, 1, 1, '#9fb4ff'); px(sx, sy + 1, 1, 1, '#9fb4ff')
+        }
+      }
+
+      // ---- the moon
+      const MX = 744
+      const MY = 104
+      const MR = 54
+      for (let dy = -MR - 8; dy <= MR + 8; dy++) { // halo
+        const w = Math.floor(Math.sqrt(Math.max(0, (MR + 8) * (MR + 8) - dy * dy)))
+        a.fillStyle = 'rgba(255,214,232,0.07)'
+        a.fillRect(MX - w, MY + dy, w * 2, 1)
+      }
+      for (let dy = -MR; dy <= MR; dy++) {
+        const w = Math.floor(Math.sqrt(Math.max(0, MR * MR - dy * dy)))
+        px(MX - w, MY + dy, w * 2, 1, '#e8dfe8')
+      }
+      for (const [cx, cy, cr, col] of [
+        [-18, -12, 9, '#e6d2e2'], [12, 8, 11, '#e6d2e2'], [-6, 22, 6, '#eddbe8'],
+        [22, -18, 5, '#eddbe8'], [-28, 8, 4, '#eddbe8'], [4, -30, 4, '#e6d2e2'],
+      ]) {
+        for (let dy = -cr; dy <= cr; dy++) {
+          const w = Math.floor(Math.sqrt(Math.max(0, cr * cr - dy * dy)))
+          px(MX + cx - w, MY + cy + dy, w * 2, 1, col)
+        }
+      }
+
+      /* ---- Fuji ----
+         Shaded across three planes — the lit west flank, the body, and
+         the shadowed east — with a treeline skirting the base and the
+         snow broken into gullies down the ridges. */
+      const FX = 224
+      const FTOP = 168
+      const FH = HZ - FTOP
+      for (let y = 0; y < FH; y++) {
+        const t = y / FH
+        const half = Math.round(22 + Math.pow(t, 1.28) * 286)
+        const yy = FTOP + y
+        for (let x = -half; x < half; x++) {
+          const u = x / half
+          const col = u < -0.34 ? '#252048' : u < 0.28 ? '#1c1838' : '#141029'
+          px(FX + x, yy, 1, 1, col)
+        }
+        // the treeline, dark and ragged, skirting the foot
+        if (t > 0.78) {
+          const band = Math.round((t - 0.78) * 60)
+          for (let x = -half; x < half; x++) {
+            if (((x * 7 + yy * 3) % 11) > 6) continue
+            px(FX + x, yy, 1, 1, '#161230')
+          }
+          if (band > 0) px(FX - half, yy, half * 2, 1, ((yy % 3) ? '#191434' : '#161230'))
+        }
+        // snow
+        if (t < 0.34) {
+          if (t < 0.15) {
+            px(FX - half, yy, half * 2, 1, '#dfd8ee')
+            px(FX + Math.round(half * 0.22), yy, Math.round(half * 0.78), 1, '#bdb4d6')
+            px(FX + Math.round(half * 0.62), yy, Math.round(half * 0.38), 1, '#9d95bd')
+          } else {
+            const run = 1 - (t - 0.15) / 0.19
+            for (const gg of [-0.80, -0.56, -0.30, -0.03, 0.26, 0.54, 0.80]) {
+              const gw = Math.max(0, Math.round(half * 0.085 * run * (1 + Math.sin(yy * 0.4 + gg * 9) * 0.3)))
+              if (!gw) continue
+              px(FX + Math.round(half * gg) - gw, yy, gw * 2, 1, gg < -0.1 ? '#cfc7e4' : '#a89fc4')
+            }
+          }
+        }
+      }
+      px(FX - 11, FTOP, 22, 3, '#241f45') // the crater rim
+
+      /* ---- the town ----
+         A machiya is a low box under a deep hipped roof with the eave
+         turned up at both tips. At this density the roof gets tile
+         courses, the front gets a lit paper screen, and a noren hangs
+         in the doorway. */
+      const INK = '#0b0818'
+      const INK2 = '#171238'
+      const TILE = '#1a1436'
+      const WARM = ['#ffb85c', '#ff8f4a', '#ffd88a']
+
+      const roof = (cx, y, half, drop, col, tile) => {
+        for (let k = 0; k < drop; k++) {
+          const w = Math.round(half * (0.40 + (k / drop) * 0.60))
+          px(cx - w, y + k, w * 2, 1, col)
+          if (tile && k % 3 === 2) px(cx - w, y + k, w * 2, 1, TILE)
+        }
+        // the flicked eave
+        px(cx - half - 7, y + drop - 4, 9, 2, col)
+        px(cx + half - 2, y + drop - 4, 9, 2, col)
+        px(cx - half - 11, y + drop - 7, 7, 2, col)
+        px(cx + half + 4, y + drop - 7, 7, 2, col)
+        px(cx - half - 14, y + drop - 10, 5, 2, col)
+        px(cx + half + 9, y + drop - 10, 5, 2, col)
+      }
+
+      const machiya = (cx, w, bh, col, lit) => {
+        px(cx - w, HZ - bh, w * 2, bh, col)
+        roof(cx, HZ - bh - 15, w + 7, 17, col, col === INK)
+        if (lit) {
+          // a shoji screen, and a noren across the door
+          px(cx - Math.round(w * 0.55), HZ - bh + 8, Math.round(w * 1.1), Math.round(bh * 0.34), '#3a2a52')
+          for (let r = 0; r < 3; r++) {
+            px(cx - Math.round(w * 0.5), HZ - bh + 11 + r * 5, Math.round(w), 3, WARM[(r + cx) % 3])
+          }
+          px(cx - 7, HZ - 13, 14, 6, '#2b1a44')
+          px(cx - 7, HZ - 13, 14, 2, '#c9384a')
+        }
+      }
+
+      // far bank
+      for (let i = 0; i < 30; i++) {
+        machiya(Math.round(ar() * AW), 11 + Math.round(ar() * 15), 16 + Math.round(ar() * 24), INK2, false)
+      }
+      // near town
+      for (let i = 0; i < 34; i++) {
+        machiya(Math.round(ar() * AW), 13 + Math.round(ar() * 19), 22 + Math.round(ar() * 38), INK, ar() < 0.62)
+      }
+
+      /* ---- pagodas ----
+         Five roofs stacked and shrinking, each with a rail and rafter
+         line under it, and the sorin standing off the top. */
+      const pagoda = (pxx, base, tiers, scale) => {
+        let y = base
+        let half = Math.round(40 * scale)
+        for (let t = 0; t < tiers; t++) {
+          const bodyW = Math.round(half * 0.56)
+          px(pxx - bodyW, y - 23, bodyW * 2, 23, INK)
+          // the rail
+          px(pxx - bodyW - 3, y - 25, bodyW * 2 + 6, 3, '#241a44')
+          for (let r = -bodyW; r < bodyW; r += 5) px(pxx + r, y - 24, 2, 6, INK)
+          roof(pxx, y - 38, half, 17, INK, true)
+          y -= 36
+          half = Math.round(half * 0.87)
+        }
+        px(pxx - 2, y - 30, 4, 32, INK)
+        for (let k = 0; k < 5; k++) px(pxx - 7 + k, y - 26 + k * 5, 15 - k * 2, 2, INK)
+        px(pxx - 4, y - 34, 8, 4, '#241a44')
+      }
+      pagoda(196, HZ, 5, 1)
+      pagoda(892, HZ, 3, 0.62)
+
+      /* ---- the torii, standing in the water ---- */
+      const TX = 700
+      const TB = HZ + 58
+      const TH = 132
+      const VER = '#e2402f'
+      const VERL = '#ff7a5c'
+      const VERD = '#8f2016'
+      const post = (x) => {
+        px(x - 8, TB - TH, 17, TH, VER)
+        px(x - 8, TB - TH, 4, TH, VERL)
+        px(x + 5, TB - TH, 4, TH, VERD)
+        px(x - 11, TB - 5, 23, 5, VERD) // the stone footing
+      }
+      post(TX - 52)
+      post(TX + 52)
+      px(TX - 66, TB - TH + 44, 132, 13, VER)      // nuki
+      px(TX - 66, TB - TH + 44, 132, 3, VERL)
+      px(TX - 66, TB - TH + 54, 132, 3, VERD)
+      px(TX - 20, TB - TH + 20, 40, 22, VERD)      // gaku, the plaque
+      px(TX - 17, TB - TH + 23, 34, 16, '#2a1410')
+      px(TX - 86, TB - TH + 16, 172, 9, VERD)      // shimaki
+      px(TX - 94, TB - TH, 188, 15, VER)           // kasagi
+      px(TX - 94, TB - TH, 188, 4, VERL)
+      px(TX - 102, TB - TH + 2, 10, 6, VER)        // lifted tips
+      px(TX + 92, TB - TH + 2, 10, 6, VER)
+      px(TX - 110, TB - TH - 3, 10, 6, VER)
+      px(TX + 100, TB - TH - 3, 10, 6, VER)
+
+      /* ---- the water, under seigaiha ---- */
+      const grd = ['#0a0d24', '#090c20', '#080b1c', '#070a18', '#060814', '#050710', '#04050c']
+      for (let y = HZ; y < AH; y++) {
+        px(0, y, AW, 1, grd[Math.min(6, Math.floor(((y - HZ) / (AH - HZ)) * 7))])
+      }
+      // the torii's reflection, broken up
+      for (let y = TB; y < AH; y += 2) {
+        const f = 1 - (y - TB) / (AH - TB)
+        if (ar() > 0.55) continue
+        px(TX - 60 + Math.round(ar() * 6), y, 16, 1, 'rgba(226,64,47,' + (0.3 * f).toFixed(2) + ')')
+        px(TX + 44 + Math.round(ar() * 6), y, 16, 1, 'rgba(226,64,47,' + (0.3 * f).toFixed(2) + ')')
+      }
+      /* The seigaiha field is gone. Eight rows of concentric arcs
+         across the bottom third was a lot of moving detail under a
+         block of text that has to be read in about a second. */
+      // the moon's road
+      for (let y = HZ + 4; y < AH; y += 5) {
+        const w = 10 + (y - HZ) * 0.42
+        for (let x = -w / 2; x < w / 2; x += 8) {
+          a.fillStyle = 'rgba(253,242,246,0.10)'
+          a.fillRect(Math.round(MX + x), y, 4, 2)
+        }
+      }
+
+      /* ---- a sakura branch over the top ---- */
+      const bl = (x0, y0, ang, len, th, depth) => {
+        let cx = x0
+        let cy = y0
+        let an = ang
+        for (let k = 0; k < len; k++) {
+          an += ((((k * 11 + depth * 7) % 5) - 2) * 0.018)
+          cx += Math.cos(an)
+          cy += Math.sin(an)
+          px(Math.round(cx), Math.round(cy), Math.max(1, Math.round(th)), Math.max(1, Math.round(th * 0.7)), '#2a1a2e')
+        }
+        if (depth > 0) {
+          bl(cx, cy, an - 0.5, len * 0.64, th * 0.62, depth - 1)
+          bl(cx, cy, an + 0.42, len * 0.6, th * 0.62, depth - 1)
+          if (depth > 1) bl(cx, cy, an - 0.04, len * 0.5, th * 0.5, depth - 1)
+        } else {
+          for (let f = 0; f < 14; f++) {
+            const fx = Math.round(cx + (ar() * 2 - 1) * 15)
+            const fy = Math.round(cy + (ar() * 2 - 1) * 13)
+            const tone = f % 3 ? '#ffb6d5' : '#ffe0ee'
+            px(fx, fy - 2, 2, 2, tone); px(fx - 2, fy, 2, 2, tone)
+            px(fx + 2, fy, 2, 2, tone); px(fx, fy + 2, 2, 2, tone)
+            px(fx, fy, 2, 2, '#ff6fa6')
+          }
+        }
+      }
+      bl(-8, 12, 0.48, 54, 6, 3)
+      bl(-8, 44, 0.22, 60, 6, 3)
+      bl(AW + 8, 20, Math.PI - 0.40, 50, 6, 3)
+    }
 
     /* Build the attract screen: a starfield, and a skyline that the
        loader raises one tower at a time. Heights come from a fixed
@@ -102,6 +386,25 @@
         towers = towers.concat([...near.children])
       }
 
+      /* Blossom over the whole boot. Seeded from the same fixed
+         sequence as the skyline, so the same petals fall every time
+         this screen loads. */
+      const petalBox = document.getElementById('bootPetals')
+      if (petalBox) {
+        let ps = 4241
+        const pr = () => {
+          ps = (Math.imul(ps, 1103515245) + 12345) >>> 0
+          return ps / 4294967296
+        }
+        for (let i = 0; i < 34; i++) {
+          const p = document.createElement('span')
+          p.style.left = (pr() * 100).toFixed(2) + '%'
+          p.style.animationDuration = (5 + pr() * 6).toFixed(2) + 's, 1.1s'
+          p.style.animationDelay = (-pr() * 9).toFixed(2) + 's, 0s'
+          petalBox.appendChild(p)
+        }
+      }
+
       // the rain, waiting for its cue
       const rainBox = document.getElementById('bootRain')
       if (rainBox) {
@@ -128,12 +431,12 @@
       'ONE BUILDING SPELLS SOMETHING. KEEP LOOKING.',
       'IT SNOWS IF YOU ASK IT TO.',
       'UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A.',
-      'THE AIRSHIP FLIES A DIFFERENT BANNER EVERY TIME.',
-      'THERE IS A RUBBER DUCK. NO, IT IS NOT EXPLAINED.',
+      'THE BLOSSOM FALLS WHETHER YOU WATCH OR NOT.',
+      'THERE IS SOMETHING OUT IN THE BAY. DO NOT WAKE IT.',
       'WATCH THE PARAPET. SOMETHING RUNS ALONG IT.',
-      'THE CHESS GAME HAS NOT MOVED IN WEEKS.',
-      'THE CITY IN THE CORNER CHANGES. FIVE OF THEM.',
-      'IT IS ALWAYS APRIL IN TOKYO.',
+      'THE VENDING MACHINE IS ALWAYS LIT. ALWAYS.',
+      'FIVE CITIES. TOKYO IS ONLY THE ONE IT OPENS ON.',
+      'IT IS ALWAYS APRIL HERE.',
     ]
     const tip = TIPS[Math.floor(Math.random() * TIPS.length)]
 
@@ -341,29 +644,29 @@
        type, and a download arrow sitting under it. */
     resume: [
       '........................',
-      '....kkkkkkkkkkkkkk......',
-      '....kwwwwwwwwwwkdk......',
-      '....kwwwwwwwwwwkddk.....',
-      '....kwwwwwwwwwwkdddk....',
-      '....kwwwwwwwwwwwwwwk....',
-      '....kwbbbbwsssssssswk...',
-      '....kwbbbbwssssssssswk..',
-      '....kwbbbbwwwwwwwwwwwk..',
-      '....kwbbbbwssssssssswk..',
-      '....kwwwwwwwwwwwwwwwwk..',
-      '....kwssssssssssssswwk..',
-      '....kwsssssssssssswwwk..',
-      '....kwwwwwwwwwwwwwwwwk..',
-      '....kwsssssssssssswwwk..',
-      '....kwssssssssswwwwwwk..',
-      '....kwwwwwwwwwwwwwwwwk..',
-      '....kddddddddddddddddk..',
-      '.....kkkkkkkkkkkkkkkk...',
-      '..........kggk..........',
-      '..........kggk..........',
-      '.......kkggggggkk.......',
-      '........kggggggk........',
-      '.........kkggkk.........',
+      '........................',
+      '.....kkkkkkkkkkkkkk.....',
+      '.....kwwwwwwwwwwkkk.....',
+      '.....kwwwwwwwwwwswk.....',
+      '.....kwwwwwwwwwwwwk.....',
+      '.....kwmmmmmmwwwwwk.....',
+      '.....kwmmmmmmwwwwwk.....',
+      '.....kwwwwwwwwwwwwk.....',
+      '.....kwssssssssswwk.....',
+      '.....kwsssssssssssk.....',
+      '.....kwwwwwwwwwwwwk.....',
+      '.....kwssssssssswwk.....',
+      '.....kwsssssssssssk.....',
+      '.....kwwwwwwwwwwwwk.....',
+      '.....kwsssssswwwwwk.....',
+      '.....kwwwwwwwwwwwwk.....',
+      '.....kwwwwwwwrrrwwk.....',
+      '.....kwwwwwwwrrrwwk.....',
+      '.....kddddddddddddk.....',
+      '.....kkkkkkkkkkkkkk.....',
+      '........................',
+      '........................',
+      '........................',
     ],
 
     /* ---- the contact row ----
@@ -377,22 +680,22 @@
       '........................',
       '..kkkkkkkkkkkkkkkkkkkk..',
       '..kwwwwwwwwwwwwwwwwwwk..',
-      '..kwkwwwwwwwwwwwwwwkwk..',
-      '..kwwkwwwwwwwwwwwwkwwk..',
-      '..kwwwkwwwwwwwwwwkwwwk..',
-      '..kwwwwkwwwwwwwwkwwwwk..',
-      '..kwwwwwkwwwwwwkwwwwwk..',
-      '..kwwwwwwkwwwwkwwwwwwk..',
-      '..kwwwwwwwkwwkwwwwwwwk..',
-      '..kwwwwwwwwkkwwwwwwwwk..',
-      '..kwsswwwwwwwwwwwwsswk..',
-      '..kwsssswwwwwwwwsssswk..',
-      '..kwssssssssssssssssswk.',
-      '..kwssssssssssssssssswk.',
-      '..kdddddddddddddddddddk.',
+      '..kwkkwwwwwwwwwwwwkkwk..',
+      '..kwwkkwwwwwwwwwwkkwwk..',
+      '..kwwwkkwwwwwwwwkkwwwk..',
+      '..kwwwwkkwwwwwwkkwwwwk..',
+      '..kwwwwwkkwwwwkkwwwwwk..',
+      '..kwwwwwwkkwwkkwwwwwwk..',
+      '..kwwwwwwwkkkkwwwwwwwk..',
+      '..kwwwwwwwwwwwwwwwwwwk..',
+      '..kwkkkkkwwwwwwwwwwwwk..',
+      '..kwkmmmkwwwwwwwwwwwwk..',
+      '..kwkmmmkwwsssssssssdk..',
+      '..kwkkkkkwsssssssssssk..',
+      '..kwsssssssssssssssssk..',
+      '..kwsssssssssssssssssk..',
+      '..kddddddddddddddddddk..',
       '..kkkkkkkkkkkkkkkkkkkk..',
-      '........................',
-      '........................',
       '........................',
       '........................',
       '........................',
@@ -427,22 +730,22 @@
     linkedin: [
       '........................',
       '..kkkkkkkkkkkkkkkkkkkk..',
-      '..kcccccccccccccccccck..',
-      '..kcccccccccccccccccck..',
-      '..kccwwccccccccccccccck.',
-      '..kccwwccccccccccccccck.',
-      '..kcccccccccccccccccck..',
-      '..kccwwccccwwwwcccccck..',
-      '..kccwwcccwwwwwwccccck..',
-      '..kccwwcccwwccwwccccck..',
-      '..kccwwcccwwccwwccccck..',
-      '..kccwwcccwwccwwccccck..',
-      '..kccwwcccwwccwwccccck..',
-      '..kccwwcccwwccwwccccck..',
-      '..kccwwcccwwccwwccccck..',
-      '..kcccccccccccccccccck..',
-      '..kcccccccccccccccccck..',
-      '..kdddddddddddddddddddk.',
+      '..kwwwwwwwwwwwwwwwwwwk..',
+      '..kwcccccccccccccccccd..',
+      '..kwccwwccccccccccccdd..',
+      '..kwccwwccccccccccccdd..',
+      '..kwcccccccccccccccccd..',
+      '..kwccwwccccwwwwcccccd..',
+      '..kwccwwcccwwwwwwccccd..',
+      '..kwccwwcccwwccwwccccd..',
+      '..kwccwwcccwwccwwccccd..',
+      '..kwccwwcccwwccwwccccd..',
+      '..kwccwwcccwwccwwccccd..',
+      '..kwccwwcccwwccwwccccd..',
+      '..kwccwwcccwwccwwccccd..',
+      '..kwcccccccccccccccccd..',
+      '..kwccccccccccccccccdd..',
+      '..kddddddddddddddddddd..',
       '..kkkkkkkkkkkkkkkkkkkk..',
       '........................',
       '........................',
@@ -450,9 +753,377 @@
       '........................',
       '........................',
     ],
+
+    dribbble: [
+      '........................',
+      '........................',
+      '...........kk...........',
+      '........kkkkkkkk........',
+      '......kkmwwmmmwwkk......',
+      '.....kkwwwwmwwwrrkk.....',
+      '....kkmmwwwwwwrrrrkk....',
+      '....kwwwwwwwmrrrrrrk....',
+      '...kwwwwwwwmrrrrrrrrk...',
+      '...kmmmmmwwwrrrrrrrrk...',
+      '...kmmmmmwwwwrrrrrrrk...',
+      '..kkmmmmmrwwwrrrrrrrkk..',
+      '..kkmmmmrrwwwrrrrrrrkk..',
+      '...kmmmrrrwwwwrrrrrrk...',
+      '...kmmrrrrrwwwrrrrrrk...',
+      '...kmrrrrrrwwwrrrrrrk...',
+      '....krrrrrrrwwwrrrrk....',
+      '....kkrrrrrrwwwrrrkk....',
+      '.....kkrrrrrrwwrrkk.....',
+      '......kkrrrrrwwwkk......',
+      '........kkkkkkkk........',
+      '...........kk...........',
+      '........................',
+      '........................',
+    ],
+
+    dribbble: [
+      '........................',
+      '........................',
+      '...........kk...........',
+      '........kkkkkkkk........',
+      '......kkwwmmmmmmkk......',
+      '.....kkwwwwmmmmmwkk.....',
+      '....kkwwwwwmmwwwwwkk....',
+      '....kwwwwwwwwwwwwmmk....',
+      '...kwwwwwwwwwwmmmmrrk...',
+      '...kwwwwwwwwmmmmmrrrk...',
+      '...kmmmmmwwwwmmmrrrrk...',
+      '..kkmmmmmmwwwmmrrrrrkk..',
+      '..kkmmmmmmwwwwrrrrrrkk..',
+      '...kmmmmmmmwwwwrrrrrk...',
+      '...kmmmmmmmmwwwrrrrrk...',
+      '...kmmmmmmmrwwwwrrrrk...',
+      '....kmmmmmrrwwwwwrrk....',
+      '....kkmmmrrrrwwwwwkk....',
+      '.....kkmrrrrrwwwwkk.....',
+      '......kkrrrrrwwwkk......',
+      '........kkkkkkkk........',
+      '...........kk...........',
+      '........................',
+      '........................',
+    ],
+
+    dribbble: [
+      '........................',
+      '........................',
+      '...........kk...........',
+      '........kkkkkkkk........',
+      '......kkmwwmmmwwkk......',
+      '.....kkwwwwmwwwrrkk.....',
+      '....kkmmwwwwwwrrrrkk....',
+      '....kwwwwwwwmrrrrrrk....',
+      '...kwwwwwwwmrrrrrrrrk...',
+      '...kmmmmmwwwrrrrrrrrk...',
+      '...kmmmmmwwwwrrrrrrrk...',
+      '..kkmmmmmrwwwrrrrrrrkk..',
+      '..kkmmmmrrwwwrrrrrrrkk..',
+      '...kmmmrrrwwwwrrrrrrk...',
+      '...kmmrrrrrwwwrrrrrrk...',
+      '...kmrrrrrrwwwrrrrrrk...',
+      '....krrrrrrrwwwrrrrk....',
+      '....kkrrrrrrwwwrrrkk....',
+      '.....kkrrrrrrwwrrkk.....',
+      '......kkrrrrrwwwkk......',
+      '........kkkkkkkk........',
+      '...........kk...........',
+      '........................',
+      '........................',
+    ],
   }
 
+
+  /* ==================================================================
+     THE CONTACT ICONS, AT FULL RESOLUTION
+
+     The desktop icons above are 24x24 because they are furniture on a
+     machine that only has 24x24 to give. These four are not: they are
+     the last thing on the page and the only four things on it a
+     visitor is meant to click, so they are drawn at 4x the size they
+     display at, with curves, gradients and soft shadows.
+
+     Nothing here is on a grid. That is the point — the pixel face and
+     the pixel city carry the retro; the one row of controls that has
+     to be unmistakable at a glance does not have to pay for it.
+     ================================================================== */
+  const ICON_HI = 192 // backing resolution; displayed at 48
+
+  function roundRect(g, x, y, w, h, r) {
+    g.beginPath()
+    g.moveTo(x + r, y)
+    g.arcTo(x + w, y, x + w, y + h, r)
+    g.arcTo(x + w, y + h, x, y + h, r)
+    g.arcTo(x, y + h, x, y, r)
+    g.arcTo(x, y, x + w, y, r)
+    g.closePath()
+  }
+
+  const grad = (g, x0, y0, x1, y1, a, b) => {
+    const gr = g.createLinearGradient(x0, y0, x1, y1)
+    gr.addColorStop(0, a)
+    gr.addColorStop(1, b)
+    return gr
+  }
+
+  /* Everything is drawn on a 192 grid with an 18px margin, so the four
+     of them share a silhouette weight even though the shapes differ. */
+  const HI = {
+    /* ---- envelope ----
+       Body, then the inside of the throat, then the flap folded down
+       over it, so the flap reads as being in front of the paper. */
+    mail(g) {
+      const x = 18, y = 34, w = 156, h = 124
+      g.save()
+      g.shadowColor = 'rgba(4,6,15,0.55)'
+      g.shadowBlur = 0
+      g.shadowOffsetX = 7
+      g.shadowOffsetY = 7
+      roundRect(g, x, y, w, h, 12)
+      g.fillStyle = grad(g, x, y, x, y + h, '#f6f9ff', '#c3cde6')
+      g.fill()
+      g.restore()
+
+      // the throat: what you can see of the inside behind the flap
+      g.beginPath()
+      g.moveTo(x + 6, y + 8)
+      g.lineTo(x + w / 2, y + 74)
+      g.lineTo(x + w - 6, y + 8)
+      g.closePath()
+      g.fillStyle = '#8f9bbb'
+      g.fill()
+
+      // the flap
+      g.beginPath()
+      g.moveTo(x, y + 4)
+      g.lineTo(x + w / 2, y + 66)
+      g.lineTo(x + w, y + 4)
+      g.lineTo(x + w, y - 2)
+      g.quadraticCurveTo(x + w, y - 12, x + w - 12, y - 12)
+      g.lineTo(x + 12, y - 12)
+      g.quadraticCurveTo(x, y - 12, x, y - 2)
+      g.closePath()
+      g.fillStyle = grad(g, x, y - 12, x, y + 66, '#ffffff', '#aab6d4')
+      g.fill()
+      g.strokeStyle = 'rgba(5,7,15,0.85)'
+      g.lineWidth = 5
+      g.lineJoin = 'round'
+      g.stroke()
+
+      // a stamp, franked
+      g.fillStyle = '#ff3ea5'
+      roundRect(g, x + 104, y + 78, 38, 30, 4)
+      g.fill()
+      g.strokeStyle = 'rgba(255,255,255,0.85)'
+      g.lineWidth = 3
+      g.stroke()
+      g.strokeStyle = 'rgba(5,7,15,0.55)'
+      g.lineWidth = 4
+      g.lineCap = 'round'
+      for (let i = 0; i < 3; i++) {
+        g.beginPath()
+        g.moveTo(x + 22, y + 84 + i * 11)
+        g.lineTo(x + 84 - i * 12, y + 84 + i * 11)
+        g.stroke()
+      }
+
+      // the outline last, over everything
+      g.strokeStyle = '#05070f'
+      g.lineWidth = 6
+      g.lineJoin = 'round'
+      roundRect(g, x, y, w, h, 12)
+      g.stroke()
+    },
+
+    /* ---- the card ---- */
+    linkedin(g) {
+      const x = 20, y = 20, w = 152, h = 152
+      g.save()
+      g.shadowColor = 'rgba(4,6,15,0.55)'
+      g.shadowOffsetX = 7
+      g.shadowOffsetY = 7
+      roundRect(g, x, y, w, h, 26)
+      g.fillStyle = grad(g, x, y, x + w, y + h, '#5df6ff', '#1aa8d8')
+      g.fill()
+      g.restore()
+
+      // a soft sheen across the top left
+      g.save()
+      roundRect(g, x, y, w, h, 26)
+      g.clip()
+      g.fillStyle = 'rgba(255,255,255,0.22)'
+      g.beginPath()
+      g.moveTo(x, y)
+      g.lineTo(x + w, y)
+      g.lineTo(x, y + h)
+      g.closePath()
+      g.fill()
+      g.restore()
+
+      g.fillStyle = '#ffffff'
+      // the i: a dot and a stem
+      g.beginPath()
+      g.arc(x + 34, y + 44, 12, 0, Math.PI * 2)
+      g.fill()
+      roundRect(g, x + 22, y + 64, 24, 66, 5)
+      g.fill()
+      /* the n: its stem starts at the x-height, NOT at the i's
+         ascender — carried up there it reads as an h. */
+      roundRect(g, x + 60, y + 78, 24, 52, 5)
+      g.fill()
+      g.beginPath()
+      g.moveTo(x + 84, y + 130)
+      g.lineTo(x + 84, y + 96)
+      g.quadraticCurveTo(x + 84, y + 78, x + 102, y + 78)
+      g.quadraticCurveTo(x + 120, y + 78, x + 120, y + 96)
+      g.lineTo(x + 120, y + 130)
+      g.lineTo(x + 96, y + 130)
+      g.lineTo(x + 96, y + 100)
+      g.quadraticCurveTo(x + 96, y + 94, x + 90, y + 94)
+      g.quadraticCurveTo(x + 84, y + 94, x + 84, y + 100)
+      g.closePath()
+      g.fill()
+
+      g.strokeStyle = '#05070f'
+      g.lineWidth = 6
+      roundRect(g, x, y, w, h, 26)
+      g.stroke()
+    },
+
+    /* ---- one page, PDF ---- */
+    resume(g) {
+      const x = 38, y = 20, w = 116, h = 152, fold = 34
+      g.save()
+      g.shadowColor = 'rgba(4,6,15,0.55)'
+      g.shadowOffsetX = 7
+      g.shadowOffsetY = 7
+      g.beginPath()
+      g.moveTo(x + 8, y)
+      g.lineTo(x + w - fold, y)
+      g.lineTo(x + w, y + fold)
+      g.lineTo(x + w, y + h - 8)
+      g.quadraticCurveTo(x + w, y + h, x + w - 8, y + h)
+      g.lineTo(x + 8, y + h)
+      g.quadraticCurveTo(x, y + h, x, y + h - 8)
+      g.lineTo(x, y + 8)
+      g.quadraticCurveTo(x, y, x + 8, y)
+      g.closePath()
+      g.fillStyle = grad(g, x, y, x, y + h, '#ffffff', '#ccd5ea')
+      g.fill()
+      g.restore()
+
+      // the dog ear, lit on its fold
+      g.beginPath()
+      g.moveTo(x + w - fold, y)
+      g.lineTo(x + w, y + fold)
+      g.lineTo(x + w - fold, y + fold)
+      g.closePath()
+      g.fillStyle = '#93a0c0'
+      g.fill()
+
+      // heading, then three runs of copy
+      g.fillStyle = '#ff3ea5'
+      roundRect(g, x + 16, y + 30, 52, 12, 4)
+      g.fill()
+      g.fillStyle = '#9aa6c8'
+      const runs = [76, 92, 62, 84, 70]
+      for (let i = 0; i < runs.length; i++) {
+        roundRect(g, x + 16, y + 58 + i * 18, runs[i], 8, 4)
+        g.fill()
+      }
+
+      // a wax seal
+      g.beginPath()
+      g.arc(x + 88, y + 124, 18, 0, Math.PI * 2)
+      g.fillStyle = grad(g, x + 74, y + 110, x + 102, y + 140, '#ff6a70', '#c2262d')
+      g.fill()
+      g.strokeStyle = 'rgba(5,7,15,0.7)'
+      g.lineWidth = 4
+      g.stroke()
+
+      g.strokeStyle = '#05070f'
+      g.lineWidth = 6
+      g.lineJoin = 'round'
+      g.beginPath()
+      g.moveTo(x + 8, y)
+      g.lineTo(x + w - fold, y)
+      g.lineTo(x + w, y + fold)
+      g.lineTo(x + w, y + h - 8)
+      g.quadraticCurveTo(x + w, y + h, x + w - 8, y + h)
+      g.lineTo(x + 8, y + h)
+      g.quadraticCurveTo(x, y + h, x, y + h - 8)
+      g.lineTo(x, y + 8)
+      g.quadraticCurveTo(x, y, x + 8, y)
+      g.closePath()
+      g.stroke()
+    },
+
+    /* ---- the ball ----
+       Three arcs, each a wide stroke clipped to the ball, which is the
+       only way they stay true curves rather than the staircases the
+       24-pixel version had to settle for. */
+    dribbble(g) {
+      const cx = 96, cy = 96, r = 76
+      g.save()
+      g.shadowColor = 'rgba(4,6,15,0.55)'
+      g.shadowOffsetX = 7
+      g.shadowOffsetY = 7
+      g.beginPath()
+      g.arc(cx, cy, r, 0, Math.PI * 2)
+      g.fillStyle = grad(g, cx - r, cy - r, cx + r, cy + r, '#ff64bd', '#e01f77')
+      g.fill()
+      g.restore()
+
+      g.save()
+      g.beginPath()
+      g.arc(cx, cy, r - 3, 0, Math.PI * 2)
+      g.clip()
+      g.strokeStyle = '#ffffff'
+      g.lineWidth = 13
+      g.lineCap = 'round'
+      // the long sweep across the belly
+      g.beginPath()
+      g.arc(cx - 96, cy + 118, 168, -1.05, -0.16)
+      g.stroke()
+      // the one that comes over the shoulder
+      g.beginPath()
+      g.arc(cx + 122, cy - 42, 128, 2.05, 3.25)
+      g.stroke()
+      // and the short one across the top
+      g.beginPath()
+      g.arc(cx + 6, cy - 150, 168, 0.62, 1.42)
+      g.stroke()
+      // a highlight, so it reads as a sphere and not a disc
+      g.fillStyle = 'rgba(255,255,255,0.18)'
+      g.beginPath()
+      g.ellipse(cx - 26, cy - 34, 40, 26, -0.6, 0, Math.PI * 2)
+      g.fill()
+      g.restore()
+
+      g.strokeStyle = '#05070f'
+      g.lineWidth = 6
+      g.beginPath()
+      g.arc(cx, cy, r, 0, Math.PI * 2)
+      g.stroke()
+    },
+  }
+
+  document.querySelectorAll('canvas.links__art[data-icon]').forEach((cv) => {
+    const draw = HI[cv.dataset.icon]
+    if (!draw) return
+    cv.width = ICON_HI
+    cv.height = ICON_HI
+    const g = cv.getContext('2d')
+    g.clearRect(0, 0, ICON_HI, ICON_HI)
+    draw(g)
+    cv.dataset.hires = '1'
+  })
+
   document.querySelectorAll('canvas[data-icon]').forEach((cv) => {
+    if (cv.dataset.hires) return
     const art = ICONS[cv.dataset.icon]
     if (!art) return
     const N = 24

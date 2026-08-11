@@ -40,8 +40,6 @@
   /* Shared by the static prop in buildRoof and the per-frame occupant
      shared with the prop below it. */
   const PIPE_X = 636
-  const VIA_Y = 360 // top of the elevated deck
-  const VIA_H = 11
   const LOOP_W = W * 2
 
   /* ---- how tall a layer buffer has to be ----
@@ -54,7 +52,6 @@
      Generous margins on both: a landmark that grows past its buffer is
      silently cropped, which is a horrible thing to debug. */
   const CITY_H = 452
-  const VIA_BUF_H = 420
 
   /* ==================================================================
      SUPERSAMPLING
@@ -986,7 +983,7 @@
   /* ==================================================================
      STATIC LAYERS
      ================================================================== */
-  let sky, clouds, roof, viaduct
+  let sky, clouds, roof
   let city = []
   let ridge = null
   /* ---- the camera ----
@@ -1421,7 +1418,8 @@
        is made before that decision, so the field thickens under weather
        instead of being swapped for a different one — which is what
        toggling the rain used to do to the sky. */
-    for (let k = 0; k < 46; k++) {
+    // Was 46. A calmer sky has room in it.
+    for (let k = 0; k < 20; k++) {
       const cx = Math.floor(rnd() * LOOP_W)
       const cy = 26 + Math.floor(rnd() * 244)
       const len = 26 + Math.floor(rnd() * 96)
@@ -2994,9 +2992,10 @@
     // feed horn on its tripod
     g.fillStyle = o.window
     g.fillRect(x - 2, cy - 17, 5, 7)
-    for (let k = 0; k < 17; k++) {
-      g.fillRect(x - Math.round(k * 1.1), cy - 17 + k, 1, 1)
-      g.fillRect(x + Math.round(k * 1.1), cy - 17 + k, 1, 1)
+    g.fillStyle = o.dark
+    for (let k = 0; k < 8; k++) {
+      g.fillRect(x - Math.round(k * 0.9), cy - 17 + k, 1, 1)
+      g.fillRect(x + Math.round(k * 0.9), cy - 17 + k, 1, 1)
     }
   }
 
@@ -3508,7 +3507,7 @@
     g.fillRect(x - 26, dy, 52, 16)
     g.fillStyle = white
     g.fillRect(x - 26, dy, 52, 1)
-    g.fillRect(x - 28, dy + 4, 56, 2)
+    g.fillRect(x - 26, dy + 4, 52, 2)
     g.fillStyle = '#ffd88a'
     for (let k = 0; k < 12; k++) g.fillRect(x - 23 + k * 4, dy + 8, 2, 4)
 
@@ -3560,7 +3559,13 @@
       g.fillRect(x - dw, dy, dw * 2, 1)
       g.fillRect(x - dw, dy + dh - 1, dw * 2, 1)
       g.fillStyle = '#e8ddff'
-      for (let k = 0; k < dw; k++) g.fillRect(x - dw + 2 + k * 3, dy + 2, 1, dh - 4)
+      /* dw is the deck's HALF width, and the mullions step three
+         pixels at a time — so looping dw times ran the last one out to
+         x + 2*dw, about a deck's width past the right hand edge and
+         into open sky. Two decks, two lines coming out of the tower.
+         Count the slots the deck actually has room for. */
+      const slots = Math.floor((dw * 2 - 4) / 3)
+      for (let k = 0; k < slots; k++) g.fillRect(x - dw + 2 + k * 3, dy + 2, 1, dh - 4)
     }
     deck(top + 96, 19, 14)
     deck(top + 40, 12, 10)
@@ -3623,40 +3628,147 @@
      pink pixels are noise. What works is clumps: three or four dense
      clusters with dark gaps between them, each one lit on its upper
      left, so the canopy reads as mass with light coming through it. */
+  /* ---- the cherry tree ----
+     It was five filled circles round a fork: a blob, and at this size
+     a blob of pink is a bush, a cloud or a smudge depending on what
+     you were expecting.
+
+     A tree reads as a tree because of its BRANCHING — a trunk that
+     divides, divides again, and thins as it goes — and blossom reads
+     as blossom because it is made of separate flowers with gaps of
+     sky between them, not a continuous field of pink.
+
+     So this draws the structure first: a tapering trunk, then limbs
+     recursed three deep with a deterministic wobble on each, and the
+     tips collected as it goes. Then every tip gets a handful of
+     florets, and a floret is an actual five-petal flower — four petals
+     round a hot centre — rather than a pixel of pink. A few leaves go
+     in among them, because a cherry in full flower still has some.
+
+     Nothing here rolls a die: the wobble and the scatter are both
+     functions of position, so the same tree comes back every build. */
   function sakuraTree(g, o, x, y, scale) {
     const s = scale || 1
-    const trunk = '#3a2438'
+    const bark = '#43293f'
+    const barkLit = '#63415c'
+    const barkDark = '#251529'
     const pink = '#f2a8c8'
-    const pinkLit = '#ffd6e6'
-    const pinkDark = '#c06a94'
+    const pinkLit = '#ffe0ee'
+    const pinkDark = '#bf6690'
+    const heart = '#ff6fa6'
+    const leaf = '#5f8a55'
+    const leafDark = '#3c5c38'
 
-    const th = Math.round(26 * s)
-    g.fillStyle = trunk
-    g.fillRect(x - Math.max(1, Math.round(2 * s)), y - th, Math.max(2, Math.round(4 * s)), th)
-    // two branches out of the fork
-    for (let k = 0; k < Math.round(10 * s); k++) {
-      g.fillRect(x - 2 - k, y - th - Math.round(k * 0.8), 1, 1)
-      g.fillRect(x + 2 + k, y - th - Math.round(k * 0.7), 1, 1)
-    }
+    const tips = []
 
-    // the canopy: five clumps around the fork
-    const cl = [
-      [0, -14, 13], [-11, -8, 9], [11, -9, 9], [-5, -19, 8], [6, -18, 8],
-    ]
-    for (const [cx, cy, cr] of cl) {
-      const px = x + Math.round(cx * s)
-      const py = y - th + Math.round(cy * s)
-      const r = Math.max(2, Math.round(cr * s))
-      for (let dy = -r; dy <= r; dy++) {
-        const span = Math.floor(Math.sqrt(Math.max(0, r * r - dy * dy)))
-        for (let dx = -span; dx <= span; dx++) {
-          // a ragged edge — blossom has no outline
-          if (dx * dx + dy * dy > (r - 1) * (r - 1) && ((px + dx + py + dy) & 1)) continue
-          g.fillStyle = dy < -r * 0.3 && dx < 0 ? pinkLit : dy > r * 0.35 ? pinkDark : pink
-          g.fillRect(px + dx, py + dy, 1, 1)
+    /* One limb, walked a pixel at a time so it can taper and bend.
+       The bend is a hash of how far along it is, which keeps it
+       deterministic and stops every branch being a straight ruled
+       line. */
+    function limb(bx, by, ang, len, th, depth) {
+      let cx = bx
+      let cy = by
+      let a = ang
+      for (let k = 0; k < len; k++) {
+        const t = k / len
+        const w = Math.max(1, Math.round(th * (1 - t * 0.75)))
+        a += ((((k * 13 + depth * 29 + Math.round(bx)) % 7) - 3) * 0.016)
+        cx += Math.cos(a)
+        cy += Math.sin(a)
+        const px = Math.round(cx)
+        const py = Math.round(cy)
+        g.fillStyle = bark
+        g.fillRect(px, py, w, 1)
+        g.fillStyle = w > 1 ? barkLit : bark
+        g.fillRect(px, py, 1, 1)
+        if (w > 2) {
+          g.fillStyle = barkDark
+          g.fillRect(px + w - 1, py, 1, 1)
         }
       }
+      if (depth > 0) {
+        limb(cx, cy, a - 0.42 - depth * 0.06, len * 0.66, th * 0.62, depth - 1)
+        limb(cx, cy, a + 0.38 + depth * 0.07, len * 0.62, th * 0.62, depth - 1)
+        // a third, shorter shoot on the bigger forks, so it is not a Y
+        if (depth > 1) limb(cx, cy, a - 0.05, len * 0.5, th * 0.5, depth - 1)
+      } else {
+        tips.push([cx, cy])
+      }
     }
+
+    /* A single flower: four petals round a lit centre. At s=1 that is
+       three pixels across, which is the smallest thing that still
+       reads as a flower rather than as a dot. */
+    function floret(px, py, tone, big) {
+      g.fillStyle = tone
+      g.fillRect(px, py - 1, 1, 1)
+      g.fillRect(px - 1, py, 1, 1)
+      g.fillRect(px + 1, py, 1, 1)
+      g.fillRect(px, py + 1, 1, 1)
+      if (big) {
+        g.fillRect(px - 1, py - 1, 1, 1)
+        g.fillRect(px + 1, py + 1, 1, 1)
+      }
+      g.fillStyle = heart
+      g.fillRect(px, py, 1, 1)
+    }
+
+    // the trunk, tapering, with a lit side
+    const th = Math.round(30 * s)
+    const tw = Math.max(2, Math.round(5 * s))
+    for (let k = 0; k < th; k++) {
+      const w = Math.max(2, Math.round(tw * (1 - (k / th) * 0.45)))
+      const px = x - Math.round(w / 2) + Math.round(Math.sin(k * 0.12) * s)
+      g.fillStyle = bark
+      g.fillRect(px, y - k, w, 1)
+      g.fillStyle = barkLit
+      g.fillRect(px, y - k, 1, 1)
+      g.fillStyle = barkDark
+      g.fillRect(px + w - 1, y - k, 1, 1)
+    }
+    // roots flaring into the ground
+    g.fillStyle = barkDark
+    g.fillRect(x - Math.round(5 * s), y - 1, Math.round(10 * s), 1)
+
+    // three main limbs out of the fork, recursed
+    const fy = y - th
+    limb(x, fy, -Math.PI / 2 - 0.55, 13 * s, 3.2 * s, 2)
+    limb(x, fy, -Math.PI / 2 + 0.5, 12 * s, 3.2 * s, 2)
+    limb(x, fy, -Math.PI / 2 - 0.02, 15 * s, 3.4 * s, 2)
+
+    /* Blossom on the tips. Each tip carries a small cloud of florets
+       scattered around it — offset by a hash of the tip's own position
+       so the clusters differ from each other — and the tone steps with
+       height, lit at the crown and deeper underneath. */
+    for (let i = 0; i < tips.length; i++) {
+      const [tx, ty] = tips[i]
+      const n = 7 + (i % 3) * 2
+      for (let k = 0; k < n; k++) {
+        const h = (i * 37 + k * 61) % 100
+        const h2 = (i * 53 + k * 29) % 100
+        const dx = Math.round(((h / 100) * 2 - 1) * 5.5 * s)
+        const dy = Math.round(((h2 / 100) * 2 - 1) * 5 * s)
+        const px = Math.round(tx) + dx
+        const py = Math.round(ty) + dy
+        // a few leaves in among the flowers
+        if (h % 11 === 0) {
+          g.fillStyle = h2 % 2 ? leaf : leafDark
+          g.fillRect(px, py, 2, 1)
+          g.fillRect(px + 1, py - 1, 1, 1)
+          continue
+        }
+        const tone = dy < -2 ? pinkLit : dy > 2 ? pinkDark : pink
+        floret(px, py, tone, s >= 1 && h % 3 === 0)
+      }
+    }
+
+    /* A couple of petals already off the tree, falling. The blossom
+       only reads as blossom if it is visibly losing. */
+    g.fillStyle = pinkLit
+    g.fillRect(x + Math.round(9 * s), y - Math.round(12 * s), 1, 1)
+    g.fillRect(x - Math.round(12 * s), y - Math.round(7 * s), 1, 1)
+    g.fillStyle = pink
+    g.fillRect(x + Math.round(4 * s), y - Math.round(4 * s), 1, 1)
   }
 
   /* ---- the precinct ----
@@ -3732,6 +3844,238 @@
      One great archway of sandstone, taller than it is wide, with a heavy
      cornice and a shallow saucer where the never-built cupola would have
      gone. The flame beneath the arch is the Amar Jawan Jyoti. */
+
+  /* ==================================================================
+     TOKYO, UP CLOSE
+
+     The monuments were never the problem. Tokyo Tower and the Skytree
+     were already standing in layer 2, and you could still fail to name
+     the city, because a landmark is one building and the other four
+     hundred were the same generic mat every other city here is made
+     of.
+
+     What actually makes a Tokyo street read as Tokyo is the clutter on
+     it: the overhead cable, strung pole to pole because almost nothing
+     is buried; the steel water tank up on legs on every mid-rise roof;
+     the external stair bolted to the outside of the building because
+     the plot was too narrow to put one inside. None of those are
+     landmarks. All of them are unmistakable.
+
+     So this section is furniture, and it is drawn ACROSS the layers
+     rather than at one spot — which is the point. A landmark you look
+     at; furniture you read the city through.
+     ================================================================== */
+
+  /* ---- the water tank ----
+     A steel box up on four legs with a ladder bolted up one side. It
+     is the single most common object on a Japanese roofline and the
+     cheapest way to say which country a rooftop is in. */
+  function waterTank(g, o, x, y, s) {
+    const w = Math.round(16 * s)
+    const h = Math.round(11 * s)
+    const leg = Math.round(7 * s)
+    const hw = Math.round(w / 2)
+
+    // the legs, and the shadow between them
+    g.fillStyle = o.dark
+    g.fillRect(x - hw + 1, y - leg, 2, leg)
+    g.fillRect(x + hw - 3, y - leg, 2, leg)
+    g.fillRect(x - 1, y - leg, 2, leg)
+
+    // the tank
+    const top = y - leg - h
+    g.fillStyle = o.fill
+    g.fillRect(x - hw, top, w, h)
+    g.fillStyle = o.lit
+    g.fillRect(x - hw, top, w, 1)
+    g.fillRect(x - hw, top, 1, h)
+    g.fillStyle = o.dark
+    g.fillRect(x + hw - 1, top, 1, h)
+    g.fillRect(x - hw, top + h - 1, w, 1)
+    // the seam round its middle, and the hatch on top
+    g.fillStyle = o.dark
+    g.fillRect(x - hw, top + Math.round(h / 2), w, 1)
+    g.fillRect(x - 2, top - 2, 5, 2)
+
+    // the ladder
+    g.fillStyle = o.dark
+    for (let k = 1; k < h + leg; k += 3) g.fillRect(x + hw, y - k, 3, 1)
+    g.fillRect(x + hw + 2, top, 1, h + leg)
+  }
+
+
+
+  /* ---- the stair on the outside ----
+     Put the stair outside and the whole floorplate is rentable. Half
+     the mid-rise in this city is built that way, and the zigzag it
+     leaves on the flank is as good as a label. */
+  function stairRun(g, o, x, base, h, dir) {
+    const runH = 9
+    let y = base
+    let flip = 0
+    while (y > base - h + runH) {
+      const x0 = dir > 0 ? x : x - 12
+      // the flight, stepped
+      g.fillStyle = o.dark
+      for (let k = 0; k < 6; k++) {
+        const sx = flip ? x0 + 10 - k * 2 : x0 + k * 2
+        g.fillRect(sx, y - k * 1.5 | 0, 3, 1)
+      }
+      // the landing
+      g.fillStyle = o.dark
+      g.fillRect(x0, y - runH, 13, 2)
+      g.fillStyle = o.lit
+      g.fillRect(x0, y - runH, 13, 1)
+      // the rail
+      g.fillStyle = o.dark
+      g.fillRect(dir > 0 ? x0 + 12 : x0, y - runH - 5, 1, 5)
+      y -= runH
+      flip ^= 1
+    }
+  }
+
+  /* ---- the vending machine ----
+     Lit, always on, and standing on its own in the dark at the mouth
+     of an alley. There are five and a half million of them out there;
+     one of them may as well be in shot. */
+  function vending(g, o, x, base) {
+    const w = 9
+    const h = 15
+    g.fillStyle = o.dark
+    g.fillRect(x - 1, base - h - 1, w + 2, h + 1)
+    // the lit face
+    g.fillStyle = o.window
+    g.fillRect(x, base - h, w, h - 4)
+    // rows of cans, read as dark notches in the light
+    g.fillStyle = o.dark
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        g.fillRect(x + 1 + c * 3, base - h + 2 + r * 4, 2, 2)
+      }
+    }
+    // the tray at the foot, and the light it throws on the pavement
+    g.fillStyle = o.dark
+    g.fillRect(x, base - 4, w, 3)
+    glow(g, x - 4, base - h - 2, w + 8, h + 6, 14, o.window, 0.5)
+  }
+
+  /* ---- the twin towers at Shinjuku ----
+     The Metropolitan Government Building. A broad plinth that splits
+     into two square towers with a lattice of window banding right up
+     both of them — and the split is the whole recognition. Nothing
+     else on this skyline forks. */
+  function metroGov(g, o, x, windows) {
+    const H = 232
+    const base = SKYLINE
+    const plinthH = 96
+    const pw = 76
+
+    // the plinth
+    g.fillStyle = o.fill
+    g.fillRect(x - pw / 2, base - plinthH, pw, plinthH)
+    g.fillStyle = o.lit
+    g.fillRect(x - pw / 2, base - plinthH, 2, plinthH)
+    g.fillStyle = o.dark
+    g.fillRect(x + pw / 2 - 2, base - plinthH, 2, plinthH)
+
+    // the two shafts
+    const tw = 30
+    const gap = 12
+    for (const side of [-1, 1]) {
+      const tx = x + side * (gap / 2 + tw / 2) - tw / 2
+      const top = base - H
+      g.fillStyle = o.fill
+      g.fillRect(tx, top, tw, H - plinthH + 4)
+      g.fillStyle = o.lit
+      g.fillRect(tx, top, 2, H - plinthH + 4)
+      g.fillStyle = o.dark
+      g.fillRect(tx + tw - 2, top, 2, H - plinthH + 4)
+      // the lattice: paired vertical piers with lit slots between them
+      for (let cx = tx + 4; cx < tx + tw - 4; cx += 7) {
+        g.fillStyle = o.dark
+        g.fillRect(cx, top + 4, 2, H - plinthH - 6)
+      }
+      for (let cy = top + 8; cy < base - plinthH; cy += 6) {
+        g.fillStyle = o.dark
+        g.fillRect(tx + 3, cy, tw - 6, 1)
+        if (windows && ((cy + tx) % 17) < 6) {
+          g.fillStyle = o.window
+          g.fillRect(tx + 4, cy + 2, 4, 3)
+        }
+      }
+      // the aerial masts
+      g.fillStyle = o.dark
+      g.fillRect(tx + tw / 2 - 1, top - 12, 2, 12)
+      g.fillStyle = o.warm
+      g.fillRect(tx + tw / 2 - 1, top - 13, 2, 2)
+    }
+  }
+
+  /* ---- the cocoon ----
+     Mode Gakuen at Nishi-Shinjuku: an egg standing on end, wrapped in
+     a diagonal lattice with three vertical cuts let into it. Drawn as
+     a true ellipse rather than a tapered box, because the taper IS the
+     building. */
+  function cocoon(g, o, x, windows) {
+    const H = 168
+    const RW = 21
+    const base = SKYLINE
+    const top = base - H
+    for (let y = 0; y < H; y++) {
+      const t = y / H
+      // fat in the middle, drawn in at both ends, flat where it meets
+      // the ground
+      const w = Math.round(RW * Math.sin(Math.PI * Math.pow(t, 0.86)) + 5)
+      const yy = top + y
+      g.fillStyle = o.fill
+      g.fillRect(x - w, yy, w * 2, 1)
+      g.fillStyle = o.lit
+      g.fillRect(x - w, yy, 2, 1)
+      g.fillStyle = o.dark
+      g.fillRect(x + w - 2, yy, 2, 1)
+      // the diagonal lattice, both ways
+      if ((yy + x) % 5 === 0) {
+        g.fillStyle = o.dark
+        for (let k = -w; k < w; k += 5) g.fillRect(x + k, yy, 2, 1)
+      }
+      // and the three vertical cuts
+      if (windows && y > 10 && y < H - 14 && yy % 3 === 0) {
+        g.fillStyle = o.window
+        g.fillRect(x - 1, yy, 2, 1)
+        if (w > 12) {
+          g.fillRect(x - w + 5, yy, 2, 1)
+          g.fillRect(x + w - 7, yy, 2, 1)
+        }
+      }
+    }
+  }
+
+  /* ---- the one in the bay ----
+     A shape rising out of the water between two far towers, lit from
+     below by the city it is looking at. Never explained, never
+     animated, and gone the moment you change city. */
+  function kaiju(g, o, x, base) {
+    const H = 54
+    const top = base - H
+    g.fillStyle = o.dark
+    // tail into the water, then the back
+    g.fillRect(x - 34, base - 6, 22, 3)
+    g.fillRect(x - 20, base - 10, 16, 5)
+    g.fillRect(x - 10, base - 26, 18, 20)
+    // the neck and head
+    g.fillRect(x + 2, top + 8, 9, 20)
+    g.fillRect(x + 4, top, 14, 10)
+    g.fillRect(x + 16, top + 3, 4, 4)
+    // dorsal plates
+    for (let k = 0; k < 5; k++) {
+      g.fillRect(x - 10 + k * 4, base - 30 - k, 3, 5)
+    }
+    // the eye, and the light coming up off the water
+    g.fillStyle = o.warm
+    g.fillRect(x + 13, top + 4, 2, 2)
+    glow(g, x - 30, base - 12, 60, 10, 16, o.neon || o.warm, 0.30)
+  }
+
   function indiaGate(g, o, x) {
     const b = SKYLINE
     o = mStone(o)
@@ -4455,24 +4799,36 @@
       shape: { zakkyo: 0.30, ziggurat: -0.26, banded: 0.04, needle: 0.02, slab: 0.03 },
       roofKit: 'billboard',
       stock: [
-        { gapChance: 0.40, gap: 5, minW: 11, maxW: 22, minH: 50, maxH: 96 },
-        { gapChance: 0.40, gap: 5, minW: 13, maxW: 27, minH: 62, maxH: 120 },
-        { gapChance: 0.42, gap: 6, minW: 16, maxW: 33, minH: 74, maxH: 150 },
-        { gapChance: 0.44, gap: 7, minW: 21, maxW: 43, minH: 50, maxH: 110 },
+        { gapChance: 0.58, gap: 9, minW: 14, maxW: 26, minH: 46, maxH: 88 },
+        { gapChance: 0.58, gap: 10, minW: 17, maxW: 31, minH: 56, maxH: 108 },
+        { gapChance: 0.56, gap: 11, minW: 20, maxW: 37, minH: 66, maxH: 132 },
+        { gapChance: 0.60, gap: 13, minW: 24, maxW: 46, minH: 46, maxH: 98 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 380)
         bridge(g, o, 1060)
         radioDish(g, o, 1660)
+        // something in the bay, a long way out
+        kaiju(g, o, 1420, SKYLINE)
       },
       layer1: (g, o, windows) => {
         pagoda(g, o, 470)
         lanterns(g, o, 880, SKYLINE - 118, 5, 6)
         observatory(g, o, 1480)
+        // Shinjuku's two, standing well back
+        metroGov(g, o, 1180, windows)
+        cocoon(g, o, 1300, windows)
       },
       layer2: (g, o, windows) => {
         tokyoTower(g, o, 300, windows)
         skytree(g, o, 920, windows)
+        /* Tanks on the roofline. Spread across the plane rather than
+           clustered, because the point of them is that they are
+           everywhere. */
+        for (const [tx, ty, ts] of [
+          [180, 96, 1], [420, 74, 0.8], [620, 110, 1], [760, 88, 0.9],
+          [1080, 102, 1], [1240, 80, 0.85], [1520, 94, 1], [1720, 86, 0.9],
+        ]) waterTank(g, o, tx, SKYLINE - ty, ts)
       },
       layer3: (g, o, windows) => {
         pagoda(g, o, 240)
@@ -4480,6 +4836,32 @@
         precinct(g, o, 1420, 104)
         sakuraTree(g, o, 860, SKYLINE, 1)
         sakuraTree(g, o, 1180, SKYLINE, 0.85)
+
+        /* ---- the street, and what is strung over it ----
+           Poles first, then the cable between each pair, then the
+           stairs and the machines that stand under it all. Drawn in
+           the near plane so the clutter is the thing closest to the
+           viewer, which is exactly where it is when you stand in it. */
+/* The cable is gone. Strung pole to pole at roof height it was
+           four slack lines crossing the full width of open sky, and a
+           skyline read through four horizontals is a skyline cut into
+           strips — every tower behind it arrived pre-sliced. It was
+           the most Tokyo thing in the frame and the least restful, and
+           when those two fight in a backdrop the backdrop loses.
+
+           The poles stay, shorter, standing among the low-rise rather
+           than over it: they still read as poles, they just no longer
+           rule lines across the picture. */
+        /* The poles are gone. One stood at 300 and so does Tokyo
+           Tower, so its crossarms ran straight across both observatory
+           decks and read as lines coming out of the tower. Moving it
+           would have fixed that one collision and left the rest of the
+           clutter; the brief was calm, so they all go. */
+        for (const [sx, sh, sd] of [[400, 46, 1], [960, 38, -1], [1620, 42, 1]]) {
+          stairRun(g, o, sx, SKYLINE, sh, sd)
+        }
+        vending(g, o, 640, SKYLINE)
+        vending(g, o, 1340, SKYLINE)
       },
     },
 
@@ -4816,19 +5198,19 @@
   const LAYERS = [
     { key: 'layer0', seed: 4411, recede: 0.40, fog: 0.085, pan: 0.16,
       minW: 13, maxW: 27, minH: 54, maxH: 134, gapChance: 0.42, gap: 5,
-      step: 3, ww: 1, wh: 1, litChance: 0.28, neonChance: 0.09 },
+      step: 3, ww: 1, wh: 1, litChance: 0.13, neonChance: 0.02 },
 
     { key: 'layer1', seed: 5273, recede: 0.25, fog: 0.062, pan: 0.26,
       minW: 16, maxW: 33, minH: 74, maxH: 172, gapChance: 0.42, gap: 6,
-      step: 3, ww: 1, wh: 2, litChance: 0.31, neonChance: 0.15 },
+      step: 3, ww: 1, wh: 2, litChance: 0.15, neonChance: 0.03 },
 
     { key: 'layer2', seed: 881, recede: 0.11, fog: 0.032, pan: 0.42,
       minW: 19, maxW: 40, minH: 90, maxH: 205, gapChance: 0.44, gap: 7,
-      step: 3, ww: 1, wh: 2, litChance: 0.34, neonChance: 0.21, escapes: true },
+      step: 3, ww: 1, wh: 2, litChance: 0.18, neonChance: 0.05, escapes: true },
 
     { key: 'layer3', seed: 2266, recede: 0, fog: 0, pan: 0.68,
       minW: 26, maxW: 54, minH: 50, maxH: 130, gapChance: 0.46, gap: 8,
-      step: 4, ww: 2, wh: 2, litChance: 0.30, neonChance: 0.25, escapes: true },
+      step: 4, ww: 2, wh: 2, litChance: 0.17, neonChance: 0.05, escapes: true },
   ]
 
   /* Four planes off a three-stop authored ramp. The stops are the
@@ -4874,135 +5256,6 @@
     })
   }
 
-  /* ==================================================================
-     ELEVATED LINE
-
-     A viaduct across the middle distance, between the near buildings
-     and the rooftop. It carries the scene's third depth plane, and
-     every so often a train crosses it.
-
-     The deck is a lattice girder rather than a plain band, and there is
-     a catenary strung above it — the train's pantographs reach up to
-     that wire, which is what stops a fast train reading as a sticker
-     sliding along a shelf.
-     ================================================================== */
-  const WIRE_Y = VIA_Y - 46
-
-  function buildViaduct() {
-    viaduct = makeBuffer(LOOP_W, VIA_BUF_H)
-    const g = viaduct.x
-    const snowy = weather === 'snow'
-
-    // Piers, dropping out of frame behind the parapet.
-    for (let x = 30; x < LOOP_W; x += 104) {
-      const pierH = ROOF_TOP - VIA_Y
-      g.fillStyle = T.viaduct
-      g.fillRect(x, VIA_Y + VIA_H, 15, pierH)
-      g.fillStyle = T.viaductLit
-      g.fillRect(x, VIA_Y + VIA_H, 2, pierH)
-      g.fillStyle = T.viaductDark
-      g.fillRect(x + 13, VIA_Y + VIA_H, 2, pierH)
-      // haunch where the pier meets the deck
-      g.fillStyle = T.viaduct
-      g.fillRect(x - 5, VIA_Y + VIA_H, 25, 4)
-      g.fillStyle = T.viaductLit
-      g.fillRect(x - 5, VIA_Y + VIA_H, 25, 1)
-      // grime running down from the deck joint
-      g.fillStyle = T.viaductDark
-      for (let k = 0; k < 4; k++) {
-        g.fillRect(x + 3 + k * 3, VIA_Y + VIA_H + 5, 1, 6 + ((k * 5) % 11))
-      }
-    }
-
-    /* Lattice girder under the deck: a top and bottom chord with
-       alternating diagonals between them. Stepping each diagonal one
-       pixel across per row is how a diagonal is drawn on a grid. */
-    const gT = VIA_Y + VIA_H
-    const gB = VIA_Y + VIA_H + 9
-    g.fillStyle = T.viaductDark
-    g.fillRect(0, gB - 1, LOOP_W, 2)
-    for (let x = 0; x < LOOP_W; x += 14) {
-      g.fillStyle = T.viaduct
-      for (let k = 0; k < 9; k++) {
-        g.fillRect(x + Math.round((k / 9) * 13), gT + k, 1, 1)
-        g.fillRect(x + 13 - Math.round((k / 9) * 13), gT + k, 1, 1)
-      }
-      g.fillStyle = T.viaductLit
-      g.fillRect(x, gT, 1, 9)
-    }
-
-    // Deck.
-    g.fillStyle = T.viaductDark
-    g.fillRect(0, VIA_Y - 1, LOOP_W, 1)
-    g.fillStyle = T.viaductLit
-    g.fillRect(0, VIA_Y, LOOP_W, 2)
-    g.fillStyle = T.viaduct
-    g.fillRect(0, VIA_Y + 2, LOOP_W, VIA_H - 4)
-    g.fillStyle = T.viaductDark
-    g.fillRect(0, VIA_Y + VIA_H - 2, LOOP_W, 2)
-
-    // Sleepers and the two running rails.
-    g.fillStyle = T.viaductDark
-    for (let x = 0; x < LOOP_W; x += 4) g.fillRect(x, VIA_Y + 2, 2, 3)
-    g.fillStyle = T.viaductLit
-    g.fillRect(0, VIA_Y + 2, LOOP_W, 1)
-    g.fillRect(0, VIA_Y + 5, LOOP_W, 1)
-
-    // A neon strip along the deck edge — the line advertising itself.
-    g.fillStyle = T.trainStripe
-    g.fillRect(0, VIA_Y + VIA_H - 4, LOOP_W, 1)
-    for (let x = 0; x < LOOP_W; x++) {
-      dot(g, x, VIA_Y + VIA_H - 5, 0.5, T.trainStripe)
-      dot(g, x, VIA_Y + VIA_H - 3, 0.5, T.trainStripe)
-    }
-
-    // Guard posts, and a lamp every fifth one.
-    for (let x = 8, i = 0; x < LOOP_W; x += 16, i++) {
-      g.fillStyle = T.viaductLit
-      g.fillRect(x, VIA_Y - 6, 1, 6)
-      if (i % 5) continue
-      g.fillStyle = T.viaductLit
-      g.fillRect(x - 1, VIA_Y - 14, 1, 8)
-      g.fillRect(x - 3, VIA_Y - 14, 3, 1)
-      g.fillStyle = T.trainWin
-      g.fillRect(x - 4, VIA_Y - 13, 3, 2)
-      // dithered pool of lamplight on the deck
-      for (let dy = 0; dy < 6; dy++) {
-        for (let dx = -8; dx <= 8; dx++) {
-          const xx = x + dx
-          if (xx < 0 || xx >= LOOP_W) continue
-          dot(g, xx, VIA_Y - 1 + dy, (1 - Math.abs(dx) / 9) * (1 - dy / 6) * 0.55, T.trainWin)
-        }
-      }
-    }
-
-    /* Catenary. Masts every 104px with a cantilever arm, and the
-       contact wire the pantographs run under. */
-    for (let x = 82; x < LOOP_W; x += 104) {
-      g.fillStyle = T.viaductDark
-      g.fillRect(x, WIRE_Y - 8, 2, VIA_Y - WIRE_Y + 8)
-      g.fillStyle = T.viaductLit
-      g.fillRect(x, WIRE_Y - 8, 1, VIA_Y - WIRE_Y + 8)
-      g.fillRect(x - 12, WIRE_Y - 8, 14, 1)
-      g.fillStyle = T.viaductDark
-      g.fillRect(x - 12, WIRE_Y - 7, 1, 7)
-    }
-    g.fillStyle = T.viaductDark
-    g.fillRect(0, WIRE_Y, LOOP_W, 1)
-
-    // Snow lying on every horizontal the line offers.
-    if (snowy) {
-      const rnd = mulberry32(5150)
-      for (let x = 0; x < LOOP_W; x++) {
-        const d = Math.round((1 + Math.floor(rnd() * 2)) * snowLevel)
-        if (d < 1) continue
-        g.fillStyle = T.snowLie
-        g.fillRect(x, VIA_Y - d, 1, d)
-        g.fillStyle = T.snowLit
-        g.fillRect(x, VIA_Y - d, 1, 1)
-      }
-    }
-  }
 
   /* ==================================================================
      THE ROOFTOP
@@ -5510,7 +5763,6 @@
     buildSky()
     buildSkyline()
     buildClouds()
-    buildViaduct()
     buildRoof()
   }
 
@@ -5549,7 +5801,6 @@
       buildSky,
       ...skylineSteps(),
       buildClouds,
-      buildViaduct,
       buildRoof,
     ]
   }
@@ -6639,221 +6890,6 @@
     }
   }
 
-  /* ==================================================================
-     THE TRAIN
-
-     An event, not a loop: it crosses, then the line is empty for a
-     while. Eleven cars at 76px is longer than the canvas is wide, and
-     it clears the frame in about four seconds, so it reads as an
-     express rather than as a shuttle.
-
-     Drawn in screen space rather than into the viaduct buffer, so it
-     runs along the deck at its own speed instead of being carried by
-     the parallax.
-     ================================================================== */
-  const TRAIN_CYCLE = 340
-  const TRAIN_RUN = 132
-  const CAR_W = 76
-  const CARS = 11
-  const CAR_H = 30
-
-  function drawTrain() {
-    const t = frame % TRAIN_CYCLE
-    if (t >= TRAIN_RUN) return
-
-    const len = CARS * CAR_W
-    const x0 = Math.round(-len - 30 + (t / TRAIN_RUN) * (W + len * 2 + 60))
-    const top = VIA_Y - CAR_H
-    const body = CAR_W - 6
-
-    /* Speed streaks. Drawn first so the cars sit on top of them: a
-       smear of window light left behind along the whole train, which is
-       most of what makes 20 pixels a frame feel fast rather than
-       merely quick. */
-    for (let k = 0; k < 12; k++) {
-      const sx = x0 - k * 4
-      if (sx + len < 0) break
-      const fade = 1 - k / 12
-      for (let s = 0; s < 2; s++) {
-        const y = top + 11 + s * 6
-        for (let x = Math.max(0, sx); x < Math.min(W, sx + len); x += 1) {
-          dot(ctx, x, y, fade * 0.11, T.trainWin)
-        }
-      }
-    }
-
-    for (let i = 0; i < CARS; i++) {
-      const cx = x0 + i * CAR_W
-      if (cx > W || cx + CAR_W < 0) continue
-      const lead = i === CARS - 1
-      const bayW = 13
-
-      // ---- the shell ----
-      ctx.fillStyle = T.train
-      ctx.fillRect(cx, top, body, CAR_H)
-      ctx.fillStyle = T.trainLit
-      ctx.fillRect(cx, top, body, 2) // roof catches the sky
-      ctx.fillRect(cx, top, 1, CAR_H) // lit left corner
-      ctx.fillStyle = T.trainDark
-      ctx.fillRect(cx, top + CAR_H - 4, body, 4) // underframe fascia
-      ctx.fillRect(cx + body - 1, top, 1, CAR_H) // shaded right corner
-
-      /* ---- the gangway to the car behind ----
-         The six-pixel gap between two bodies is the coupling, and a
-         concertina bellows bridges it. Ribbed, and a shade darker than
-         the cars, so the train reads as jointed rather than as one long
-         extrusion. Not on the rearmost car, which has an open coupler. */
-      if (i > 0) {
-        ctx.fillStyle = T.trainDark
-        ctx.fillRect(cx - 6, top + 4, 6, CAR_H - 8)
-        ctx.fillStyle = T.train
-        for (let g = top + 5; g < top + CAR_H - 4; g += 2) ctx.fillRect(cx - 6, g, 6, 1)
-        ctx.fillStyle = T.trainLit
-        ctx.fillRect(cx - 1, top + 4, 1, CAR_H - 8)
-      }
-
-      // ---- roof: cantrail, ventilators, and two air-conditioning units ----
-      ctx.fillStyle = T.trainDark
-      ctx.fillRect(cx + 2, top + 3, body - 4, 1) // cantrail shadow
-      for (let k = 0; k < 6; k++) ctx.fillRect(cx + 6 + k * 11, top + 4, 3, 1) // vents
-      for (const ax of [cx + 11, cx + body - 25]) {
-        ctx.fillStyle = T.trainLit
-        ctx.fillRect(ax, top + 1, 14, 2) // raised A/C housing
-        ctx.fillStyle = T.trainDark
-        for (let gx = 0; gx < 14; gx += 2) ctx.fillRect(ax + gx, top + 2, 1, 2) // grille
-      }
-
-      // ---- body rails: a bright line above the glass, a shadow below ----
-      ctx.fillStyle = T.trainLit
-      ctx.fillRect(cx + 1, top + 6, body - 2, 1)
-      ctx.fillStyle = T.trainDark
-      ctx.fillRect(cx + 1, top + 20, body - 2, 1)
-
-      // ---- five bays: glass, doors, and (on the lead car) the cab ----
-      for (let k = 0; k < 5; k++) {
-        const wx = cx + 5 + k * bayW
-        const lit = (frame * 3 + i * 7 + k * 13) % 47 > 5
-
-        if (lead && k === 4) {
-          // the cab windscreen, with the driver at it
-          ctx.fillStyle = T.trainDark
-          ctx.fillRect(wx - 1, top + 6, 12, 14)
-          ctx.fillStyle = T.trainWin
-          ctx.fillRect(wx, top + 7, 10, 9)
-          ctx.fillStyle = T.trainDark
-          ctx.fillRect(wx + 5, top + 7, 1, 9) // centre pillar
-          ctx.fillRect(wx + 2, top + 11, 3, 5) // driver
-          continue
-        }
-
-        if (k === 1 || k === 3) {
-          // a double-leaf sliding door
-          ctx.fillStyle = T.trainDark
-          ctx.fillRect(wx - 1, top + 6, 12, 15)
-          ctx.fillStyle = T.train
-          ctx.fillRect(wx, top + 7, 10, 13)
-          ctx.fillStyle = T.trainDark
-          ctx.fillRect(wx, top + 7, 1, 13)
-          ctx.fillRect(wx + 5, top + 7, 1, 13) // leaf seam
-          ctx.fillRect(wx + 9, top + 7, 1, 13)
-          ctx.fillStyle = lit ? T.trainWin : T.trainDark
-          ctx.fillRect(wx + 1, top + 8, 3, 5) // door glass
-          ctx.fillRect(wx + 6, top + 8, 3, 5)
-          ctx.fillStyle = T.trainStripe
-          ctx.fillRect(wx, top + 20, 10, 1) // threshold
-          continue
-        }
-
-        // a passenger window: frame, glass, ceiling strip, seats, a pole
-        ctx.fillStyle = T.trainDark
-        ctx.fillRect(wx, top + 6, 11, 14)
-        ctx.fillStyle = lit ? T.trainWin : T.trainDark
-        ctx.fillRect(wx + 1, top + 7, 9, 12)
-        if (lit) {
-          ctx.fillStyle = T.trainLit
-          ctx.fillRect(wx + 1, top + 7, 9, 1) // lit ceiling
-          ctx.fillStyle = T.trainDark
-          ctx.fillRect(wx + 1, top + 16, 9, 3) // seat backs
-          ctx.fillRect(wx + 5, top + 8, 1, 8) // grab pole
-          if ((i + k + (frame >> 3)) % 3 === 0) ctx.fillRect(wx + 2, top + 11, 3, 8) // a passenger
-        }
-      }
-
-      // ---- rivet lines between the bays ----
-      ctx.fillStyle = T.trainDark
-      for (let k = 0; k <= 5; k++) ctx.fillRect(cx + 4 + k * bayW, top + 6, 1, 14)
-
-      // ---- the livery band, with a highlight above it ----
-      ctx.fillStyle = T.trainStripe
-      ctx.fillRect(cx, top + CAR_H - 7, body, 2)
-      ctx.fillStyle = T.trainLit
-      ctx.fillRect(cx, top + CAR_H - 8, body, 1)
-
-      // ---- under-floor equipment boxes, slung between the bogies ----
-      for (const ex of [cx + 6, cx + 27, cx + body - 20]) {
-        ctx.fillStyle = T.trainDark
-        ctx.fillRect(ex, top + CAR_H, 12, 4)
-        ctx.fillStyle = T.train
-        ctx.fillRect(ex, top + CAR_H, 12, 1)
-        for (let lv = 0; lv < 12; lv += 3) { ctx.fillStyle = T.trainDark; ctx.fillRect(ex + lv, top + CAR_H + 2, 1, 2) } // louvres
-      }
-
-      // ---- bogies: frame, two wheels and an axlebox glint each ----
-      for (const bx of [cx + 9, cx + body - 23]) {
-        ctx.fillStyle = T.trainDark
-        ctx.fillRect(bx, top + CAR_H + 1, 15, 2)
-        ctx.fillRect(bx + 1, top + CAR_H + 2, 4, 4)
-        ctx.fillRect(bx + 10, top + CAR_H + 2, 4, 4)
-        ctx.fillStyle = T.trainLit
-        ctx.fillRect(bx + 2, top + CAR_H + 3, 1, 1)
-        ctx.fillRect(bx + 11, top + CAR_H + 3, 1, 1)
-      }
-
-      // pantograph, reaching up to the contact wire
-      if (i % 5 === 2) {
-        const pxm = cx + Math.round(body / 2)
-        ctx.fillStyle = T.trainLit
-        for (let k = 0; k < top - WIRE_Y; k++) {
-          const dx = Math.round((k / (top - WIRE_Y)) * 7)
-          ctx.fillRect(pxm - dx, top - k, 1, 1)
-          ctx.fillRect(pxm + dx, top - k, 1, 1)
-        }
-        ctx.fillRect(pxm - 8, WIRE_Y, 17, 1)
-        // the arc where the shoe meets the wire
-        if ((frame + i) % 7 === 0) px(pxm + 4, WIRE_Y - 1, '#ffffff')
-      }
-
-      if (!lead) continue
-      // ---- the cab end: destination board, headlights, a red marker ----
-      const nx = cx + body
-      ctx.fillStyle = T.trainHead
-      ctx.fillRect(nx - 22, top + 3, 17, 2) // destination board
-      ctx.fillStyle = T.trainDark
-      for (let k = 0; k < 5; k++) ctx.fillRect(nx - 20 + k * 4, top + 3, 1, 2) // route digits
-      ctx.fillStyle = T.trainHead
-      ctx.fillRect(nx - 5, top + 17, 4, 3) // upper headlight
-      ctx.fillRect(nx - 5, top + CAR_H - 11, 4, 3) // lower headlight
-      ctx.fillStyle = '#ff5a4a'
-      ctx.fillRect(nx - 5, top + 22, 2, 2) // red tail marker
-      ctx.fillStyle = T.trainDark
-      ctx.fillRect(nx - 2, top + CAR_H - 2, 3, 3) // coupler nub
-      // beam thrown forward along the deck
-      for (let k = 0; k < 46; k++) {
-        const bx = cx + body + k
-        if (bx >= W) break
-        for (let dy = 0; dy < 7; dy++) {
-          dot(ctx, bx, top + 17 + dy, (1 - k / 46) * (1 - dy / 7) * 0.7, T.trainHead)
-        }
-      }
-    }
-
-    // Light spilling from the windows onto the deck below.
-    for (let x = Math.max(0, x0); x < Math.min(W, x0 + len); x++) {
-      for (let dy = 0; dy < 6; dy++) {
-        dot(ctx, x, VIA_Y + dy, (1 - dy / 6) * 0.5, T.trainWin)
-      }
-    }
-  }
 
   /* ---- The cat, sitting on the parapet ----
      Placed right of centre so it clears the window, and high enough
@@ -7411,407 +7447,6 @@
     present(sceneCv)
   })
 
-  /* ---- Campfire on the roof ----
-     It used to be an oil drum: twenty-six pixels across, eighteen
-     tall, and a flame you could cover with a thumb. That was fine
-     while it was scenery, and wrong the moment it became something
-     that can go out — an event you cannot see is not an event.
-
-     So it is a campfire. Four logs stacked over a bed of embers with
-     a ring of stones round the front, and a flame half again as tall
-     over twice the footprint, which is enough that losing it is
-     obvious from across the frame.
-
-     Drawn back to front — back log, leaners, embers, flame, front log,
-     stones — so the flame comes out from *between* the logs instead of
-     standing in front of them. That order is the only reason a stack
-     of flat bars reads as a fire with depth in it.
-
-     The flame is still generated per frame rather than being a fixed
-     sprite: each row tapers toward the tip, is displaced by two
-     out-of-phase sines, and is filled in four bands from a dark red
-     rim to a near-white core. */
-  /* Moved in from 268. The brazier is sheltered by whatever window is
-     up — that is the whole reason it goes out when you drag one off it
-     — and the title screen is a good deal narrower than it used to be,
-     which left the fire standing out in the rain on first load. A
-     landing shot with a dead fire in it is not the landing shot.
-
-     460 sits inside the window's footprint at every viewport width the
-     clamp produces, and in the clear stretch of deck between the
-     crates and the pipe. */
-  const FIRE_X = 812
-  const FIRE_BASE = ROOF_TOP + 78
-  const FIRE_H = 44
-
-  const LOG_MID = '#4b3524'
-  const LOG_LIT = '#6f4d34'
-  const LOG_DARK = '#281a11'
-  const LOG_END = '#8d6a49'
-  const LOG_CHAR = '#1b1210'
-
-  /* One log. Walked along its long axis a pixel at a time with a run
-     laid across it, the leading edge catching light and the trailing
-     one falling into shadow — the two-tone rule every other surface on
-     this roof follows.
-
-     `char` is how much of it has burnt black. Burn is taken from the
-     middle outward and the ends stay sound, because that is both what
-     a log in a fire looks like and what keeps the stack readable once
-     the flame is over the top of it: four black bars would vanish. */
-  function fireLog(x0, y0, x1, y1, th, char, glow) {
-    const dx = x1 - x0
-    const dy = y1 - y0
-    const steps = Math.max(Math.abs(dx), Math.abs(dy), 1)
-    const flat = Math.abs(dx) >= Math.abs(dy)
-    for (let s = 0; s <= steps; s++) {
-      const t = s / steps
-      const x = Math.round(x0 + dx * t)
-      const y = Math.round(y0 + dy * t)
-      const burnt = char * (1 - Math.abs(t - 0.5) * 2.2) > 0.35
-      ctx.fillStyle = burnt ? LOG_CHAR : LOG_MID
-      if (flat) ctx.fillRect(x, y, 1, th)
-      else ctx.fillRect(x, y, th, 1)
-      ctx.fillStyle = burnt ? LOG_DARK : LOG_LIT
-      ctx.fillRect(x, y, 1, 1)
-      ctx.fillStyle = LOG_DARK
-      if (flat) ctx.fillRect(x, y + th - 1, 1, 1)
-      else ctx.fillRect(x + th - 1, y, 1, 1)
-      // a split still glowing somewhere in the charred stretch
-      if (burnt && glow > 0.04 && (s * 7 + frame * 3) % 17 < glow * 6) {
-        px(flat ? x : x + 1, flat ? y + 1 : y, frame % 3 ? '#8c2a0a' : '#d1560f')
-      }
-    }
-    // end grain, or a stack of logs is a pile of sticks
-    ctx.fillStyle = LOG_END
-    if (flat) ctx.fillRect(x1, y1 + 1, 1, Math.max(1, th - 2))
-    else ctx.fillRect(x1 + 1, y1, Math.max(1, th - 2), 1)
-  }
-
-  /* ---- whether it is under cover ----
-     The panel sits directly over the brazier, which is why the fire
-     has survived every rainstorm this scene has ever run: the rain
-     already treats the panel as a surface and lands on its lip rather
-     than on the roof underneath. The fire was the one object on the
-     roof still drawn as though none of that mattered.
-
-     So it depends on the window now. Take the panel out of the column
-     above the brazier — drag it aside, minimise it, close it — while
-     it is raining or snowing, and the flame drops, guts, and is out in
-     about two and a half seconds, leaving embers and a thread of
-     smoke. Put cover back and it catches again, but slower than it
-     went out, because nothing relights as fast as it dies.
-
-     The shelter test is the rain's own test with one clause dropped:
-     the rain requires the panel's lip to be on screen before a drop
-     will land on it, and a maximised window has its lip at or above
-     zero. Invisible either way — a maximised window covers the whole
-     roof — but a fire that quietly dies behind it and needs relighting
-     when you come back is a worse answer than one that was under cover
-     the whole time, which it was. */
-  const FIRE_DIE = 2.4 // seconds, lit to out
-  const FIRE_CATCH = 4.2 // seconds, out to lit
-  let fireLife = 1
-
-  const fireSheltered = (p) =>
-    !!p && FIRE_X >= p.x0 && FIRE_X <= p.x1 && p.y0 < FIRE_BASE - FIRE_H
-
-  /* ---- putting it out, and getting it lit again ----
-
-     Moving the window off the brazier used to relight it. The rain
-     stopped falling on the wood, so the wood simply caught: no spark,
-     no cause, a fire that reassembled itself because the geometry said
-     it could. It was the one event on the roof that happened for no
-     reason.
-
-     Going out is still physics and still gradual — rain reaches it,
-     it gutters, it dies. Coming back is now an EVENT. Wet wood sits
-     there dead until something ignites it, and the only thing on this
-     roof capable of that is the weather: a strike comes down on the
-     brazier, the frame goes white, and the wood catches from it.
-
-     `fireArmed` is the wood being ready to take a spark — exposed but
-     unlit. `igniteAt` is the frame the bolt lands on. */
-  let fireArmed = false
-  let igniteAt = -1
-  let igniteFrom = 0
-
-  function stepFire(dt, p) {
-    const sheltered = fireSheltered(p)
-    const wetted = weather !== 'none' && T.fire && !sheltered
-
-    if (wetted) {
-      // rain is getting to it: it dies, and stays dead
-      fireLife = Math.max(0, fireLife - dt / 1000 / FIRE_DIE)
-      if (fireLife <= 0) {
-        fireArmed = true
-        if (igniteAt < 0) {
-          // a strike is coming, but not immediately — the wait is what
-          // makes it read as weather rather than as a switch
-          igniteAt = frame + 90 + Math.floor(Math.random() * 170)
-        }
-      }
-      return
-    }
-
-    /* Sheltered, or clear weather. If it was already burning it
-       recovers; if the rain killed it, it needs the strike first. */
-    if (!fireArmed) {
-      fireLife = Math.min(1, fireLife + dt / 1000 / FIRE_CATCH)
-      return
-    }
-    /* Out of the rain with dead wood. The wood is dry now but it is
-       still dead, and dry wood does not light itself — so it waits for
-       the strike. The wait is a second or two, long enough that the
-       relight is clearly an event with a cause rather than a
-       consequence of having moved the window. */
-    if (igniteAt < 0) igniteAt = frame + 60 + Math.floor(Math.random() * 120)
-    if (frame >= igniteAt) {
-      fireArmed = false
-      igniteFrom = frame
-      igniteAt = -1
-    }
-  }
-
-  /* The strike itself. A single channel down onto the brazier, stepped
-     three pixels at a time with one kink in it, and a hard white flash
-     across the whole roof on the frame it lands. Six frames, total —
-     lightning is over before you have finished seeing it. */
-  function drawIgnition() {
-    const age = frame - igniteFrom
-    if (igniteFrom <= 0 || age > 6) return
-
-    if (age < 2) {
-      ctx.fillStyle = rgba(T.lightning, age === 0 ? 0.5 : 0.2)
-      ctx.fillRect(0, ROOF_TOP - 20, W, H - ROOF_TOP + 20)
-    }
-    if (age > 3) return
-
-    let bx = FIRE_X + 6
-    ctx.fillStyle = age === 0 ? T.boltCore : T.lightning
-    for (let y = 0; y < FIRE_BASE - FIRE_H - 2; y += 3) {
-      const swing = ((y >> 3) % 2 ? 1 : -1) * (1 + ((y >> 4) % 2))
-      bx += swing
-      ctx.fillRect(bx, y, age === 0 ? 2 : 1, 3)
-    }
-    // where it lands, a burst of embers
-    for (let k = 0; k < 10; k++) {
-      const a = (k / 10) * Math.PI * 2
-      ctx.fillStyle = k % 2 ? '#ffd21f' : '#ff7a1a'
-      ctx.fillRect(
-        Math.round(FIRE_X + Math.cos(a) * (4 + age * 4)),
-        Math.round(FIRE_BASE - 6 + Math.sin(a) * (3 + age * 2)),
-        2,
-        2
-      )
-    }
-  }
-
-  /* ---- how big the fire is ----
-
-     It is the only object left on the terrace, so it has to carry the
-     whole foreground on its own — and at its old size it was a
-     forty-four pixel brazier alone on a hundred-and-thirty pixel deck,
-     which read as abandoned rather than as quiet.
-
-     Four thirds, and the fraction is the point. At S = 3 every
-     authored pixel is backed by three device pixels, so a scale of
-     4/3 makes each one exactly four — a whole number. Any scale that
-     is not a multiple of 1/S puts the flame's edges on fractions of a
-     device pixel and the one object in the frame that is supposed to
-     be the sharpest thing in it comes out soft. It sat at 5/3 and read
-     a touch loud on the deck; 4/3 is the same fire, quieter.
-
-     Anchored at the foot, so it grows upward out of the deck rather
-     than away from it. */
-  const FIRE_SCALE = 4 / 3
-
-  function drawFire() {
-    ctx.save()
-    ctx.translate(FIRE_X, FIRE_BASE)
-    ctx.scale(FIRE_SCALE, FIRE_SCALE)
-    ctx.translate(-FIRE_X, -FIRE_BASE)
-    drawFireAt()
-    ctx.restore()
-  }
-
-  function drawFireAt() {
-    /* The fire reads the weather harder than anything else on the roof,
-       because a fire is the one object whose whole purpose changes with
-       it. In snow it is banked right up and throwing twice the light —
-       somebody needs it. In rain it is guttering and barely holding on.
-       Same twenty-eight rows of flame; three numbers different.
-
-       And all of it now runs through L, which is how much fire there
-       still is. At 1 this is exactly the fire it always was. */
-    const snowy = weather === 'snow'
-    const wet = weather === 'rain'
-    const L = fireLife
-    const reach = (snowy ? 112 : wet ? 62 : 86) * L
-    const height = (snowy ? 1.25 : wet ? 0.7 : 1) * L
-    const flick = ((wet ? 0.5 : snowy ? 0.86 : 0.72) + (frame % 5 === 0 ? 0.1 : 0)) * L
-    if (reach > 1) {
-      for (let y = FIRE_BASE - FIRE_H - 24; y <= FIRE_BASE + 24; y++) {
-        if (y < 0 || y >= H) continue
-        for (let x = FIRE_X - reach; x <= FIRE_X + reach; x++) {
-          if (x < 0 || x >= W) continue
-          const d = Math.hypot((x - FIRE_X) / 1.25, y - (FIRE_BASE - FIRE_H * 0.35))
-          if (d > reach) continue
-          dot(ctx, x, y, (1 - d / reach) * (1 - d / reach) * flick, '#4a2a14')
-        }
-      }
-    }
-
-    /* The stack. One log laid across the back goes down here, behind
-       the flame; the two leaners and the front log go on afterwards,
-       in front of it.
-
-       The leaners were originally behind as well and were completely
-       invisible — a dark log inside a bright flame is nothing. In
-       front they are silhouettes crossing the light, which is both the
-       strongest read a campfire has and the thing that makes it
-       obvious there is fuel here rather than a jet.
-
-       Char does not track the fire. A stack that has burnt is black in
-       the middle whether or not it is burning right now, and having it
-       lighten as the fire died looked like the logs were healing. Burn
-       is taken from the middle outward so the ends stay wood-coloured,
-       which is the only reason four dark bars are still legible. What
-       does track the fire is `glow` — the splits still lit inside the
-       charred stretch, and they go out with everything else. */
-    const char = 0.55
-    fireLog(FIRE_X - 23, FIRE_BASE + 5, FIRE_X + 21, FIRE_BASE + 2, 6, char, L)
-
-    /* The ember bed, and the reason going out reads as going out
-       rather than as the fire being deleted. Coals stay hot long after
-       there is nothing burning above them — they are the last warm
-       thing on this roof, and they cool rather than switch off. */
-    for (let i = 0; i < 30; i++) {
-      const ex = FIRE_X - 16 + ((i * 7) % 33)
-      const ey = FIRE_BASE + 2 + ((i * 5) % 8)
-      const beat = (frame * 0.6 + i * 3.7) % 12
-      const heat = (L * 0.62 + 0.38) * (beat < 6 ? 1 : 0.56)
-      px(ex, ey, heat > 0.74 ? '#ffb03a' : heat > 0.52 ? '#d1560f' : heat > 0.3 ? '#8c2a0a' : '#481605')
-    }
-
-    for (let i = 0; i < FIRE_H; i++) {
-      const y = FIRE_BASE + 1 - i
-      const p = i / FIRE_H
-      const wob = Math.sin(frame * 0.85 + i * 0.5) * 2.4 + Math.sin(frame * 0.47 + i * 0.9) * 1.7
-      const breathe = Math.sin(frame * 0.6) * 1.6
-      /* A teepee, not a cone. The first term narrows hard on the way
-         up; the second pinches the bottom two or three rows back in,
-         because a flame is thinnest where it meets the fuel and the
-         straight linear taper this used to run made the base wider
-         than the log stack it was supposed to be sitting in. */
-      const taper = Math.pow(1 - p, 1.35) * (0.5 + 0.5 * Math.min(1, p * 7))
-      const w = Math.round((taper * 12 + breathe * taper) * height)
-      if (w <= 0) continue
-      const cx = Math.round(FIRE_X + wob * p * 1.5)
-      ctx.fillStyle = '#b8330d'
-      ctx.fillRect(cx - w, y, w * 2 + 1, 1)
-      /* The bands are a FRACTION of the width, not a fixed inset. At
-         eight pixels across, insetting one and two pixels put the
-         yellow and the white at three quarters of the flame; at twelve
-         it made the whole thing a white column with a red edge. */
-      const w2 = Math.round(w * 0.76)
-      if (w2 > 0) {
-        ctx.fillStyle = '#ef7714'
-        ctx.fillRect(cx - w2, y, w2 * 2 + 1, 1)
-      }
-      /* The hot bands go first as it dies. A dying fire does not
-         shrink evenly — it loses its white heart, then its yellow, and
-         what is left is the dull red that was always at the rim.
-         Gating both on L is what makes the last second read as cooling
-         rather than as the same flame scaled down. */
-      const w3 = Math.round(w * 0.46)
-      if (w3 > 0 && p < 0.44 * L) {
-        ctx.fillStyle = '#ffd23a'
-        ctx.fillRect(cx - w3, y, w3 * 2 + 1, 1)
-      }
-      const w4 = Math.round(w * 0.22)
-      if (w4 > 0 && p < 0.19 * L) {
-        ctx.fillStyle = '#fff4b0'
-        ctx.fillRect(cx - w4, y, w4 * 2 + 1, 1)
-      }
-    }
-
-    // the leaners, silhouetted against the flame they are feeding
-    fireLog(FIRE_X - 21, FIRE_BASE + 8, FIRE_X + 3, FIRE_BASE - 17, 5, char, L)
-    fireLog(FIRE_X + 21, FIRE_BASE + 8, FIRE_X - 3, FIRE_BASE - 17, 5, char, L)
-
-    // the front log, and the ring, which is what puts the fire inside
-    // the stones rather than on top of them
-    fireLog(FIRE_X - 25, FIRE_BASE + 13, FIRE_X + 23, FIRE_BASE + 9, 7, char * 0.7, L * 0.7)
-
-    /* Front arc only. The back of the ring is behind the logs and
-       would be six pixels of grey nobody can see.
-
-       Each is drawn as a body with a narrower row on top rather than
-       as one rect: a stone at this scale needs its top corners taken
-       off or the ring reads as a course of bricks, which is what it
-       did. The sizes are all slightly different for the same reason. */
-    const STONES = [[-31, 13, 9, 6], [-22, 15, 7, 5], [-12, 16, 9, 5],
-                    [0, 16, 8, 5], [10, 15, 8, 5], [19, 13, 10, 6]]
-    for (const [sx, sy, sw, sh] of STONES) {
-      const x = FIRE_X + sx
-      const y = FIRE_BASE + sy
-      ctx.fillStyle = '#332c4e'
-      ctx.fillRect(x, y + 1, sw, sh - 1)
-      ctx.fillRect(x + 1, y, sw - 2, 1)
-      ctx.fillStyle = '#4c4470'
-      ctx.fillRect(x + 1, y, sw - 2, 1)
-      ctx.fillStyle = '#1d1830'
-      ctx.fillRect(x, y + sh - 1, sw, 1)
-      // the inner face takes the fire, which is what lights the ring
-      if (L > 0.04) {
-        ctx.fillStyle = L > 0.5 ? '#8a4a22' : '#54301a'
-        ctx.fillRect(x + 2, y, sw - 4, 1)
-      }
-    }
-
-    const sparks = Math.round(20 * L)
-    for (let i = 0; i < sparks; i++) {
-      const t = (frame * 0.6 + i * 4.3) % 58
-      if (t < 4 || t > 54) continue
-      const ey = Math.round(FIRE_BASE - 32 - t * 1.35)
-      const ex = Math.round(FIRE_X + Math.sin(frame * 0.28 + i * 2.1) * (4 + t * 0.2) + (i - 10) * 2)
-      px(ex, ey, t < 16 ? '#ffd23a' : t < 34 ? '#ef7714' : '#7a3210')
-    }
-
-    /* ---- smoke ----
-       It comes in as the flame goes down and is thickest just after it
-       is out, which is when a real one smokes hardest: the fuel is
-       still hot and there is no longer a flame burning the smoke off.
-       Drawn on the same dithered column the vent steam uses, but grey
-       rather than the steam's violet, so the two never read as the
-       same thing.
-
-       It has to be a good deal lighter than smoke actually is. The
-       roof it rises off is `#090318` — near black — and a physically
-       honest dark grey plume against that is invisible, which is the
-       usual trade in a dark scene: value separation beats accuracy. */
-    const smoke = 1 - L
-    if (smoke > 0.03) {
-      for (let i = 0; i < 34; i++) {
-        const age = (frame * 1.15 + i * 1.7) % 56
-        const y = Math.round(FIRE_BASE - 4 - age * 1.2)
-        if (y < ROOF_TOP - 56 || y >= H) continue
-        const spread = 2.5 + age * 0.24
-        const drift = Math.sin(age * 0.13 + i * 1.7) * spread
-        const x = Math.round(FIRE_X - 2 + drift)
-        const fade = (1 - age / 56) * smoke
-        /* Blocks that widen as they rise, for the same reason the vent
-           steam is blocks: a column of lone pixels at this scale does
-           not read as smoke, it reads as dirt on the lens. */
-        const w = 3 + Math.round(age / 9)
-        for (let k = 0; k < w; k++) {
-          dot(ctx, x + k, y, fade * 0.9, age < 15 ? '#8d84a6' : '#665d7e')
-          dot(ctx, x + k, y - 1, fade * 0.5, '#554d6b')
-        }
-      }
-    }
-  }
 
   /* Steam off the vent pipe — a column that widens and drifts as it
      rises, redrawn each frame so it never repeats exactly. */
@@ -8419,19 +8054,17 @@
       flicker(L, off, LIFT[i + 1])
       nearOff = off
     }
-    if (T.stars) drawLightBeams(nearOff) // a lighthouse beam by day is a smudge
+    /* The rotating beams are off. Two lines sweeping out of the
+       skyline and back, once a second, is motion the eye is obliged
+       to track — and this is a backdrop behind a page somebody is
+       trying to read. Kept in the file, not called. */
+    // if (T.stars) drawLightBeams(nearOff)
 
     // In front of the skyline, behind the elevated line — it is flying
     // over the city, not through it.
     // The airship is gone: it carried a lit banner with words on it,
     // and words in the backdrop compete with words on the page.
 
-    /* The elevated line sits in front of the city and behind the roof.
-       It does NOT drift: it is thirty feet away and bolted down, and
-       the camera is a fixed shot from one rooftop. Only the train on
-       it moves. */
-    blit(viaduct, drift(5))
-    if (!quiet) drawTrain()
 
     drawShells()
 
@@ -8468,10 +8101,6 @@
       drawRipples()
     }
 
-    if (T.fire) {
-      drawFire()
-      drawIgnition()
-    }
 
     /* No second flash pass here. An earlier version also washed the
        city and the roof on a strike, which is what lightning physically
@@ -8505,7 +8134,6 @@
     const p = weather === 'none' ? null : panelRect()
 
     // the brazier reads the same panel rect the weather does
-    stepFire(dt, p)
 
     if (weather === 'rain') {
       stepRain(p, live, k)
