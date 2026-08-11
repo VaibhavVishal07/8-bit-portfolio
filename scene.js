@@ -7351,16 +7351,17 @@
      forty-four pixel brazier alone on a hundred-and-thirty pixel deck,
      which read as abandoned rather than as quiet.
 
-     Five thirds, and the fraction is the point. At S = 3 every
+     Four thirds, and the fraction is the point. At S = 3 every
      authored pixel is backed by three device pixels, so a scale of
-     5/3 makes each one exactly five — a whole number. Any scale that
+     4/3 makes each one exactly four — a whole number. Any scale that
      is not a multiple of 1/S puts the flame's edges on fractions of a
      device pixel and the one object in the frame that is supposed to
-     be the sharpest thing in it comes out soft.
+     be the sharpest thing in it comes out soft. It sat at 5/3 and read
+     a touch loud on the deck; 4/3 is the same fire, quieter.
 
      Anchored at the foot, so it grows upward out of the deck rather
      than away from it. */
-  const FIRE_SCALE = 5 / 3
+  const FIRE_SCALE = 4 / 3
 
   function drawFire() {
     ctx.save()
@@ -8295,6 +8296,10 @@
   function setCity(key) {
     if (!CITIES[key] || key === cityKey) return
     cityKey = key
+    /* The interface re-themes with the skyline: the wordmark, the panel
+       and its neon border all read their colours from CSS variables
+       that a `[data-city]` block overrides. */
+    document.documentElement.dataset.city = key
     applyPalette()
     seedPetals()
     stageRebuild()
@@ -8325,6 +8330,7 @@
 
   seedPetals()
   setTheme('night')
+  document.documentElement.dataset.city = cityKey
 
   /* A reload straight into snow never passes through setWeather, so the
      ledges are seeded here too. */
