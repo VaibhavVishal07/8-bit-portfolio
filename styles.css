@@ -284,9 +284,9 @@ svg { display: block; image-rendering: pixelated; }
   font-size: var(--wm);
   line-height: 1.05;
   color: var(--wm-face);
-  /* The logotype holds still — only its colour snaps. An idle hop and a
-     glitch jolt both read as the title shaking, which it should not. */
-  animation: title-flash 2.4s steps(1, end) infinite;
+  /* The name holds still AND holds its colour — no flash. The chromatic
+     fringe either side already says "logotype on a CRT"; a colour that
+     snaps every couple of seconds only pulled the eye back to it. */
 }
 
 /* ---- The perspective stack ----
@@ -870,7 +870,6 @@ svg { display: block; image-rendering: pixelated; }
   font-size: var(--wm);
   line-height: 1.02;
   color: var(--wm-face);
-  animation: title-flash 2.4s steps(1, end) infinite;
 }
 
 .boot__brand {
@@ -3125,9 +3124,13 @@ html:not([data-page='home']) .l2-home {
   text-decoration: none;
   background: var(--panel);
   border: 2px solid var(--panel-edge);
-  box-shadow: var(--s1) var(--s1) 0 var(--panel-cast-2);
+  /* Tactile: it sits proud on a hard offset shadow and presses in on
+     click — the whole button drops onto its own shadow. No easing, so
+     the press is a snap, which is the whole language of this scene. */
+  box-shadow: 4px 4px 0 var(--ink);
 }
-html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); }
+html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); background: var(--panel-bar); }
+html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
 
 /* ==================================================================
    THE CASE STUDY
@@ -3136,20 +3139,30 @@ html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); }
    not scanned. The long prose sets in Satoshi; every label, heading and
    number stays on the pixel/mono so the page still reads as this place.
    ================================================================== */
-.cs { padding-bottom: var(--s7); }
+/* A case study is a document: it ranges LEFT, so the eye has an edge to
+   return to. (The rest of the site centres; this deliberately does not.) */
+.cs { text-align: left; padding: var(--s4) var(--s2) var(--s7); }
 
-.cs__eyebrow { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 2px; color: var(--panel-accent); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
-.cs__title { font-family: var(--font-display); font-size: var(--d4); color: var(--cream); margin: 0 0 var(--s4); line-height: 1.35; }
-.cs__lede { font-family: var(--font-read); font-size: var(--b4); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 40ch; }
+.cs__eyebrow { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 2px; color: var(--panel-accent); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.cs__title { font-family: var(--font-display); font-size: var(--d4); color: var(--cream); margin: 0 0 var(--s4); line-height: 1.4; }
+.cs__lede { font-family: var(--font-read); font-size: var(--b4); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 34ch; }
 .cs__hero { display: block; width: 100%; margin: 0 0 var(--s6); }
-.cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5) var(--s4); margin: 0 0 var(--s6); padding: var(--s5) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
+.cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5) var(--s5); margin: 0 0 var(--s6); padding: var(--s5) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
 .cs__meta dt { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 1px; color: var(--panel-quiet); margin: 0 0 var(--s2); }
-.cs__meta dd { margin: 0; font-size: var(--b2); color: var(--panel-text); }
+.cs__meta dd { margin: 0; font-size: var(--b3); color: var(--panel-text); }
 .cs__h { font-family: var(--font-display); font-size: var(--d3); color: var(--panel-edge); margin: var(--s7) 0 var(--s4); }
 
-/* long prose reads in Satoshi, with more line and paragraph spacing */
+/* The reading prose. Satoshi by default, at a comfortable size; but the
+   FIRST project stays fully pixel/mono, on the JetBrains face, so there
+   is one study that is the machine talking and the rest read plainly. */
 .cs .prose { font-family: var(--font-read); }
-.cs .prose p { font-size: var(--b3); line-height: 1.65; color: var(--cream); margin: 0 0 var(--s4); max-width: 64ch; }
+.cs .prose p { font-size: 19px; line-height: 1.7; color: var(--cream); margin: 0 0 var(--s5); max-width: 62ch; }
+.cs .prose p:last-child { margin-bottom: 0; }
+
+.page[data-page='w1'] .cs__lede,
+.page[data-page='w1'] .cs__note,
+.page[data-page='w1'] .cs .prose { font-family: var(--font-body); }
+.page[data-page='w1'] .cs .prose p { font-size: var(--b3); }
 
 /* ---- the NDA badge, note and redacted screens ---- */
 .cs__nda {
@@ -3163,8 +3176,8 @@ html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); }
 }
 .cs__note {
   font-family: var(--font-read);
-  font-size: var(--b2);
-  line-height: 1.55;
+  font-size: var(--b3);
+  line-height: 1.6;
   color: var(--panel-text);
   margin: 0 0 var(--s6);
   padding: var(--s4);
@@ -3221,12 +3234,16 @@ html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); }
   color: var(--panel-quiet);
 }
 
-.cs__cta { margin: var(--s6) 0 0; }
-.cs__cta a { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--ink); background: var(--panel-edge); padding: var(--s3) var(--s4); text-decoration: none; box-shadow: 2px 2px 0 var(--panel-cast-2); display: inline-block; }
+/* both end-of-study actions are tactile buttons: proud on a hard
+   offset, and they drop onto their shadow on press */
+.cs__cta { margin: var(--s7) 0 0; }
+.cs__cta a { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--ink); background: var(--panel-edge); padding: var(--s3) var(--s4); text-decoration: none; box-shadow: 4px 4px 0 var(--ink); display: inline-block; }
 .cs__cta a:hover { background: var(--panel-accent); }
+.cs__cta a:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
 
-.cs__next { display: inline-block; margin-top: var(--s6); font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--panel-accent); text-decoration: none; }
-.cs__next:hover { color: var(--panel-edge); }
+.cs__next { display: inline-block; margin-top: var(--s6); font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--panel-text); text-decoration: none; padding: var(--s3) var(--s4); background: var(--panel); border: 2px solid var(--panel-dim); box-shadow: 4px 4px 0 var(--ink); }
+.cs__next:hover { color: var(--panel-edge); border-color: var(--panel-edge); }
+.cs__next:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
 
 @media (max-width: 760px) {
   .cs__meta { grid-template-columns: minmax(0, 1fr); }
