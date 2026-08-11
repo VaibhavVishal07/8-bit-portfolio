@@ -3901,44 +3901,31 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
    what it is and it is the correct shape for whatever replaces it —
    drop an <img> in and it crops to fit.
    ================================================================== */
-/* A home card is a labelled, painted tile: the generated cover on top,
-   the project name and one line under it. The art is tactile — proud on
-   a hard offset, dropping onto it on press. */
 .tile {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-  text-align: left;
-  text-decoration: none;
-}
-.tile__art {
   display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
+  aspect-ratio: 1 / 1;
   background: var(--panel-bar);
-  border: 2px solid var(--panel-dim);
-  box-shadow: 4px 4px 0 var(--ink);
+  border: 3px solid var(--panel-dim);
+  box-shadow:
+    inset 2px 2px 0 var(--panel-lift),
+    inset -2px -2px 0 var(--panel-sink);
 }
-.tile__art canvas,
-.tile__art img {
+
+.tile:hover,
+.tile:focus-visible {
+  border-color: var(--panel-edge);
+  outline: none;
+}
+
+.tile:active { transform: translate(2px, 2px); }
+
+.tile > img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   image-rendering: pixelated;
 }
-.tile:hover .tile__art,
-.tile:focus-visible .tile__art { border-color: var(--panel-edge); outline: none; }
-.tile:active .tile__art { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
-.tile__title { font-family: var(--font-display); font-size: var(--d2); color: var(--panel-text); }
-.tile:hover .tile__title { color: var(--panel-edge); }
-.tile__meta { font-family: var(--font-body); font-size: var(--b1); color: var(--panel-quiet); }
-
-/* the quiet way through to the rest of the site */
-.home-nav { display: flex; justify-content: center; gap: var(--s5); margin: var(--s6) 0 var(--s5); }
-.home-nav a { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--panel-quiet); text-decoration: none; }
-.home-nav a:hover { color: var(--panel-edge); }
 
 /* ==================================================================
    AIR BETWEEN SECTIONS

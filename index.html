@@ -139,12 +139,12 @@
        one way back. -->
   <a class="l2-home" href="#home">CLOSE</a>
 
-  <!-- Home is deliberately spare: the name, one line about who is
-       talking, the work, and a quiet way through to everything else.
-       About / Writing / Contact each live on their own page now, one
-       iris-wipe away, rather than stacked down a long scroll here. -->
   <section class="page page--home is-on" data-page="home">
     <div class="col">
+
+      <!-- The lines are separate elements because each is set at its
+           own size: small on top, large on the bottom, so the block
+           reads as a trapezoid leaning away from the viewer. -->
       <h1 class="wordmark">
         <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
         <span class="wordmark__line wordmark__line--b">VISHAL</span>
@@ -153,34 +153,111 @@
       <p class="role">YOUR ROLE &middot; PORTFOLIO 2026</p>
 
       <div class="intro">
-        <p>I'm a product designer based in <b>CITY</b>, designing at
-           <b>COMPANY</b>. A few selected pieces of work.</p>
+        <p>I'm a product designer based in <b>CITY</b>, currently
+           designing at <b>COMPANY</b>. Before that I spent a few years
+           as a frontend engineer, which is why I still think in
+           components.</p>
+
+        <p>Here's a few selected pieces of work.</p>
       </div>
 
       <ul class="cards">
-        <li><a class="tile" href="#w1">
-          <span class="tile__art"><canvas data-poster="work" data-seed="3" aria-hidden="true"></canvas></span>
-          <span class="tile__title">PROJECT ONE</span>
-          <span class="tile__meta">Product design &middot; 2025</span></a></li>
-        <li><a class="tile" href="#w2">
-          <span class="tile__art"><canvas data-poster="work" data-seed="17" aria-hidden="true"></canvas></span>
-          <span class="tile__title">PROJECT TWO</span>
-          <span class="tile__meta">Design systems &middot; 2024</span></a></li>
-        <li><a class="tile" href="#w3">
-          <span class="tile__art"><canvas data-poster="work" data-seed="41" aria-hidden="true"></canvas></span>
-          <span class="tile__title">PROJECT THREE</span>
-          <span class="tile__meta">Mobile &middot; 2023</span></a></li>
-        <li><a class="tile" href="#w4">
-          <span class="tile__art"><canvas data-poster="work" data-seed="88" aria-hidden="true"></canvas></span>
-          <span class="tile__title">PROJECT FOUR</span>
-          <span class="tile__meta">Brand &middot; 2022</span></a></li>
+        <li><a class="tile" href="#w1" aria-label="W1"></a></li>
+        <li><a class="tile" href="#w2" aria-label="W2"></a></li>
+        <li><a class="tile" href="#w3" aria-label="W3"></a></li>
+        <li><a class="tile" href="#w4" aria-label="W4"></a></li>
       </ul>
 
-      <nav class="home-nav" aria-label="More">
-        <a href="#about">About</a>
-        <a href="#writing">Writing</a>
-        <a href="#contact">Contact</a>
-      </nav>
+      <div class="intro">
+        <p>Previously I worked in-house on design systems, and before
+           that freelance with small teams who needed one person to do
+           all of it.</p>
+      </div>
+
+      <!-- ---- more about me ----
+           The reference puts a code block here listing where he is and
+           what he does with his weekends, and it is the best thing on
+           that page: a readout is a way to say six true things without
+           writing six sentences about yourself, which almost nobody can
+           do without sounding like a cover letter.
+
+           Same idea, in this machine's voice. -->
+      <h2 class="sect">ABOUT</h2>
+      <div class="intro">
+        <p>I grew up in <b>HOMETOWN</b> and moved for the work. I got
+           here through engineering, which is why I still care more
+           about how a thing is built than how it presents.</p>
+      </div>
+
+      <!-- ---- the shelf ----
+           Four lines about what is actually on the desk this month.
+           A readout of tools and hobbies said what somebody DOES; this
+           says what they are into, which is the thing that actually
+           tells you who you would be working with. -->
+      <ul class="shelf">
+        <li data-cover="book" data-seed="7"><span>READING</span><b>BOOK TITLE</b><i>Author</i></li>
+        <li data-cover="game" data-seed="12"><span>PLAYING</span><b>GAME TITLE</b><i>Platform</i></li>
+        <li data-cover="film" data-seed="23"><span>WATCHING</span><b>FILM OR SHOW</b><i>Director</i></li>
+        <li data-cover="music" data-seed="31"><span>LISTENING</span><b>ALBUM TITLE</b><i>Artist</i></li>
+      </ul>
+
+      <div class="intro">
+        <p>Things I am bad at: estimating, letting a draft go, and
+           saying no to a side project. This is the most likeable
+           paragraph on any about page and almost nobody writes it.</p>
+      </div>
+
+      <!-- ---- articles ----
+           A list, not a grid. Writing is a title and a date; giving it
+           a card and a thumbnail would be dressing a paragraph up as a
+           product. -->
+      <h2 class="sect">WRITING</h2>
+      <ul class="reads">
+        <li>
+          <a href="#r1">
+            <span class="reads__title">Why every gradient in this city is a lie</span>
+            <span class="reads__meta">2026 &middot; 6 min</span>
+          </a>
+        </li>
+        <li>
+          <a href="#r2">
+            <span class="reads__title">Stepped motion, and when to break it</span>
+            <span class="reads__meta">2025 &middot; 4 min</span>
+          </a>
+        </li>
+        <li>
+          <a href="#r3">
+            <span class="reads__title">The case against the hamburger menu</span>
+            <span class="reads__meta">2025 &middot; 8 min</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="intro">
+        <p>Away from the desk it's bouldering, too many podcasts, and a
+           standing argument about whether filter coffee counts.</p>
+
+        <p>Thanks for visiting. If you want to work together, or just
+           want to say hello, here are the ways to reach me.</p>
+      </div>
+
+      <!-- ---- contact ----
+           Four icons in a row. It was four full-width rows with a
+           label, a value and a hover affordance in each — a table of
+           contact details at the foot of a page whose whole point is
+           that it is quiet. Nobody needs to be TOLD that an envelope
+           is email. -->
+      <ul class="links">
+        <li><a href="mailto:you@example.com" title="you@example.com">
+          <canvas class="links__art" data-icon="mail" aria-hidden="true"></canvas>
+          <span class="links__name">EMAIL</span></a></li>
+        <li><a href="https://linkedin.com/in/handle" title="linkedin.com/in/handle">
+          <canvas class="links__art" data-icon="linkedin" aria-hidden="true"></canvas>
+          <span class="links__name">LINKEDIN</span></a></li>
+        <li><a href="resume.pdf" download title="one page, PDF">
+          <canvas class="links__art" data-icon="resume" aria-hidden="true"></canvas>
+          <span class="links__name">RESUME</span></a></li>
+      </ul>
 
       <p class="copyright">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span>
         &middot; drawn in code, no images</p>
@@ -348,57 +425,6 @@
       <p class="level__meta">2025 &middot; 8 MIN</p>
       <h2 class="level__title">The case against the hamburger menu</h2>
       <div class="prose"><p>Opening paragraph.</p><p>Replace all of this.</p></div>
-    </div>
-  </section>
-
-  <!-- ==== ABOUT / WRITING / CONTACT ====
-       Off home now, each reachable from the home nav and each its own
-       page behind the iris. -->
-  <section class="page" data-page="about" hidden>
-    <div class="col col--doc cs">
-      <p class="sect">ABOUT</p>
-      <div class="prose">
-        <p>I grew up in <b>HOMETOWN</b> and moved for the work. I got here through engineering, which is why I still care more about how a thing is built than how it presents.</p>
-        <p>Previously in-house on design systems, and before that freelance with small teams who needed one person to do all of it.</p>
-      </div>
-      <ul class="shelf">
-        <li data-cover="book" data-seed="7"><span>READING</span><b>BOOK TITLE</b><i>Author</i></li>
-        <li data-cover="game" data-seed="12"><span>PLAYING</span><b>GAME TITLE</b><i>Platform</i></li>
-        <li data-cover="film" data-seed="23"><span>WATCHING</span><b>FILM OR SHOW</b><i>Director</i></li>
-        <li data-cover="music" data-seed="31"><span>LISTENING</span><b>ALBUM TITLE</b><i>Artist</i></li>
-      </ul>
-      <div class="prose">
-        <p>Things I'm bad at: estimating, letting a draft go, and saying no to a side project. Away from the desk it's bouldering, too many podcasts, and a standing argument about whether filter coffee counts.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="page" data-page="writing" hidden>
-    <div class="col col--doc cs">
-      <p class="sect">WRITING</p>
-      <ul class="reads">
-        <li><a href="#r1"><span class="reads__title">Why every gradient in this city is a lie</span><span class="reads__meta">2026 &middot; 6 min</span></a></li>
-        <li><a href="#r2"><span class="reads__title">Stepped motion, and when to break it</span><span class="reads__meta">2025 &middot; 4 min</span></a></li>
-        <li><a href="#r3"><span class="reads__title">The case against the hamburger menu</span><span class="reads__meta">2025 &middot; 8 min</span></a></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="page" data-page="contact" hidden>
-    <div class="col col--doc cs">
-      <p class="sect">CONTACT</p>
-      <div class="prose"><p>Want to work together, or just want to say hello? Here are the ways to reach me.</p></div>
-      <ul class="links">
-        <li><a href="mailto:you@example.com" title="you@example.com">
-          <canvas class="links__art" data-icon="mail" aria-hidden="true"></canvas>
-          <span class="links__name">EMAIL</span></a></li>
-        <li><a href="https://linkedin.com/in/handle" title="linkedin.com/in/handle">
-          <canvas class="links__art" data-icon="linkedin" aria-hidden="true"></canvas>
-          <span class="links__name">LINKEDIN</span></a></li>
-        <li><a href="resume.pdf" download title="one page, PDF">
-          <canvas class="links__art" data-icon="resume" aria-hidden="true"></canvas>
-          <span class="links__name">RESUME</span></a></li>
-      </ul>
     </div>
   </section>
 
