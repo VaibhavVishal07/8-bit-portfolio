@@ -528,13 +528,13 @@
       ],
       tall: ['SAKE', 'BAR', 'RAMEN', 'SUSHI', 'UDON', 'HOTEL', 'SENTO', 'KOBAN'],
     },
-    mexico: {
+    delhi: {
       wide: [
-        'TACOS', 'CANTINA', 'MEZCAL', 'FONDA', 'MERCADO', 'TORTAS',
-        'ELOTES', 'CHURROS', 'BARBACOA', 'FARMACIA', 'HORCHATA', 'CAFE',
-        'PANADERIA', 'LUCHA', 'ABARROTES', 'TAMALES', 'SALON',
+        'CHAI', 'DHABA', 'MITHAI', 'SAMOSA', 'BIRYANI', 'CHAAT',
+        'TIFFIN', 'DOSA', 'KIRANA', 'PAKORA', 'LASSI', 'TANDOOR',
+        'SWEETS', 'MEDICAL', 'SAREES', 'JALEBI', 'STUDIO',
       ],
-      tall: ['BAR', 'HOTEL', 'CAFE', 'TACOS', 'FONDA', 'CINE', 'SALON', 'RADIO'],
+      tall: ['CHAI', 'PAAN', 'HOTEL', 'DHABA', 'CAFE', 'SWEETS', 'STUDIO', 'RADIO'],
     },
     paris: {
       wide: [
@@ -2013,9 +2013,9 @@
          the few pieces of vernacular that is legible at eight pixels.
          New York has timber water tanks on legs, on a third of the
          island. Tokyo has a billboard on everything. Paris has ranks
-         of chimney pots. Mexico City has tanks too, but plastic ones
-         on a frame, plus the odd bell cote. Dubai has satellite dishes
-         and chillers.
+         of chimney pots. Delhi has black plastic water tanks on frames,
+         a dish on every parapet. Dubai has satellite dishes and
+         chillers.
 
          Cheap, small, and repeated — which is exactly how vernacular
          works. `roofKit` picks which. */
@@ -3679,197 +3679,230 @@
   }
 
   /* ==================================================================
-     MEXICO CITY
+     NEW DELHI
      ================================================================== */
 
-  /* ---- the Torre Latinoamericana ----
-     The one that survived the earthquake. A plain slab with a glazed
-     observation cage and a lattice mast, and it is the mast that puts
-     it on the postcards. */
-  function torreLatino(g, o, x, windows) {
-    const b = SKYLINE
-    mBox(g, o, x - 17, b - 176, 34, 176)
-    // horizontal floor bands — this tower is read by its stripes
-    g.fillStyle = o.dark
-    for (let y = b - 170; y < b - 6; y += 5) g.fillRect(x - 16, y, 32, 1)
-    g.fillStyle = o.glass ? o.glass[0] : o.window
-    for (let y = b - 168; y < b - 8; y += 5) g.fillRect(x - 14, y, 28, 2)
-
-    // the setback and the observation cage
-    mBox(g, o, x - 12, b - 196, 24, 22)
-    g.fillStyle = o.warm
-    g.fillRect(x - 10, b - 192, 20, 6)
-    mBox(g, o, x - 8, b - 208, 16, 14)
-    g.fillStyle = o.window
-    g.fillRect(x - 8, b - 208, 16, 1)
-
-    // the mast
-    g.fillStyle = o.window
-    g.fillRect(x - 1, b - 262, 2, 56)
-    g.fillStyle = o.lit
-    for (let k = 0; k < 7; k++) g.fillRect(x - 3, b - 256 + k * 8, 6, 1)
-    if (windows) windows.push({ x: x - 1, y: b - 264, w: 2, h: 2, beacon: true })
-  }
-
-  /* ---- El Ángel de la Independencia ----
-     A column with a gold winged victory on it. At this scale the
-     figure is nine pixels tall and the gold is doing all the work,
-     which is fine — gold on a column is the memory people have. */
-  function angelColumn(g, o, x) {
-    const b = SKYLINE
-    const gold = '#f2c14e'
-    const goldLit = '#ffeaa8'
-
-    // the stepped plinth
-    g.fillStyle = o.fill
-    g.fillRect(x - 22, b - 10, 44, 10)
-    g.fillRect(x - 16, b - 18, 32, 8)
-    g.fillStyle = o.lit
-    g.fillRect(x - 22, b - 10, 44, 1)
-    g.fillRect(x - 16, b - 18, 32, 1)
-
-    // the shaft, fluted
-    mBox(g, o, x - 7, b - 96, 14, 78)
-    g.fillStyle = o.dark
-    for (let k = 0; k < 4; k++) g.fillRect(x - 5 + k * 3, b - 92, 1, 72)
-    // capital
-    g.fillStyle = o.lit
-    g.fillRect(x - 10, b - 102, 20, 6)
-    g.fillStyle = o.fill
-    g.fillRect(x - 8, b - 106, 16, 4)
-
-    // Victoria, with the wings open behind her
-    g.fillStyle = gold
-    g.fillRect(x - 2, b - 118, 4, 12)
-    g.fillRect(x - 1, b - 122, 3, 4)
-    g.fillStyle = goldLit
-    g.fillRect(x - 2, b - 118, 1, 12)
-    // wings
-    g.fillStyle = gold
-    for (let k = 0; k < 9; k++) {
-      g.fillRect(x - 3 - k, b - 120 + Math.round(k * 0.7), 1, Math.max(1, 5 - Math.floor(k / 2)))
-      g.fillRect(x + 3 + k, b - 120 + Math.round(k * 0.7), 1, Math.max(1, 5 - Math.floor(k / 2)))
-    }
-    // the laurel wreath, held out
-    g.fillStyle = goldLit
-    g.fillRect(x + 3, b - 124, 4, 1)
-    g.fillRect(x + 6, b - 126, 1, 4)
-    glow(g, x - 12, b - 128, 24, 24, 16, gold, 1.2)
-  }
-
-  /* ---- the Monumento a la Revolución ----
-     Four colossal legs, four arches between them, one copper dome. It
-     was meant to be a parliament and it ended up as the biggest
-     triumphal arch on earth, which is a very Mexico City story. */
-  function revolutionDome(g, o, x) {
-    const b = SKYLINE
-    const copper = '#6f9c86'
-    const copperLit = '#a2cbb4'
-
-    /* Four legs and the three voids between them. The voids are cut
-       FIRST and the legs drawn over them, because an arch is the hole
-       and the pier is what is left — doing it the other way round is
-       what put an arch through the middle of a leg. */
-    mArch(g, x - 32, b - 62, 14, 62, o.dark)
-    mArch(g, x - 8, b - 62, 18, 62, o.dark)
-    mArch(g, x + 20, b - 62, 12, 62, o.dark)
-    for (const dx of [-42, -18, 10, 32]) {
-      g.fillStyle = o.fill
-      g.fillRect(x + dx, b - 62, 10, 62)
-      g.fillStyle = o.lit
-      g.fillRect(x + dx, b - 62, 1, 62)
-      g.fillStyle = o.dark
-      g.fillRect(x + dx + 9, b - 62, 1, 62)
-    }
-
-    // the entablature, then the drum
-    g.fillStyle = o.fill
-    g.fillRect(x - 42, b - 74, 84, 12)
-    g.fillStyle = o.lit
-    g.fillRect(x - 42, b - 74, 84, 1)
-    g.fillStyle = o.dark
-    for (let k = 0; k < 10; k++) g.fillRect(x - 38 + k * 9, b - 70, 2, 6)
-    g.fillStyle = o.fill
-    g.fillRect(x - 28, b - 88, 56, 14)
-    g.fillStyle = o.warm
-    for (let k = 0; k < 7; k++) g.fillRect(x - 24 + k * 7, b - 85, 3, 8)
-
-    // the dome and its lantern
-    mDome(g, o, x - 28, b - 88, 56, 30, copper)
-    g.fillStyle = copperLit
-    g.fillRect(x - 5, b - 124, 10, 6)
-    g.fillStyle = copper
-    g.fillRect(x - 2, b - 132, 4, 8)
-    g.fillStyle = '#ffd27a'
-    g.fillRect(x - 1, b - 136, 2, 4)
-  }
-
-  /* ---- the pyramid ----
-     Teotihuacán, up the road and a couple of thousand years older than
-     everything else in frame. Five hard steps and one staircase — the
-     staircase is what stops it reading as a ziggurat. */
-  function stepPyramid(g, o, x) {
+  /* ---- India Gate ----
+     One great archway of sandstone, taller than it is wide, with a heavy
+     cornice and a shallow saucer where the never-built cupola would have
+     gone. The flame beneath the arch is the Amar Jawan Jyoti. */
+  function indiaGate(g, o, x) {
     const b = SKYLINE
     o = mStone(o)
-    const stone = o.fill
-    /* Big, because the real one is and because a 70px pyramid at
-       SKYLINE is a pyramid entirely behind the elevated line. At 110
-       it stands most of its height clear of the deck, which is the
-       only height that matters here. */
-    let w = 170
-    let y = b
-    for (let t = 0; t < 5; t++) {
-      const h = 26 - t * 2
-      const hw = Math.round(w / 2)
-      g.fillStyle = stone
-      g.fillRect(x - hw, y - h, w, h)
-      g.fillStyle = o.lit
-      g.fillRect(x - hw, y - h, w, 1)
-      g.fillStyle = o.dark
-      g.fillRect(x - hw, y - 1, w, 1)
-      // the battered face — a talud, sloping in
-      for (let k = 0; k < h; k++) {
-        g.fillStyle = o.dark
-        g.fillRect(x + hw - 1 - Math.round(k * 0.4), y - h + k, 1, 1)
-      }
-      y -= h
-      w -= 30
-    }
-    // the staircase, dead centre, running the whole way up
-    const sw = 28
-    g.fillStyle = o.dark
-    g.fillRect(x - sw / 2, y, sw, b - y)
+    const w = 62
+    const h = 94
+    // the pylon
+    mBox(g, o, x - w / 2, b - h, w, h)
+    // the one great arch, tall and narrow
+    mArch(g, x - 16, b - 76, 32, 76, o.dark)
+    // string courses across the piers
     g.fillStyle = o.lit
-    for (let k = 0; k < b - y; k += 3) g.fillRect(x - sw / 2, y + k, sw, 1)
-    // and a fire on the platform, because there always was one
-    g.fillStyle = '#ff9a3c'
-    g.fillRect(x - 3, y - 6, 6, 6)
+    g.fillRect(x - w / 2, b - 76, w, 1)
+    g.fillStyle = o.dark
+    g.fillRect(x - w / 2, b - 40, w, 1)
+    // the deep cornice
+    g.fillStyle = o.fill
+    g.fillRect(x - w / 2 - 4, b - h - 9, w + 8, 9)
+    g.fillStyle = o.lit
+    g.fillRect(x - w / 2 - 4, b - h - 9, w + 8, 1)
+    g.fillStyle = o.dark
+    for (let k = 0; k < 9; k++) g.fillRect(x - 27 + k * 7, b - h - 6, 3, 5)
+    // the shallow saucer where the cupola never went
+    mDome(g, o, x - 12, b - h - 9, 24, 8, o.lit)
+    // the eternal flame under the arch
+    g.fillStyle = '#ffb03c'
+    g.fillRect(x - 1, b - 6, 3, 5)
     g.fillStyle = '#ffd27a'
-    g.fillRect(x - 1, y - 8, 3, 5)
-    glow(g, x - 4, y - 9, 8, 10, 14, '#ff9a3c', 1.3)
+    g.fillRect(x - 1, b - 9, 2, 3)
+    glow(g, x - 4, b - 12, 8, 10, 14, '#ffb03c', 1.2)
   }
 
-  /* Papel picado — perforated paper flags on a string, the thing that
-     is over every street in the city for half the year. */
-  function papelPicado(g, o, x, y, n) {
-    const cols = ['#ff5c8a', '#4ad2c8', '#ffd24a', '#8a6cff', '#5fd66f']
-    g.fillStyle = o.dark
-    const span = n * 13
-    for (let k = 0; k < span; k++) {
-      g.fillRect(x + k, y + Math.round(Math.sin((k / span) * Math.PI) * 7), 1, 1)
+  /* ---- the Qutub Minar ----
+     The tallest brick minaret in the world: five storeys that taper as
+     they climb, each ending in a corbelled balcony that throws a ring of
+     shadow, the lower shafts fluted. A small cupola sits on the summit. */
+  function qutubMinar(g, o, x, windows) {
+    const b = SKYLINE
+    o = mStone(o, 0.42)
+    const heights = [56, 46, 38, 30, 24]
+    const total = heights.reduce((a, c) => a + c, 0)
+    const baseHW = 17
+    const topHW = 5
+    const hwAt = (yUp) => baseHW - (baseHW - topHW) * (yUp / total)
+    let cy = b
+    for (let s = 0; s < heights.length; s++) {
+      const hs = heights[s]
+      // the tapering shaft of this storey
+      for (let k = 0; k < hs; k++) {
+        const hw = Math.round(hwAt(b - cy + k))
+        const yr = cy - k
+        g.fillStyle = o.fill
+        g.fillRect(x - hw, yr, hw * 2, 1)
+        g.fillStyle = o.lit
+        g.fillRect(x - hw, yr, 1, 1)
+        g.fillStyle = o.dark
+        g.fillRect(x + hw - 1, yr, 1, 1)
+      }
+      // fluting on the lower three storeys
+      if (s < 3) {
+        const hwBot = Math.round(hwAt(b - cy))
+        g.fillStyle = o.dark
+        for (let fx = -hwBot + 3; fx < hwBot - 3; fx += 3) g.fillRect(x + fx, cy - hs, 1, hs)
+      }
+      // the corbelled balcony ring at the top of the storey
+      const hwBal = Math.round(hwAt(b - cy + hs)) + 3
+      g.fillStyle = o.dark
+      for (let k = 0; k < hwBal * 2; k += 2) g.fillRect(x - hwBal + k, cy - hs - 1, 1, 1)
+      g.fillStyle = o.lit
+      g.fillRect(x - hwBal, cy - hs, hwBal * 2, 2)
+      g.fillStyle = o.dark
+      g.fillRect(x - hwBal, cy - hs + 2, hwBal * 2, 1)
+      cy -= hs
     }
+    // the cupola on the summit
+    mDome(g, o, x - 5, cy, 10, 6, o.lit)
+    g.fillStyle = o.window
+    g.fillRect(x - 1, cy - 12, 2, 6)
+    if (windows) windows.push({ x: x - 1, y: cy - 13, w: 2, h: 2, beacon: true })
+  }
+
+  /* ---- Humayun's Tomb ----
+     The first of the great Mughal garden-tombs and the rehearsal for the
+     Taj: an arcaded red-sandstone plinth, a cubic tomb with one tall
+     central iwan, and a bulbous white-marble dome on a drum under a
+     gilded finial, with a pair of chhatris on the roof. */
+  function mughalTomb(g, o, x, windows) {
+    const b = SKYLINE
+    o = mStone(o, 0.36)
+    const marble = '#e8e2d4'
+    const mo = { fill: marble, lit: '#fbf6ea', dark: '#b6ab98', warm: o.warm }
+
+    // the arcaded plinth
+    const pw = 128
+    const ph = 20
+    mBox(g, o, x - pw / 2, b - ph, pw, ph)
+    for (let k = -2; k <= 2; k++) mArch(g, x + k * 25 - 7, b - ph + 4, 14, ph - 4, o.dark)
+
+    // the tomb cube, with the great central iwan
+    const cw = 84
+    const chh = 52
+    mBox(g, o, x - cw / 2, b - ph - chh, cw, chh)
+    mArch(g, x - 15, b - ph - chh + 10, 30, chh - 10, o.dark)
+    // a pointed tip breaking up over the iwan
+    g.fillStyle = o.dark
+    for (let k = 0; k < 7; k++) {
+      g.fillRect(x - 7 + k, b - ph - chh + 10 - (7 - k), 1, 7 - k)
+      g.fillRect(x + 7 - k, b - ph - chh + 10 - (7 - k), 1, 7 - k)
+    }
+    // recessed arches either side
+    mArch(g, x - cw / 2 + 6, b - ph - 24, 12, 22, o.dark)
+    mArch(g, x + cw / 2 - 18, b - ph - 24, 12, 22, o.dark)
+    // a marble cornice on the cube
+    g.fillStyle = marble
+    g.fillRect(x - cw / 2, b - ph - chh, cw, 2)
+
+    // the drum
+    const drumTop = b - ph - chh - 14
+    g.fillStyle = marble
+    g.fillRect(x - 28, drumTop, 56, 14)
+    g.fillStyle = mo.lit
+    g.fillRect(x - 28, drumTop, 56, 1)
+    g.fillStyle = mo.dark
+    for (let k = 0; k < 7; k++) g.fillRect(x - 24 + k * 7, drumTop + 3, 2, 9)
+
+    // the bulbous dome and its pinched collar
+    const domeW = 60
+    mDome(g, mo, x - domeW / 2, drumTop, domeW, 44, marble)
+    g.fillStyle = mo.dark
+    g.fillRect(x - domeW / 2 + 3, drumTop - 2, domeW - 6, 2)
+
+    // the gilded finial
+    const dtop = drumTop - 44
+    g.fillStyle = marble
+    g.fillRect(x - 3, dtop - 5, 6, 5)
+    g.fillStyle = '#ffd27a'
+    g.fillRect(x - 1, dtop - 16, 2, 11)
+    g.fillRect(x - 3, dtop - 13, 6, 1)
+    glow(g, x - 4, dtop - 18, 8, 9, 12, '#ffd27a', 0.9)
+
+    // the two roof chhatris
+    for (const dx of [-38, 38]) {
+      g.fillStyle = marble
+      g.fillRect(x + dx - 6, b - ph - chh - 11, 2, 11)
+      g.fillRect(x + dx + 4, b - ph - chh - 11, 2, 11)
+      g.fillStyle = mo.dark
+      g.fillRect(x + dx - 7, b - ph - chh - 12, 14, 1)
+      mDome(g, mo, x + dx - 7, b - ph - chh - 11, 14, 9, marble)
+      g.fillStyle = '#ffd27a'
+      g.fillRect(x + dx - 1, b - ph - chh - 23, 2, 4)
+    }
+    if (windows) windows.push({ x: x - 1, y: dtop - 17, w: 2, h: 2, beacon: true })
+  }
+
+  /* ---- the Lotus Temple ----
+     The Bahai House of Worship: twenty-seven marble petals in three
+     tiers, which at this size is a fan of white points opening off a
+     low podium. Floodlit, so it carries its own cool halo. */
+  function lotusTemple(g, o, x) {
+    const b = SKYLINE
+    const marble = '#e6e6de'
+    const marbleLit = '#fbfbf4'
+    const marbleDark = '#aeaea4'
+    // the podium
+    o = mStone(o, 0.3)
+    mBox(g, o, x - 46, b - 12, 92, 12)
+    g.fillStyle = o.lit
+    g.fillRect(x - 46, b - 12, 92, 1)
+    // a petal: a pointed marble shard that tapers to a point and leans
+    const petal = (px, ph, lean, wmax) => {
+      for (let k = 0; k < ph; k++) {
+        const f = k / ph
+        const hw = Math.max(0, Math.round(wmax * (1 - f) * (1 - f * 0.35)))
+        const cx = px + Math.round(lean * f)
+        const yy = b - 10 - k
+        g.fillStyle = marble
+        g.fillRect(cx - hw, yy, hw * 2 + 1, 1)
+        g.fillStyle = marbleLit
+        g.fillRect(cx - hw, yy, 1, 1)
+        g.fillStyle = marbleDark
+        g.fillRect(cx + hw, yy, 1, 1)
+      }
+    }
+    // back to front: the outer, leaning petals first
+    petal(x - 30, 30, -16, 9)
+    petal(x + 30, 30, 16, 9)
+    petal(x - 17, 42, -11, 9)
+    petal(x + 17, 42, 11, 9)
+    petal(x - 8, 52, -5, 8)
+    petal(x + 8, 52, 5, 8)
+    petal(x, 60, 0, 8)
+    glow(g, x - 34, b - 70, 68, 62, 26, '#dfeaff', 0.5)
+  }
+
+  /* Marigold torans — the strung garlands of marigold flowers and mango
+     leaf that go up over every door and balcony for a festival. Same
+     draped-string idea as the papel picado they replace. */
+  function marigoldString(g, o, x, y, n) {
+    const span = n * 13
+    g.fillStyle = o.dark
+    for (let k = 0; k < span; k++) g.fillRect(x + k, y + Math.round(Math.sin((k / span) * Math.PI) * 8), 1, 1)
+    const orange = '#ff9a2a'
+    const orangeLit = '#ffc75a'
+    const leaf = '#3f9a4a'
     for (let k = 0; k < n; k++) {
       const fx = x + 2 + k * 13
-      const fy = y + Math.round(Math.sin(((k * 13 + 6) / span) * Math.PI) * 7) + 1
-      g.fillStyle = cols[k % cols.length]
-      g.fillRect(fx, fy, 10, 12)
-      // punched out — that is the whole craft
+      const fy = y + Math.round(Math.sin(((k * 13 + 6) / span) * Math.PI) * 8) + 2
+      // a mango leaf tucked between the blooms
+      g.fillStyle = leaf
+      g.fillRect(fx + 5, fy, 2, 6)
+      // the marigold bloom — a small stacked puff
+      g.fillStyle = orange
+      g.fillRect(fx + 1, fy + 5, 8, 6)
+      g.fillRect(fx + 2, fy + 4, 6, 8)
+      g.fillStyle = orangeLit
+      g.fillRect(fx + 3, fy + 6, 2, 2)
       g.fillStyle = o.dark
-      g.fillRect(fx + 4, fy + 3, 2, 2)
-      g.fillRect(fx + 2, fy + 7, 2, 2)
-      g.fillRect(fx + 6, fy + 7, 2, 2)
-      g.fillRect(fx + 3, fy + 11, 1, 1)
-      g.fillRect(fx + 6, fy + 11, 1, 1)
+      g.fillRect(fx + 4, fy + 8, 1, 1)
     }
   }
 
@@ -4229,7 +4262,7 @@
        loop that one or two are in frame at a time.
 
        ITS LIGHT. Manhattan is magenta and cyan; Tokyo in April is
-       rose; Mexico City is sodium and warm dust; Paris is gold; Dubai
+       rose; New Delhi is sodium through smog; Paris is gold; Dubai
        is gold over a hot teal. Each city overrides a handful of
        palette entries — the sky ramp, the haze, the neon set — and
        inherits everything else from the theme.
@@ -4357,46 +4390,59 @@
       },
     },
 
-    mexico: {
-      label: 'MEXICO CITY',
-      /* Sodium and dust. The valley traps everything, so even at night
-         the horizon carries a warm haze the colour of street lighting
-         seen through it, and the sky above that goes a hard cobalt
-         rather than violet. */
+    delhi: {
+      label: 'NEW DELHI',
+      /* Sodium through smog. Delhi's winter air is the whole palette —
+         the horizon never goes black, it holds a warm amber the colour
+         of a million street lamps seen through haze, and the sky above
+         it stays a dusty violet rather than a clean blue. */
       palette: {
         night: {
           sky: [
-            '#050a24', '#07102f', '#0a1840', '#102252', '#1c2d63',
-            '#33356e', '#5a3a6c', '#8c4460', '#c26a44',
+            '#070a20', '#0b0f2c', '#101540', '#182150', '#26265e',
+            '#402a5c', '#6a3a50', '#9a5a38', '#c8802e',
           ],
-          haze: '#ffa14a',
-          smog: '#8a4a2c',
-          fog: '#7a3a2e',
-          rainSky: '#160f22',
-          orb: '#fff0d2', orbShade: '#e0c090', orbGlow: '#b06830',
-          cloud: '#3a2038', cloudLit: '#8a4a44', cloudDark: '#1e1020',
-          high: ['#123a68', '#3a2a62', '#7a3a50'],
-          starDim: '#f0c090',
-          neon: ['#ff5c8a', '#4ad2c8', '#ffd24a', '#5fd66f', '#ff7a1a', '#ffffff', '#ff2d55'],
-          sep: '#c2683a', sepDark: '#2a1410',
-          bounce: ['#ffd24a', '#4ad2c8', '#ff5c8a'],
-          wet: ['#ffd24a', '#4ad2c8', '#ff5c8a'],
+          haze: '#ffb04a',
+          smog: '#8a5426',
+          fog: '#7a4626',
+          rainSky: '#140f1f',
+          orb: '#ffe9c2', orbShade: '#dcc090', orbGlow: '#b07a30',
+          cloud: '#37242e', cloudLit: '#8a5a40', cloudDark: '#1c1016',
+          high: ['#153a64', '#38295c', '#7a3a48'],
+          starDim: '#f0cc96',
+          /* Saffron, India-green and white lead — the flag colours are
+             the loudest neon on the street — with gold, rose and a
+             cool signboard cyan behind them. */
+          neon: ['#ff8a1e', '#2fae52', '#ffd24a', '#ff3d7a', '#ffffff', '#4ad2e0', '#ff2d3a'],
+          sep: '#c27a3a', sepDark: '#241408',
+          bounce: ['#ffd24a', '#ff8a1e', '#2fae52'],
+          wet: ['#ffd24a', '#ff8a1e', '#4ad2e0'],
         },
       },
-      glow: ['#ffb45a', 0.24],
-      /* ---- Mexico City ----
-         Low and enormous. It sprawls rather than stacks: wide slabs,
-         a lot of domes and bell cotes, very few towers, and the whole
-         profile sits about half the height of Manhattan's — which is
-         what makes the three or four things that DO stand up read as
-         landmarks instead of as neighbours. */
-      shape: { slab: 0.20, dome: 0.10, ziggurat: -0.24, needle: -0.05, drum: 0.03 },
+      glow: ['#ffbe5c', 0.24],
+      /* ---- New Delhi ----
+         Low, flat and packed. This is NOT a tower city: old Delhi and
+         the residential colonies are masonry blocks of two to eight
+         storeys with flat parapeted roofs, water tanks and dishes on
+         top, and it is the Mughal domes rising out of that mat that the
+         eye catches. So the build is grid and slab ONLY — flat-topped
+         blocks, wide and low — with domes for the tombs and mosques.
+         Every tall archetype the other cities lean on (the deco
+         setback, the glazed office slab, the spire, the chamfered and
+         notched crowns, the round hotel drum) is switched off, and the
+         heights come right down: nothing generic here is a skyscraper,
+         so the Qutub and the tombs stand clear above the roofline. */
+      shape: {
+        grid: 0.30, slab: 0.22, dome: 0.10,
+        ziggurat: -0.28, banded: -0.11, needle: -0.09,
+        chamfer: -0.08, notch: -0.07, twin: -0.06, taper: -0.06, drum: -0.06,
+      },
       roofKit: 'cistern',
       stock: [
-        { gapChance: 0.54, gap: 8, minW: 18, maxW: 36, minH: 44, maxH: 92 },
-        { gapChance: 0.54, gap: 8, minW: 22, maxW: 44, minH: 52, maxH: 110 },
-        { gapChance: 0.56, gap: 9, minW: 26, maxW: 54, minH: 60, maxH: 136 },
-        { gapChance: 0.58, gap: 10, minW: 33, maxW: 66, minH: 48, maxH: 106 },
+        { gapChance: 0.50, gap: 7, minW: 22, maxW: 44, minH: 36, maxH: 68 },
+        { gapChance: 0.50, gap: 7, minW: 26, maxW: 52, minH: 42, maxH: 82 },
+        { gapChance: 0.52, gap: 8, minW: 30, maxW: 62, minH: 48, maxH: 96 },
+        { gapChance: 0.54, gap: 9, minW: 38, maxW: 78, minH: 40, maxH: 84 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 400)
@@ -4405,19 +4451,19 @@
       },
       layer1: (g, o, windows) => {
         clockTower(g, o, 450)
-        papelPicado(g, o, 930, SKYLINE - 124, 5)
+        marigoldString(g, o, 910, SKYLINE - 124, 6)
         observatory(g, o, 1490)
       },
       layer2: (g, o, windows) => {
-        torreLatino(g, o, 320, windows)
-        angelColumn(g, o, 800)
-        revolutionDome(g, o, 1200)
-        rooftopPool(g, o, 1000, SKYLINE - 152)
+        qutubMinar(g, o, 320, windows)
+        mughalTomb(g, o, 860, windows)
+        rooftopPool(g, o, 1180, SKYLINE - 152)
       },
       layer3: (g, o, windows) => {
-        stepPyramid(g, o, 300)
-        papelPicado(g, o, 620, SKYLINE - 104, 6)
-        papelPicado(g, o, 1420, SKYLINE - 88, 5)
+        indiaGate(g, o, 300)
+        lotusTemple(g, o, 760)
+        marigoldString(g, o, 1080, SKYLINE - 104, 6)
+        marigoldString(g, o, 1440, SKYLINE - 88, 5)
       },
     },
 
@@ -4580,7 +4626,7 @@
     return out
   }
 
-  const CITY_ORDER = ['newyork', 'tokyo', 'mexico', 'paris', 'dubai']
+  const CITY_ORDER = ['newyork', 'tokyo', 'delhi', 'paris', 'dubai']
 
   /* Tokyo is the shot the page opens on — a sakura night, and the
      interface themes to it (see the per-city blocks in the CSS). New

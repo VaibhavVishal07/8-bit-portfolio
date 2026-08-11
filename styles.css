@@ -1344,7 +1344,7 @@ html[data-mode='day'] .copyright { color: #7c6a86; }
 
    New York is the authored default and needs no block: the base :root
    palette IS Manhattan. The four departures each pull from their own
-   scenery — Tokyo's sakura, Mexico's sodium, Paris's gold, Dubai's
+   scenery — Tokyo's sakura, Delhi's sodium, Paris's gold, Dubai's
    teal-and-gold — and are scoped away from day mode so that palette
    still wins when the screen goes light. */
 html[data-city='tokyo']:not([data-mode='day']) {
@@ -1370,26 +1370,31 @@ html[data-city='tokyo']:not([data-mode='day']) {
   --wm-outline: #1c0518;
 }
 
-html[data-city='mexico']:not([data-mode='day']) {
-  --panel: #0c1330;
-  --panel-bar: #172247;
-  --panel-edge: #4ad2c8;
-  --panel-accent: #ff6a3a;
-  --panel-dim: #6f6a8a;
-  --panel-text: #ffe2c2;
-  --panel-quiet: #b09a8a;
-  --panel-lift: rgba(74, 210, 200, 0.28);
-  --panel-cast-1: rgba(255, 122, 26, 0.40);
+html[data-city='delhi']:not([data-mode='day']) {
+  --panel: #171030;
+  --panel-bar: #241640;
+  --panel-edge: #ff9a2a;
+  --panel-accent: #2fae52;
+  --panel-dim: #7a6a5a;
+  --panel-text: #ffe6c2;
+  --panel-quiet: #b09a86;
+  --panel-lift: rgba(255, 154, 42, 0.26);
+  --panel-cast-1: rgba(47, 174, 82, 0.36);
   --gold: #ffca3a;
-  --leaf: #5fd66f;
-  --moon: #ffd8a8;
-  --wm-face: #ffca3a;
-  --wm-face-b: #fff0c8;
-  --wm-fringe-r: #4ad2c8;
-  --wm-fringe-l: #ff5c8a;
-  --wm-ext-1: #c26a1a;
-  --wm-ext-2: #7a3a12;
-  --wm-ext-3: #3a1c08;
+  --leaf: #2fae52;
+  --moon: #ffe0b0;
+  /* The gold face read muddy against the warm panel. White instead,
+     flashing to a light warm cream, with only a faint saffron/green
+     misregistration either side — bright and legible first, Indian
+     second. The extrusion stays warm and dark so the white face lifts
+     off it. */
+  --wm-face: #ffffff;
+  --wm-face-b: #ffe6a8;
+  --wm-fringe-r: #7fdca8;
+  --wm-fringe-l: #ffbcd2;
+  --wm-ext-1: #c27a1a;
+  --wm-ext-2: #7a4a12;
+  --wm-ext-3: #3a2408;
   --wm-outline: #180e06;
 }
 
@@ -1449,10 +1454,10 @@ html[data-city='tokyo']:not([data-mode='day']) .col {
   filter: drop-shadow(10px 10px 0 rgba(2, 1, 6, 0.75)) drop-shadow(14px 14px 0 rgba(196, 88, 255, 0.16));
 }
 
-html[data-city='mexico']:not([data-mode='day']) .col {
-  border-image-source: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%234ad2c8'%3E%3Crect x='3' y='0' width='3' height='3'/%3E%3Crect x='3' y='3' width='3' height='3'/%3E%3Crect x='0' y='3' width='3' height='3'/%3E%3Crect x='6' y='0' width='6' height='3'/%3E%3Crect x='12' y='0' width='3' height='3'/%3E%3Crect x='12' y='3' width='3' height='3'/%3E%3Crect x='15' y='3' width='3' height='3'/%3E%3Crect x='0' y='6' width='3' height='6'/%3E%3Crect x='15' y='6' width='3' height='6'/%3E%3Crect x='3' y='12' width='3' height='3'/%3E%3Crect x='3' y='15' width='3' height='3'/%3E%3Crect x='0' y='12' width='3' height='3'/%3E%3Crect x='6' y='15' width='6' height='3'/%3E%3Crect x='12' y='12' width='3' height='3'/%3E%3Crect x='12' y='15' width='3' height='3'/%3E%3Crect x='15' y='12' width='3' height='3'/%3E%3C/g%3E%3C/svg%3E");
-  box-shadow: inset 3px 3px 0 0 rgba(74, 210, 200, 0.18), inset -3px -3px 0 0 rgba(0, 0, 0, 0.8);
-  filter: drop-shadow(10px 10px 0 rgba(2, 1, 6, 0.75)) drop-shadow(14px 14px 0 rgba(255, 106, 58, 0.16));
+html[data-city='delhi']:not([data-mode='day']) .col {
+  border-image-source: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%23ff9a2a'%3E%3Crect x='3' y='0' width='3' height='3'/%3E%3Crect x='3' y='3' width='3' height='3'/%3E%3Crect x='0' y='3' width='3' height='3'/%3E%3Crect x='6' y='0' width='6' height='3'/%3E%3Crect x='12' y='0' width='3' height='3'/%3E%3Crect x='12' y='3' width='3' height='3'/%3E%3Crect x='15' y='3' width='3' height='3'/%3E%3Crect x='0' y='6' width='3' height='6'/%3E%3Crect x='15' y='6' width='3' height='6'/%3E%3Crect x='3' y='12' width='3' height='3'/%3E%3Crect x='3' y='15' width='3' height='3'/%3E%3Crect x='0' y='12' width='3' height='3'/%3E%3Crect x='6' y='15' width='6' height='3'/%3E%3Crect x='12' y='12' width='3' height='3'/%3E%3Crect x='12' y='15' width='3' height='3'/%3E%3Crect x='15' y='12' width='3' height='3'/%3E%3C/g%3E%3C/svg%3E");
+  box-shadow: inset 3px 3px 0 0 rgba(255, 154, 42, 0.18), inset -3px -3px 0 0 rgba(0, 0, 0, 0.8);
+  filter: drop-shadow(10px 10px 0 rgba(2, 1, 6, 0.75)) drop-shadow(14px 14px 0 rgba(47, 174, 82, 0.16));
 }
 
 html[data-city='paris']:not([data-mode='day']) .col {
@@ -1538,7 +1543,7 @@ html[data-city='dubai']:not([data-mode='day']) .col {
 }
 
 /* Pushes the caret to the right edge so the label ranges left however
-   long the city name is — MEXICO CITY is twice NEW YORK. */
+   long the city name is — NEW DELHI runs longer than NEW YORK. */
 .picker > .btn .btn__label {
   flex: 1;
   text-align: center;
