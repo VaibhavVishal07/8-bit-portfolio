@@ -6590,43 +6590,128 @@
       const cx = x0 + i * CAR_W
       if (cx > W || cx + CAR_W < 0) continue
       const lead = i === CARS - 1
+      const bayW = 13
 
+      // ---- the shell ----
       ctx.fillStyle = T.train
       ctx.fillRect(cx, top, body, CAR_H)
       ctx.fillStyle = T.trainLit
       ctx.fillRect(cx, top, body, 2) // roof catches the sky
-      ctx.fillRect(cx, top, 1, CAR_H)
+      ctx.fillRect(cx, top, 1, CAR_H) // lit left corner
       ctx.fillStyle = T.trainDark
-      ctx.fillRect(cx, top + CAR_H - 4, body, 4) // skirt
-      ctx.fillRect(cx + body - 1, top, 1, CAR_H)
+      ctx.fillRect(cx, top + CAR_H - 4, body, 4) // underframe fascia
+      ctx.fillRect(cx + body - 1, top, 1, CAR_H) // shaded right corner
 
-      // roof rib, and the ventilators along it
+      /* ---- the gangway to the car behind ----
+         The six-pixel gap between two bodies is the coupling, and a
+         concertina bellows bridges it. Ribbed, and a shade darker than
+         the cars, so the train reads as jointed rather than as one long
+         extrusion. Not on the rearmost car, which has an open coupler. */
+      if (i > 0) {
+        ctx.fillStyle = T.trainDark
+        ctx.fillRect(cx - 6, top + 4, 6, CAR_H - 8)
+        ctx.fillStyle = T.train
+        for (let g = top + 5; g < top + CAR_H - 4; g += 2) ctx.fillRect(cx - 6, g, 6, 1)
+        ctx.fillStyle = T.trainLit
+        ctx.fillRect(cx - 1, top + 4, 1, CAR_H - 8)
+      }
+
+      // ---- roof: cantrail, ventilators, and two air-conditioning units ----
       ctx.fillStyle = T.trainDark
-      ctx.fillRect(cx + 4, top + 2, body - 8, 1)
-      for (let k = 0; k < 4; k++) ctx.fillRect(cx + 8 + k * 16, top + 3, 6, 1)
+      ctx.fillRect(cx + 2, top + 3, body - 4, 1) // cantrail shadow
+      for (let k = 0; k < 6; k++) ctx.fillRect(cx + 6 + k * 11, top + 4, 3, 1) // vents
+      for (const ax of [cx + 11, cx + body - 25]) {
+        ctx.fillStyle = T.trainLit
+        ctx.fillRect(ax, top + 1, 14, 2) // raised A/C housing
+        ctx.fillStyle = T.trainDark
+        for (let gx = 0; gx < 14; gx += 2) ctx.fillRect(ax + gx, top + 2, 1, 2) // grille
+      }
 
-      // Windows. A few blink as passengers pass them.
+      // ---- body rails: a bright line above the glass, a shadow below ----
+      ctx.fillStyle = T.trainLit
+      ctx.fillRect(cx + 1, top + 6, body - 2, 1)
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(cx + 1, top + 20, body - 2, 1)
+
+      // ---- five bays: glass, doors, and (on the lead car) the cab ----
       for (let k = 0; k < 5; k++) {
-        const litWin = (frame * 3 + i * 7 + k * 13) % 47 > 5
-        ctx.fillStyle = litWin ? T.trainWin : T.trainDark
-        ctx.fillRect(cx + 5 + k * 13, top + 7, 10, 12)
-        if (litWin && (i + k) % 3 === 0) {
-          ctx.fillStyle = T.trainDark // a passenger at the glass
-          ctx.fillRect(cx + 8 + k * 13, top + 12, 4, 7)
+        const wx = cx + 5 + k * bayW
+        const lit = (frame * 3 + i * 7 + k * 13) % 47 > 5
+
+        if (lead && k === 4) {
+          // the cab windscreen, with the driver at it
+          ctx.fillStyle = T.trainDark
+          ctx.fillRect(wx - 1, top + 6, 12, 14)
+          ctx.fillStyle = T.trainWin
+          ctx.fillRect(wx, top + 7, 10, 9)
+          ctx.fillStyle = T.trainDark
+          ctx.fillRect(wx + 5, top + 7, 1, 9) // centre pillar
+          ctx.fillRect(wx + 2, top + 11, 3, 5) // driver
+          continue
+        }
+
+        if (k === 1 || k === 3) {
+          // a double-leaf sliding door
+          ctx.fillStyle = T.trainDark
+          ctx.fillRect(wx - 1, top + 6, 12, 15)
+          ctx.fillStyle = T.train
+          ctx.fillRect(wx, top + 7, 10, 13)
+          ctx.fillStyle = T.trainDark
+          ctx.fillRect(wx, top + 7, 1, 13)
+          ctx.fillRect(wx + 5, top + 7, 1, 13) // leaf seam
+          ctx.fillRect(wx + 9, top + 7, 1, 13)
+          ctx.fillStyle = lit ? T.trainWin : T.trainDark
+          ctx.fillRect(wx + 1, top + 8, 3, 5) // door glass
+          ctx.fillRect(wx + 6, top + 8, 3, 5)
+          ctx.fillStyle = T.trainStripe
+          ctx.fillRect(wx, top + 20, 10, 1) // threshold
+          continue
+        }
+
+        // a passenger window: frame, glass, ceiling strip, seats, a pole
+        ctx.fillStyle = T.trainDark
+        ctx.fillRect(wx, top + 6, 11, 14)
+        ctx.fillStyle = lit ? T.trainWin : T.trainDark
+        ctx.fillRect(wx + 1, top + 7, 9, 12)
+        if (lit) {
+          ctx.fillStyle = T.trainLit
+          ctx.fillRect(wx + 1, top + 7, 9, 1) // lit ceiling
+          ctx.fillStyle = T.trainDark
+          ctx.fillRect(wx + 1, top + 16, 9, 3) // seat backs
+          ctx.fillRect(wx + 5, top + 8, 1, 8) // grab pole
+          if ((i + k + (frame >> 3)) % 3 === 0) ctx.fillRect(wx + 2, top + 11, 3, 8) // a passenger
         }
       }
 
-      // door seams, and the neon stripe running the length of the train
+      // ---- rivet lines between the bays ----
       ctx.fillStyle = T.trainDark
-      ctx.fillRect(cx + 2, top + 5, 1, CAR_H - 9)
-      ctx.fillRect(cx + body - 3, top + 5, 1, CAR_H - 9)
+      for (let k = 0; k <= 5; k++) ctx.fillRect(cx + 4 + k * bayW, top + 6, 1, 14)
+
+      // ---- the livery band, with a highlight above it ----
       ctx.fillStyle = T.trainStripe
       ctx.fillRect(cx, top + CAR_H - 7, body, 2)
+      ctx.fillStyle = T.trainLit
+      ctx.fillRect(cx, top + CAR_H - 8, body, 1)
 
-      // bogies, tucked under the skirt
-      ctx.fillStyle = T.trainDark
-      ctx.fillRect(cx + 9, top + CAR_H, 14, 3)
-      ctx.fillRect(cx + body - 23, top + CAR_H, 14, 3)
+      // ---- under-floor equipment boxes, slung between the bogies ----
+      for (const ex of [cx + 6, cx + 27, cx + body - 20]) {
+        ctx.fillStyle = T.trainDark
+        ctx.fillRect(ex, top + CAR_H, 12, 4)
+        ctx.fillStyle = T.train
+        ctx.fillRect(ex, top + CAR_H, 12, 1)
+        for (let lv = 0; lv < 12; lv += 3) { ctx.fillStyle = T.trainDark; ctx.fillRect(ex + lv, top + CAR_H + 2, 1, 2) } // louvres
+      }
+
+      // ---- bogies: frame, two wheels and an axlebox glint each ----
+      for (const bx of [cx + 9, cx + body - 23]) {
+        ctx.fillStyle = T.trainDark
+        ctx.fillRect(bx, top + CAR_H + 1, 15, 2)
+        ctx.fillRect(bx + 1, top + CAR_H + 2, 4, 4)
+        ctx.fillRect(bx + 10, top + CAR_H + 2, 4, 4)
+        ctx.fillStyle = T.trainLit
+        ctx.fillRect(bx + 2, top + CAR_H + 3, 1, 1)
+        ctx.fillRect(bx + 11, top + CAR_H + 3, 1, 1)
+      }
 
       // pantograph, reaching up to the contact wire
       if (i % 5 === 2) {
@@ -6643,11 +6728,19 @@
       }
 
       if (!lead) continue
-      // destination board and headlights
+      // ---- the cab end: destination board, headlights, a red marker ----
+      const nx = cx + body
       ctx.fillStyle = T.trainHead
-      ctx.fillRect(cx + body - 22, top + 4, 16, 2)
-      ctx.fillRect(cx + body - 5, top + 18, 4, 4)
-      ctx.fillRect(cx + body - 5, top + CAR_H - 12, 4, 3)
+      ctx.fillRect(nx - 22, top + 3, 17, 2) // destination board
+      ctx.fillStyle = T.trainDark
+      for (let k = 0; k < 5; k++) ctx.fillRect(nx - 20 + k * 4, top + 3, 1, 2) // route digits
+      ctx.fillStyle = T.trainHead
+      ctx.fillRect(nx - 5, top + 17, 4, 3) // upper headlight
+      ctx.fillRect(nx - 5, top + CAR_H - 11, 4, 3) // lower headlight
+      ctx.fillStyle = '#ff5a4a'
+      ctx.fillRect(nx - 5, top + 22, 2, 2) // red tail marker
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(nx - 2, top + CAR_H - 2, 3, 3) // coupler nub
       // beam thrown forward along the deck
       for (let k = 0; k < 46; k++) {
         const bx = cx + body + k
