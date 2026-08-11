@@ -640,6 +640,30 @@
     })
   }
 
+  /* ---- scroll from anywhere ----
+     The column is the only thing on the page that takes pointer events;
+     everything either side of it is the scene, deliberately, so a click
+     out there lands on the city. But a WHEEL out there used to fall
+     through and scroll nothing, which reads as the page being stuck.
+
+     Forward the wheel to whichever page is open — but only when the
+     pointer is outside that page. Inside it the browser is already
+     scrolling the column, and handling it again here would move it
+     twice as far per notch. deltaMode is honoured so a mouse that
+     reports lines or pages rather than pixels still travels right. */
+  window.addEventListener(
+    'wheel',
+    (e) => {
+      const page = document.querySelector('.page.is-on')
+      if (!page || page.scrollHeight <= page.clientHeight) return
+      if (page.contains(e.target)) return
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? page.clientHeight : 1
+      page.scrollTop += e.deltaY * unit
+      e.preventDefault()
+    },
+    { passive: false }
+  )
+
   const rainBtn = document.getElementById('rainToggle')
 
   if (rainBtn && window.__scene) {
