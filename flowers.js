@@ -563,10 +563,14 @@
      Everything else is sampled against it: blooms, leaves, buds and
      fallen petals are all thrown at the rectangle and kept in
      proportion to how well covered they land.
+
+     What comes back is not one picture. The bed — leaves, buds, the
+     petals lying on the floor — is baked into a single layer, and
+     every flowering stem is drawn into a little sprite of its own that
+     knows where its bloom sits. That is what lets the garland part
+     around a cursor without re-drawing two hundred blooms a frame.
      ================================================================== */
-  function garland(buf, def, geo) {
-    const W = buf.w
-    const H = buf.h
+  function garland(W, H, def, geo) {
     const rnd = rng(def.seed)
     const P = rampOf(def.petal)
     const C = rampOf(def.core)
@@ -574,6 +578,8 @@
     const S = rampOf(def.stem)
     const Lback = L.slice(0, Math.max(3, L.length - 2))
     const form = FORMS[def.form]
+    const bed = buffer(W, H)
+    const plants = []
 
     const cover = (x, y) => {
       const base = 1 - (H - y) / geo.baseDepth
@@ -631,7 +637,7 @@
       if (c <= 0.02 || rnd() > Math.pow(c, 0.75)) continue
       const a = outward(x, y) + Math.PI + (rnd() - 0.5) * 2.2
       const len = def.size[1] * (0.9 + rnd() * 1.1)
-      leaf(buf, x, y, a, len, len * 0.30, Lback, {
+      leaf(bed, x, y, a, len, len * 0.30, Lback, {
         base: -0.10 + c * 0.10,
         veins: 5,
         serr: def.leafSerr,
@@ -642,7 +648,12 @@
        Sorted top to bottom and drawn in that order, so a bloom lower
        down the column covers the one behind it. Anything toward the
        top of the band is also pushed a step down the ramp: distance,
-       done the way the skyline does it. */
+       done the way the skyline does it.
+
+       Each stem goes into its own buffer rather than straight onto the
+       bed. The buffer is sized off the plant it holds, so a sprite is
+       a few dozen pixels square and two hundred of them cost less to
+       composite than one of them costs to re-draw. */
     spots.sort((a, b) => a.y - b.y)
     for (let i = 0; i < spots.length; i++) {
       const s = spots[i]
@@ -652,38 +663,65 @@
       const cos = Math.cos(out)
       const sin = Math.sin(out)
 
-      // the stem it stands on, coming in from outside the band
+      // everything the plant is made of, decided before it is drawn,
+      // because the sprite has to be cut to fit it
       const reach = s.R * (1.9 + rnd() * 1.8)
-      stem(buf, s.x + cos * reach, s.y + sin * reach, s.x, s.y,
-        (rnd() - 0.5) * 2.4, S, s.R > 8 ? 2 : 1)
+      const bend = (rnd() - 0.5) * 2.4
+      const count = 1 + (rnd() < 0.5 ? 1 : 0)
+      const leaves = []
+      for (let k = 0; k < count; k++) {
+        leaves.push({
+          t: 0.35 + rnd() * 0.45,
+          side: k % 2 ? 1 : -1,
+          len: s.R * (0.9 + rnd() * 0.8),
+          lean: 0.7 + rnd() * 0.5,
+        })
+      }
+
+      const footX = s.x + cos * reach
+      const footY = s.y + sin * reach
+      const pad = s.R * 2.2 + 8
+      const ox = Math.floor(Math.min(s.x, footX) - pad)
+      const oy = Math.floor(Math.min(s.y, footY) - pad)
+      const sw = Math.ceil(Math.max(s.x, footX) + pad) - ox
+      const sh = Math.ceil(Math.max(s.y, footY) + pad) - oy
+      if (sw <= 0 || sh <= 0) continue
+      const sub = buffer(sw, sh)
+
+      // the stem it stands on, coming in from outside the band
+      stem(sub, footX - ox, footY - oy, s.x - ox, s.y - oy, bend, S, s.R > 8 ? 2 : 1)
 
       // a leaf or two on that stem, in the full ramp this time
-      const leaves = 1 + (rnd() < 0.5 ? 1 : 0)
-      for (let k = 0; k < leaves; k++) {
-        const t = 0.35 + rnd() * 0.45
-        const lx = s.x + cos * reach * t
-        const ly = s.y + sin * reach * t
-        const side = k % 2 ? 1 : -1
-        const len = s.R * (0.9 + rnd() * 0.8)
-        leaf(buf, lx, ly, out + Math.PI + side * (0.7 + rnd() * 0.5), len, len * 0.32, L, {
+      for (const lf of leaves) {
+        const lx = s.x + cos * reach * lf.t - ox
+        const ly = s.y + sin * reach * lf.t - oy
+        leaf(sub, lx, ly, out + Math.PI + lf.side * lf.lean, lf.len, lf.len * 0.32, L, {
           base: dim, veins: 5, serr: def.leafSerr,
         })
       }
 
-      form(buf, s.x, s.y, s.R, P, C, rnd, dim)
+      form(sub, s.x - ox, s.y - oy, s.R, P, C, rnd, dim)
+
+      plants.push({
+        buf: sub, ox: ox, oy: oy,
+        // the bloom's own centre, which is what a cursor is measured to
+        cx: s.x, cy: s.y, R: s.R,
+        dx: 0, dy: 0,
+      })
     }
 
     /* ---- buds and fallen petals ----
        The small stuff that fills the gaps between blooms. A garland
        that is all open flowers reads as a pattern; the half-open ones,
        and the few petals lying on the bottom edge, are what make it
-       read as a heap. */
+       read as a heap. These stay in the bed: they are the litter the
+       flowers stand in, and litter does not flinch. */
     for (let i = 0; i < 900; i++) {
       const x = -4 + rnd() * (W + 8)
       const y = H + 2 - rnd() * (geo.armRise + 4)
       const c = cover(x, y)
       if (c <= 0.06 || rnd() > Math.pow(c, 1.5) * 0.22) continue
-      bud(buf, x, y, def.size[0] * (0.34 + rnd() * 0.26), P, S, rnd, -0.06,
+      bud(bed, x, y, def.size[0] * (0.34 + rnd() * 0.26), P, S, rnd, -0.06,
         outward(x, y) + Math.PI + (rnd() - 0.5) * 1.4)
     }
 
@@ -692,10 +730,12 @@
       const y = H + 2 - rnd() * (geo.baseDepth * 0.55)
       if (cover(x, y) < 0.5 || rnd() > 0.22) continue
       const len = def.size[0] * (0.42 + rnd() * 0.34)
-      petal(buf, x, y, rnd() * TAU, len, len * 0.60, P, {
+      petal(bed, x, y, rnd() * TAU, len, len * 0.60, P, {
         prof: PROFILE.round, notch: def.form === 'blossom', tipBias: 0.8, base: -0.04,
       })
     }
+
+    return { bed: bed, plants: plants }
   }
 
   /* ==================================================================
@@ -707,6 +747,157 @@
   col.appendChild(canvas)
 
   const src = document.createElement('canvas')
+  const srcCtx = src.getContext('2d')
+
+  /* One canvas per sprite, cut once. Compositing is then two hundred
+     drawImage calls of a few dozen pixels each, which is cheap enough
+     to do on every step of the parting. */
+  function toCanvas(b) {
+    const c = document.createElement('canvas')
+    c.width = b.w
+    c.height = b.h
+    c.getContext('2d').putImageData(new ImageData(b.data, b.w, b.h), 0, 0)
+    return c
+  }
+
+  let bedCanvas = null
+  let plants = []
+  let artW = 0
+  let artH = 0
+
+  function paint() {
+    if (!bedCanvas) return
+    srcCtx.clearRect(0, 0, artW, artH)
+    srcCtx.drawImage(bedCanvas, 0, 0)
+    for (let i = 0; i < plants.length; i++) {
+      const p = plants[i]
+      srcCtx.drawImage(p.canvas, p.ox + p.dx, p.oy + p.dy)
+    }
+    const g = canvas.getContext('2d')
+    g.imageSmoothingEnabled = false
+    g.clearRect(0, 0, canvas.width, canvas.height)
+    g.drawImage(src, 0, 0, canvas.width, canvas.height)
+  }
+
+  /* ==================================================================
+     THE PARTING
+
+     Bring a cursor up to the garland and the flowers near it lean
+     away, then stand back up when it leaves. It is the one piece of
+     this page that answers to the mouse directly, so it has to behave
+     like everything else here: it steps at twelve frames a second, it
+     moves in whole art pixels, and it does not ease.
+
+     Only the flowering stems move. The bed they stand in — the
+     leaves, the buds, the petals on the floor — is one baked layer and
+     stays put, which is also what keeps the effect cheap.
+     ================================================================== */
+  const STILL = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+  // how near the cursor has to be before a bloom notices, and how far
+  // it will go to get out of the way — both in art pixels
+  const REACH = 52
+  const SHOVE = 8
+  // a bloom leans sideways more readily than it lifts, because a stem
+  // bends and does not jump
+  const RISE = 0.62
+  const FPS = 12
+  const STEP = 2
+
+  let pointerX = null
+  let pointerY = null
+  let running = false
+  let lastStep = 0
+
+  function targets() {
+    if (pointerX === null || !plants.length) return false
+    const r = canvas.getBoundingClientRect()
+    if (!r.width || !r.height) return false
+    // client space to art space
+    const ax = ((pointerX - r.left) / r.width) * artW
+    const ay = ((pointerY - r.top) / r.height) * artH
+    // a cursor nowhere near the strip is the common case, so leave early
+    const near = pointerX >= r.left - 80 && pointerX <= r.right + 80 &&
+                 pointerY >= r.top - 80 && pointerY <= r.bottom + 80
+    for (let i = 0; i < plants.length; i++) {
+      const p = plants[i]
+      p.tx = 0
+      p.ty = 0
+      if (!near) continue
+      const gx = p.cx - ax
+      const gy = p.cy - ay
+      const d = Math.sqrt(gx * gx + gy * gy)
+      if (d >= REACH) continue
+      const f = 1 - d / REACH
+      const push = SHOVE * f * f
+      // dead centre gives no direction to run in, so pick one
+      const ux = d < 0.001 ? 0.7 : gx / d
+      const uy = d < 0.001 ? -0.7 : gy / d
+      p.tx = Math.round(ux * push)
+      p.ty = Math.round(uy * push * RISE)
+    }
+    return true
+  }
+
+  function step() {
+    let moved = false
+    for (let i = 0; i < plants.length; i++) {
+      const p = plants[i]
+      const wx = p.tx || 0
+      const wy = p.ty || 0
+      if (p.dx !== wx) {
+        const d = wx - p.dx
+        p.dx += Math.sign(d) * Math.min(STEP, Math.abs(d))
+        moved = true
+      }
+      if (p.dy !== wy) {
+        const d = wy - p.dy
+        p.dy += Math.sign(d) * Math.min(STEP, Math.abs(d))
+        moved = true
+      }
+    }
+    return moved
+  }
+
+  function tick(t) {
+    if (t - lastStep >= 1000 / FPS) {
+      lastStep = t
+      targets()
+      /* Nothing moved this step, so the garland is wherever it was asked
+         to be and there is no work left. Stop — a pointer resting near a
+         flower is a settled state, not an animation. The next move, or
+         the next scroll, wakes it. */
+      if (step()) paint()
+      else { running = false; return }
+    }
+    requestAnimationFrame(tick)
+  }
+
+  function wake() {
+    if (running || STILL.matches) return
+    running = true
+    lastStep = 0
+    requestAnimationFrame(tick)
+  }
+
+  if (!STILL.matches) {
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return
+      pointerX = e.clientX
+      pointerY = e.clientY
+      wake()
+    }, { passive: true })
+
+    /* Pointer gone from the window: everything stands back up, and the
+       loop is allowed to stop once it has. */
+    document.addEventListener('pointerleave', () => { pointerX = null; pointerY = null; wake() })
+
+    /* Scrolling moves the strip out from under a stationary cursor, so
+       the garland has to be asked again where the cursor now is. */
+    const scroller = col.closest('.page')
+    if (scroller) scroller.addEventListener('scroll', wake, { passive: true })
+    window.addEventListener('blur', () => { pointerX = null; pointerY = null; wake() })
+  }
 
   function build() {
     const root = document.documentElement
@@ -720,6 +911,8 @@
     col.classList.toggle('col--bare', !def)
     if (!def) {
       canvas.style.display = 'none'
+      bedCanvas = null
+      plants = []
       return
     }
     canvas.style.display = 'block'
@@ -733,35 +926,48 @@
     const cssW = col.clientWidth
     if (cssW < 80) return
     const W = Math.ceil(cssW / SCALE)
+
+    /* GAP is clear air, held between the top of the drift and whatever
+       is above it. Without it the garland grows to fill whatever room
+       the padding gives it and ends up touching the copyright again —
+       the padding says how much room there is, this says how much of
+       that room stays empty. */
+    const GAP = 14
     /* The drift grows up from the bottom edge, and a bloom sitting at
        the top of it sticks out by its own radius — so the band stops one
        bloom short of the padding rather than filling it, which is what
        keeps a clear gap under the copyright line. */
-    const baseDepth = Math.max(14, Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1]))
+    const baseDepth = Math.max(14, Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP))
     /* Same allowance sideways, at half strength: a bloom on the inner
        lip of an arm should mostly sit in the padding, but a few breaking
        the line is what stops the arms reading as two ruled stripes. On a
        phone the side padding is 16px and this collapses to just about
        exactly that. */
-    const armDepth = clamp(Math.round(parseFloat(cs.paddingLeft) / SCALE - def.size[1] * 0.5), 8, 34)
+    const armDepth = clamp(
+      Math.round(parseFloat(cs.paddingLeft) / SCALE - def.size[1] * 0.5 - GAP * 0.4), 8, 34)
     const armRise = Math.round(Math.min(cssW * 0.46, 400) / SCALE)
     const H = Math.max(baseDepth, armRise) + 2
 
-    const buf = buffer(W, H)
-    garland(buf, def, { baseDepth: baseDepth, armDepth: armDepth, armRise: armRise })
+    artW = W
+    artH = H
+    const built = garland(W, H, def, { baseDepth: baseDepth, armDepth: armDepth, armRise: armRise })
+    bedCanvas = toCanvas(built.bed)
+    plants = built.plants.map((p) => ({
+      canvas: toCanvas(p.buf),
+      ox: p.ox, oy: p.oy, cx: p.cx, cy: p.cy,
+      dx: 0, dy: 0, tx: 0, ty: 0,
+    }))
 
     src.width = W
     src.height = H
-    src.getContext('2d').putImageData(new ImageData(buf.data, W, H), 0, 0)
+    srcCtx.imageSmoothingEnabled = false
 
     const up = Math.max(1, Math.round(SCALE * Math.min(2, window.devicePixelRatio || 1)))
     canvas.width = W * up
     canvas.height = H * up
     canvas.style.height = (H * SCALE) + 'px'
-    const g = canvas.getContext('2d')
-    g.imageSmoothingEnabled = false
-    g.clearRect(0, 0, canvas.width, canvas.height)
-    g.drawImage(src, 0, 0, canvas.width, canvas.height)
+    paint()
+    wake()
   }
 
   let queued = 0

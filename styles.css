@@ -4695,7 +4695,7 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   /* So the canvas can sit at a negative z-index — above the panel and
      its inset lighting, under every word in the column. */
   isolation: isolate;
-  padding-bottom: 124px;
+  padding-bottom: 156px;
 }
 .col__flowers {
   position: absolute;
@@ -4706,6 +4706,63 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   pointer-events: none;
   image-rendering: pixelated;
 }
+/* ==================================================================
+   THE MODAL READS IN SATOSHI
+
+   The column was set in the two machine faces: Press Start for every
+   label and marker, JetBrains Mono for every sentence. That is the
+   right voice for a boot screen and the wrong one for the page you
+   land on — a whole column of pixel type and monospace prose is a lot
+   of costume to read through before you get to what somebody does.
+
+   So the modal reads in Satoshi. The wordmark does not: it is the
+   logo, it is the one thing here that IS the machine, and it keeps
+   the pixel face it was drawn in. Everything else — the role line,
+   the prose, the section markers, the writing list, the shelf, the
+   contact labels, the copyright — comes over.
+
+   The tracking comes off with the pixel face. Press Start is drawn on
+   a grid and needs a pixel or two of air between letters; a geometric
+   sans is drawn with its own sidebearings and looks broken when you
+   add them. The markers keep a little, because they are still small
+   uppercase labels and small uppercase always wants some.
+   ================================================================== */
+.page--home .col,
+.page--home .col p,
+.page--home .col b,
+.page--home .col i,
+.page--home .col a,
+.page--home .col li,
+.page--home .col span,
+.page--home .col h2 { font-family: var(--font-read); }
+
+/* the logo stays the machine */
+.page--home .wordmark,
+.page--home .wordmark span { font-family: var(--font-display); }
+
+/* ---- the labels, re-tracked for a sans ---- */
+.page--home .sect {
+  font-size: var(--b1);
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+.page--home .shelf span {
+  font-size: var(--b1);
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+.page--home .shelf b { font-weight: 600; }
+.page--home .links__name {
+  font-size: var(--b1);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.page--home .copyright {
+  font-size: var(--b1);
+  letter-spacing: 0.4px;
+}
+.page--home .reads__meta { letter-spacing: 0.2px; }
+
 /* No garland — New York, or day, where the whole city theme is off.
    Close the reserve up rather than leave a hole under the copyright. */
 .page--home .col--bare { padding-bottom: var(--s6); }
@@ -4793,5 +4850,5 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   background: var(--row, var(--panel-edge));
 }
 @media (max-width: 760px) {
-  .page--home .col { padding-bottom: 96px; }
+  .page--home .col { padding-bottom: 120px; }
 }
