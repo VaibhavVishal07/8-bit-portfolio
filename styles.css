@@ -3282,6 +3282,158 @@ html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--
   .cs__meta { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ==================================================================
+   THE READING ROOM — the article L2
+
+   An essay is not a case study and should not wear its furniture. One
+   column, the reading face, a wide comfortable measure, and a plain
+   masthead: eyebrow, title, standfirst, a byline over a rule. Everything
+   ranges left — centred prose is a poster, and this is a page to read.
+   The body copy is clean placeholder set in the finished shape, so real
+   words drop straight in.
+   ================================================================== */
+.read { text-align: left; }
+
+.read__eyebrow {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--panel-accent);
+  margin: 0 0 var(--s5);
+}
+.read__sep { opacity: 0.45; margin: 0 2px; }
+
+.read__title {
+  font-family: var(--font-display);
+  font-size: var(--d4);
+  line-height: 1.32;
+  color: var(--cream);
+  margin: 0 0 var(--s5);
+  max-width: 18ch;
+}
+
+.read__standfirst {
+  font-family: var(--font-read);
+  font-size: var(--b4);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--panel-text);
+  margin: 0 0 var(--s5);
+  max-width: 44ch;
+}
+
+.read__byline {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  font-family: var(--font-body);
+  font-size: var(--b1);
+  letter-spacing: 0.5px;
+  color: var(--panel-quiet);
+}
+.read__by { color: var(--panel-text); font-weight: 500; }
+.read__dot { width: 4px; height: 4px; flex: none; background: var(--panel-dim); }
+
+.read__rule {
+  height: 2px;
+  background: var(--panel-dim);
+  margin: var(--s5) 0 var(--s6);
+}
+
+/* the body is the reading face at a real reading size */
+.read__body p {
+  font-family: var(--font-read);
+  font-size: 19px;
+  line-height: 1.75;
+  color: var(--cream);
+  margin: 0 0 var(--s5);
+  max-width: 62ch;
+}
+.read__body p:last-child { margin-bottom: 0; }
+.read__body h3 {
+  font-family: var(--font-display);
+  font-size: var(--d3);
+  line-height: 1.4;
+  color: var(--panel-edge);
+  margin: var(--s7) 0 var(--s4);
+}
+.read__body ul {
+  margin: 0 0 var(--s5);
+  padding-left: 1.3em;
+  max-width: 58ch;
+  list-style: square;
+}
+.read__body li {
+  font-family: var(--font-read);
+  font-size: 19px;
+  line-height: 1.7;
+  color: var(--cream);
+  margin: 0 0 var(--s2);
+}
+.read__body li::marker { color: var(--panel-accent); }
+.read__body blockquote {
+  margin: var(--s6) 0;
+  padding: var(--s1) 0 var(--s1) var(--s5);
+  border-left: 3px solid var(--panel-accent);
+  font-family: var(--font-read);
+  font-size: var(--b4);
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.45;
+  color: var(--panel-text);
+  max-width: 46ch;
+}
+
+/* a drop cap opens the body — one big letter in the reading face, in the
+   city's own edge colour, to say 'the reading starts here' */
+.read__lead::first-letter {
+  float: left;
+  font-family: var(--font-read);
+  font-weight: 700;
+  font-size: 3.1em;
+  line-height: 0.78;
+  padding: 5px 10px 0 0;
+  color: var(--panel-edge);
+}
+
+.read__end {
+  margin: var(--s6) 0 0;
+  font-size: 16px;
+  letter-spacing: 4px;
+  color: var(--panel-dim);
+}
+
+/* hands the reader the next piece — a tactile block like the rest of the
+   L2 furniture */
+.read__nav {
+  margin: var(--s6) 0 0;
+  padding-top: var(--s5);
+  border-top: 2px solid var(--panel-dim);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.read__nav__label {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 2px;
+  color: var(--panel-quiet);
+}
+.read__nav__link {
+  font-family: var(--font-read);
+  font-size: var(--b4);
+  font-weight: 500;
+  color: var(--cream);
+  text-decoration: none;
+  width: fit-content;
+}
+.read__nav__link:hover { color: var(--panel-edge); }
+
+@media (max-width: 760px) {
+  .read__body p, .read__body li { font-size: 17px; }
+  .read__lead::first-letter { font-size: 2.7em; }
+}
+
 /* ---- the measure ----
    Sixty-odd characters of monospace. Wider than this and the eye loses
    the line return; narrower and the ragged edge starts to fight the

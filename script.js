@@ -796,28 +796,54 @@
 
     function irisRun(id) {
       irisBusy = true
+      /* Freeze the city for the duration. The wipe covers it completely
+         at the midpoint, so a frozen scene is never seen — and with the
+         scene's heavy render off the main thread, the wipe animates at a
+         full frame rate instead of fighting it for the thread. That
+         contention was the whole reason it did not read as smooth. */
+      if (window.__scene && window.__scene.pause) window.__scene.pause(true)
       const W = window.innerWidth, H = window.innerHeight
       iris.width = W
       iris.height = H
       iris.classList.add('is-on')
       const ox = pointer.x, oy = pointer.y
       const maxR = Math.hypot(Math.max(ox, W - ox), Math.max(oy, H - oy)) + CELL * 3
-      const band = maxR * 0.16
-      const COVER = 210, HOLD = 30, REVEAL = 210
+      /* A wider dithered edge, so the pixel character of the wipe is
+         actually visible as it crosses rather than being a hard arc that
+         is over before the eye catches it. */
+      const band = maxR * 0.24
+      /* Longer, so the wipe reads as a deliberate movement — closing,
+         holding black, opening — instead of a flash. Still well under a
+         second door to door. */
+      const COVER = 300, HOLD = 90, REVEAL = 300
       const cols = Math.ceil(W / CELL), rows = Math.ceil(H / CELL)
-      let t0 = null, swapped = false
+      let t0 = null, swapped = false, released = false
 
       function draw(now) {
         if (t0 == null) t0 = now
         const e = now - t0
+        // ease the cover/reveal so the edge accelerates in and out rather
+        // than crossing at one flat speed — that is what reads as smooth
+        const ease = (p) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2)
         let coverR, holeR
-        if (e < COVER) { coverR = (e / COVER) * maxR; holeR = 0 }
+        if (e < COVER) { coverR = ease(e / COVER) * (maxR + band); holeR = 0 }
         else if (e < COVER + HOLD) { coverR = maxR + band; holeR = 0 }
-        else if (e < COVER + HOLD + REVEAL) { coverR = maxR + band; holeR = ((e - COVER - HOLD) / REVEAL) * (maxR + band) }
-        else { iris.classList.remove('is-on'); irisBusy = false; return }
+        else if (e < COVER + HOLD + REVEAL) { coverR = maxR + band; holeR = ease((e - COVER - HOLD) / REVEAL) * (maxR + band) }
+        else {
+          iris.classList.remove('is-on')
+          if (window.__scene && window.__scene.pause) window.__scene.pause(false)
+          irisBusy = false
+          return
+        }
 
         // swap the page while the frame is fully black
         if (!swapped && e >= COVER) { swapped = true; show(id) }
+        // let the city move again the instant the hole starts opening, so
+        // by the time it is uncovered it is already live under the reveal
+        if (!released && e >= COVER + HOLD && window.__scene && window.__scene.pause) {
+          released = true
+          window.__scene.pause(false)
+        }
 
         ictx.clearRect(0, 0, W, H)
         ictx.fillStyle = '#04030a'

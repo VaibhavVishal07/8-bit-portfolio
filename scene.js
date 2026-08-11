@@ -6115,6 +6115,13 @@
      ================================================================== */
   let frame = 0
   let last = 0
+  /* Held while a full-screen wipe is covering the city. The wipe runs its
+     own rAF, and the scene's render is the heaviest thing on the main
+     thread — letting it keep painting behind an opaque cover just steals
+     frames from the wipe and makes it stutter. The city moves at most a
+     few pixels a second, so freezing it for the ~half-second of a
+     transition is invisible and hands the whole thread to the wipe. */
+  let paused = false
 
   function blit(buf, offset, lift) {
     const o = ((offset % W) + W) % W
@@ -8609,6 +8616,12 @@
     },
     secret: () => secret,
 
+    /* Freeze the scene while a full-screen wipe covers it, so the wipe's
+       animation gets the main thread to itself. Off restores motion. */
+    pause(on) {
+      paused = !!on
+    },
+
     /* ---- reading mode ----
        Called by the router when it leaves home. The city dims and
        stops; coming back brings it up again. Both over half a second,
@@ -8645,6 +8658,11 @@
 
   function loop(t) {
     requestAnimationFrame(loop)
+    /* Held behind an opaque wipe: keep the last painted frame on screen
+       and do nothing else, so the wipe's own animation has the thread to
+       itself. `last` is banked so the content clock does not fire a burst
+       of catch-up ticks when the hold lifts. */
+    if (paused) { last = t; lastRaf = t; return }
     const dt = Math.min(120, lastRaf ? t - lastRaf : 1000 / 60)
     lastRaf = t
 
