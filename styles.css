@@ -4016,7 +4016,16 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   gap: var(--s4);
   padding: var(--s4) var(--s2);
   border-bottom: 2px solid var(--panel-dim);
+  /* Ranged left like the WRITING list below, not centred with the
+     masthead: the label reads down the left edge, the title follows
+     it, and the value sits out at the right. */
+  text-align: left;
 }
+
+/* The value column sits at the right of the row, so its text ranges
+   right — the same label-left / value-right split the writing rows
+   have. */
+.shelf i { text-align: right; }
 
 .shelf span {
   font-family: var(--font-display);
