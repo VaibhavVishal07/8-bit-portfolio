@@ -3114,12 +3114,15 @@ html:not([data-page='home']) .l2-home {
   display: inline-block;
   position: fixed;
   z-index: 7;
-  top: var(--s5);
-  left: var(--s5);
-  padding: var(--s3) var(--s4);
+  /* pinned to the foot of the frame, centred — the one way out of a
+     page, always in the same place */
+  bottom: var(--s5);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--s3) var(--s5);
   font-family: var(--font-display);
   font-size: var(--d2);
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   color: var(--panel-text);
   text-decoration: none;
   background: var(--panel);
@@ -3130,7 +3133,10 @@ html:not([data-page='home']) .l2-home {
   box-shadow: 4px 4px 0 var(--ink);
 }
 html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); background: var(--panel-bar); }
-html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+html:not([data-page='home']) .l2-home:active { transform: translateX(-50%) translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+/* room at the foot of every open page so its last line clears the
+   floating CLOSE button */
+html:not([data-page='home']) .col--doc { padding-bottom: calc(var(--s7) + var(--s6)); }
 
 /* ==================================================================
    THE CASE STUDY
@@ -3203,7 +3209,7 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 .cs__shot {
   position: relative;
   margin: 0;
-  aspect-ratio: 16 / 7;
+  aspect-ratio: 16 / 9;
   border: 2px solid var(--panel-dim);
   background-color: var(--panel);
   background-image: repeating-linear-gradient(45deg, var(--panel) 0 7px, var(--panel-bar) 7px 14px);
