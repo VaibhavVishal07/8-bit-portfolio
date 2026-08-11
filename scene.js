@@ -1107,7 +1107,41 @@
   let stage = 0
   let stageTo = 0
 
-  const drift = (i) => (DIV[i] ? -Math.floor(frame / DIV[i]) : 0)
+  /* ---- smooth parallax ----
+
+     The layers used to advance only on the 12fps content tick, in whole
+     logical pixels: `drift = -floor(frame / DIV)`. That is at most twelve
+     scroll positions a second, and for the slow layers a single-pixel
+     jump every half second — which is what read as choppy, however clean
+     each individual step was.
+
+     Motion is on its own clock now. `scrollT` is seconds of city motion
+     elapsed (it advances in loop(), stops in reading mode, and banks
+     across a wipe), and each layer's offset comes off that continuously.
+     The old per-frame speeds are preserved exactly — a layer that moved
+     one pixel every DIV frames at 12fps moves 12/DIV pixels a second — so
+     nothing travels faster or slower than before; it just updates far
+     more often.
+
+     The offset is still SNAPPED to the device-pixel grid (`* S` then
+     round, then back), because a fractional source rect with smoothing
+     off would shimmer. So the finest step is one device pixel — three
+     times finer than a logical pixel at S=3 — and the compositor repaints
+     the instant that step changes rather than waiting for the tick. The
+     content on the layers (window flicker, signage, the fire, the cat)
+     still steps at 12fps off `frame`: smooth scroll, stepped sprites. */
+  const SPEED = DIV.map((d) => (d ? 12 / d : 0)) // logical px/sec, = old 12/DIV
+  let scrollT = 0
+  const drift = (i) => (SPEED[i] ? -Math.round(scrollT * SPEED[i] * S) / S : 0)
+  // signature of every layer's device offset — changes the moment any
+  // layer crosses a whole device pixel, which is exactly when a repaint
+  // is worth doing
+  const driftSig = () => {
+    let s = 0
+    for (let i = 0; i < SPEED.length; i++) s = (s * 131 + Math.round(scrollT * SPEED[i] * S)) | 0
+    return s
+  }
+  let lastDriftSig = 0
 
   let roofLights = []
   let puddles = []
@@ -8326,7 +8360,7 @@
     if (flash) for (let y = 0; y < SKYLINE; y++) washRow(ctx, y, W, T.lightning, flash)
 
     if (T.stars && (weather === 'none' || snowLevel < 0.5)) drawStars()
-    blit(clouds, -Math.floor(frame / 7))
+    blit(clouds, -Math.round(scrollT * (12 / 7) * S) / S)
     if (flash > 0.5) drawBolt(strikeSeed)
     /* ---- the events ----
        Everything with a beginning and an end goes quiet in reading
@@ -8690,19 +8724,37 @@
 
     overlay(dt * live)
 
-    /* ONE reason to repaint: the 12fps content tick.
+    /* Two reasons to repaint, and keeping them straight is what stops
+       the interference that once read as jitter.
 
-       There used to be a second — a parallax layer having crossed a
-       whole pixel — which meant renders happened at two unrelated
-       cadences that drifted against each other. The city moved on one
-       clock and everything in it on another, and the interference
-       between them is what read as jitter. One clock now, and the
-       parallax is a division of it. */
-    /* `live` gates the content tick outright. At zero the frame
-       counter holds, nothing re-renders, and present() goes on
-       showing the last painted frame — which is exactly the still
-       picture reading mode wants, and costs nothing to hold. */
+       The CONTENT tick is a fixed 12fps: the frame counter and everything
+       counted off it — window flicker, signage, the fire, the cat — step
+       on that and nothing else. That fixed, EVEN cadence is the fix for
+       the old jitter, which came from stepping content off elapsed time
+       so the steps landed at uneven intervals.
+
+       The SCROLL is continuous and snapped to the device-pixel grid, and
+       the frame is recomposited the moment the scroll crosses a whole
+       device pixel. Both clocks are even, so they do not beat against
+       each other; the buildings slide smoothly while their lit windows
+       still step — smooth background, stepped sprites, which is what the
+       hardware this imitates actually did. */
+    /* `live` gates motion outright. At zero the frame counter holds, the
+       scroll clock holds, nothing re-renders, and present() goes on
+       showing the last painted frame — the still picture reading mode
+       wants, held for free.
+
+       When live, two clocks run. The CONTENT tick is still a fixed 12fps:
+       the frame counter, and everything counted in frames (flicker, fire,
+       cat, signage), step on it and only on it. The SCROLL is continuous
+       — scrollT accrues real time — and the frame is recomposited
+       whenever the scroll has crossed a whole device pixel, so the
+       parallax slides smoothly between content ticks instead of jumping
+       once per tick. An active event (a firework, a passing craft) also
+       forces the repaint, since those move on their own clock too. */
     if (live > 0) {
+      let doRender = false
+      scrollT += (dt / 1000) * live
       if (t - last >= 1000 / FPS) {
         last = t
         frame++
@@ -8714,10 +8766,15 @@
           const step = Math.sign(d) * Math.max(6, Math.round(Math.abs(d) / 5))
           panX = Math.abs(d) <= Math.abs(step) ? panTo : panX + step
         }
-        render()
+        doRender = true
       }
+      const sig = driftSig()
+      if (sig !== lastDriftSig) { lastDriftSig = sig; doRender = true }
+      // events that animate off wall-clock, not the frame counter
+      if (shells.length || craft.length) doRender = true
+      if (doRender) render()
     } else {
-      // keep the clock from banking time while stopped, so coming back
+      // keep both clocks from banking time while stopped, so coming back
       // does not fire a burst of catch-up frames
       last = t
     }
