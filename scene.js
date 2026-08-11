@@ -4229,6 +4229,49 @@
     return out
   }
 
+  /* Extrapolate `col` away from `anchor` by factor `f`. f = 1 returns
+     `col` unchanged; f > 1 pushes it further in the direction it already
+     leans, clamped per channel. This is how a colour is made "more
+     itself" without inventing a new hue. */
+  const spreadCache = new Map()
+  function spread(anchor, col, f) {
+    const key = anchor + '|' + col + '|' + f
+    let out = spreadCache.get(key)
+    if (out) return out
+    const na = parseInt(anchor.slice(1), 16)
+    const nc = parseInt(col.slice(1), 16)
+    const ch = (sh) => {
+      const a = (na >> sh) & 255
+      return clamp255(a + Math.round((((nc >> sh) & 255) - a) * f))
+    }
+    const r = ch(16), g = ch(8), b = ch(0)
+    out = '#' + (((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1))
+    spreadCache.set(key, out)
+    return out
+  }
+
+  /* ---- depth contrast ----
+     Every building draws its body in `fill`, its lit top-left edge in
+     `lit` and its shadowed right edge in `dark`, and the window grid
+     shades between the three. When those three sit close together the
+     tower has no internal relief and, worse, its lit edge cannot
+     separate from the shadowed edge of the tower it abuts — so a row of
+     same-material towers reads as one dark wall rather than as buildings.
+
+     `depthen` widens the fill→lit and fill→dark intervals along their
+     own hue, so the silhouette edges and the window shading both gain
+     definition. It runs BEFORE the aerial wash, and its strength scales
+     with depth: the near planes are near-black and mush hardest, so they
+     get the most; the far planes stay soft because that softness is the
+     distance cue. */
+  function depthen(pal, k) {
+    if (!(k > 0) || !pal.fill) return pal
+    const out = { ...pal }
+    if (out.lit) out.lit = spread(out.fill, out.lit, 1 + 0.75 * k)
+    if (out.dark) out.dark = spread(out.fill, out.dark, 1 + 1.05 * k)
+    return out
+  }
+
   /* The skyline is built as five independent steps rather than one
      call, so a rebuild can be spread across frames instead of landing
      as a single stall. Each city buffer is 5760x1620 at S=3 and takes
@@ -4696,7 +4739,7 @@
       minW: 30, maxW: 68, minH: 16, maxH: 54, gapChance: 0.5, gap: 8,
       step: 3, ww: 1, wh: 1, litChance: 0.1,
       neon: T.neon, neonChance: 0, halo: 0, fog: 0.11,
-      ...localGlass(recede(T.cityFar, 0.5)),
+      ...localGlass(recede(depthen(T.cityFar, 0.2), 0.5)),
     })
   }
 
@@ -4785,7 +4828,7 @@
       ...st,
       neon: T.neon,
       halo: T.halo,
-      ...localGlass(recede(cityPal(i), L.recede)),
+      ...localGlass(recede(depthen(cityPal(i), 0.45 + 0.3 * i), L.recede)),
       /* Spread across the loop so that at any moment one or two are
          in frame and the rest are on their way round. */
       landmarks: marks(L.key),
