@@ -3356,7 +3356,109 @@ html[data-l2='read'] .col.col--doc.windex {
   border-image-source: none;
   box-shadow: none;
   filter: none;
-  padding-top: clamp(48px, 7vw, 96px);
+  /* The frame is gone, so a 940px box left the text at 62ch stranded in a
+     wide empty column. Pin the column to the reading measure and centre it:
+     the whitespace becomes symmetric margin, the way an article's does,
+     instead of a lopsided right-hand void. Padding is trimmed to match — a
+     frameless page needs no inset, only a little air at the very top. */
+  width: min(92vw, 720px);
+  margin-inline: auto;
+  min-height: 0;
+  padding: clamp(28px, 4vw, 52px) 0 clamp(40px, 6vw, 72px);
+}
+
+/* ==================================================================
+   L2 READING TYPE — one face, one scale
+
+   Everything on a reading page is set in Satoshi (the pixel and mono faces
+   are the city's voice, not the article's), and every step of the scale is
+   pinned here so the sizes stay in parity across the article, the index and
+   the foot navigation. Labels are the reading face too, just small, upper
+   and letter-spaced — that is what carries the "chrome" role once the pixel
+   font steps off the page.
+   ================================================================== */
+html[data-l2='read'] .read__eyebrow,
+html[data-l2='read'] .read__title,
+html[data-l2='read'] .read__standfirst,
+html[data-l2='read'] .read__byline,
+html[data-l2='read'] .read__body,
+html[data-l2='read'] .read__body p,
+html[data-l2='read'] .read__body h3,
+html[data-l2='read'] .read__body li,
+html[data-l2='read'] .read__body blockquote,
+html[data-l2='read'] .read__figcap,
+html[data-l2='read'] .read__hero__cap,
+html[data-l2='read'] .read__nav__back,
+html[data-l2='read'] .read__nav__dir,
+html[data-l2='read'] .read__nav__ttl,
+html[data-l2='read'] .windex__yh,
+html[data-l2='read'] .windex__title,
+html[data-l2='read'] .windex__meta {
+  font-family: var(--font-read);
+}
+
+/* the label row: small, upper, spaced — the reading face doing chrome work */
+html[data-l2='read'] .read__eyebrow,
+html[data-l2='read'] .windex__yh {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+/* headline */
+html[data-l2='read'] .read__title {
+  font-size: clamp(30px, 3.6vw, 42px);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+  max-width: 20ch;
+}
+/* the deck — one clear step above body, not the old 29px jump */
+html[data-l2='read'] .read__standfirst {
+  font-size: clamp(20px, 2.2vw, 23px);
+  font-weight: 500;
+  line-height: 1.5;
+  max-width: 46ch;
+}
+/* body, and everything that reads at body size */
+html[data-l2='read'] .read__body p,
+html[data-l2='read'] .read__body li {
+  font-size: 19px;
+  line-height: 1.72;
+}
+html[data-l2='read'] .read__body h3 {
+  font-size: clamp(22px, 2vw, 26px);
+  font-weight: 700;
+  line-height: 1.25;
+}
+html[data-l2='read'] .read__body blockquote {
+  font-size: 21px;
+  line-height: 1.5;
+}
+/* the quiet metadata row: byline, captions, index meta — one small size */
+html[data-l2='read'] .read__byline,
+html[data-l2='read'] .read__figcap,
+html[data-l2='read'] .read__figcap b,
+html[data-l2='read'] .read__hero__cap,
+html[data-l2='read'] .windex__meta {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+/* foot navigation, in the same face and scale */
+html[data-l2='read'] .read__nav__back { font-size: 15px; letter-spacing: 0.02em; text-transform: none; }
+html[data-l2='read'] .read__nav__dir { font-size: 13px; letter-spacing: 0.02em; text-transform: none; }
+html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
+html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
+
+/* Under ~1100px the CLOSE button drops out of the side gutter and sits over
+   the page's own top padding, so the reading column has to give that height
+   back or the button lands on the eyebrow. (Matches the case-study rule; our
+   frameless override out-weighs it, so it is restated here.) */
+@media (max-width: 1099px) {
+  html[data-l2='read'] .col.col--doc.read,
+  html[data-l2='read'] .col.col--doc.windex {
+    padding-top: calc(var(--s7) + var(--s5));
+  }
 }
 
 .windex { text-align: left; }
