@@ -107,23 +107,27 @@
   }
   const meta = (a) => a.kind + ' · ' + a.read
 
-  /* Art is DRAWN, not left blank. Every hero and figure is a procedural
-     poster painted by posters.js (the same engine the covers use), so the
-     pages are never a wall of empty grey boxes. `artSeed` is set per article
-     so its pictures are its own and stay the same every reload; a real
-     <img> in hero.src still takes over when you have one. */
-  let artSeed = 1
+  /* Every hero and figure is a real photograph. They are served from Lorem
+     Picsum (the Unsplash photo library, addressed by a stable seed) so each
+     slot gets its own picture and it stays the same on every reload — swap
+     any `src` for a specific photo when you have one, or set hero.src on the
+     article to override its hero. */
+  const IMG = (seed, w, h) =>
+    'https://picsum.photos/seed/' + encodeURIComponent(seed) + '/' + w + '/' + h
+
   let figCount = 0
+  let artId = 'r'
 
   function heroHTML(a) {
     if (a.hero === false) return ''
-    const art = (a.hero && a.hero.src)
-      ? '<img class="read__hero__img" src="' + a.hero.src + '" alt="' + (a.hero.alt || '') + '">'
-      : '<canvas class="card__art card__art--wide" data-poster="work" data-seed="' + artSeed + '" aria-hidden="true"></canvas>'
+    const src = (a.hero && a.hero.src) ? a.hero.src : IMG('hero-' + a.id, 1200, 675)
+    const alt = (a.hero && a.hero.alt) ? a.hero.alt : ''
     const cap = (a.hero && a.hero.cap)
       ? '<figcaption class="read__figcap">' + a.hero.cap + '</figcaption>'
       : ''
-    return '<figure class="read__hero">' + art + cap + '</figure>'
+    return '<figure class="read__hero">' +
+      '<img class="card__art card__art--wide" src="' + src + '" alt="' + alt + '" loading="eager">' +
+      cap + '</figure>'
   }
 
   function blockHTML(b) {
@@ -135,9 +139,9 @@
       case 'ul': return '<ul>' + b.items.map((i) => '<li>' + i + '</li>').join('') + '</ul>'
       case 'fig': {
         const n = String(++figCount).padStart(2, '0')
-        const seed = artSeed * 7 + figCount
+        const src = IMG('fig-' + artId + '-' + figCount, 1200, 675)
         return '<figure class="read__fig">' +
-          '<canvas class="card__art card__art--wide" data-poster="work" data-seed="' + seed + '" aria-hidden="true"></canvas>' +
+          '<img class="card__art card__art--wide" src="' + src + '" alt="" loading="lazy">' +
           '<figcaption class="read__figcap"><b>Fig. ' + n + '</b> ' + b.cap + '</figcaption></figure>'
       }
       default: return ''
@@ -147,8 +151,8 @@
   // ---- build one article page ----
   function articlePage(a, prev, next) {
     figCount = 0
-    // the article's own art seed — its pictures are its own, stable per reload
-    artSeed = parseInt(String(a.id).replace(/\D/g, ''), 10) || 1
+    // the article's id keys its images, so its pictures are its own
+    artId = a.id
     const eyebrow = a.kind + ' <span class="read__sep">·</span> ' + a.date +
       ' <span class="read__sep">·</span> ' + a.read.toUpperCase() + ' READ'
 
@@ -243,9 +247,6 @@
       frag.appendChild(articlePage(a, ARTICLES[i - 1], ARTICLES[i + 1]))
     })
     main.appendChild(frag)
-    // paint the heroes and figures we just generated (posters.js also runs
-    // its own pass on load; this covers the case where it already ran).
-    if (window.Posters && window.Posters.paintAll) window.Posters.paintAll(main)
   }
 
   const host = document.getElementById('writingHome')
