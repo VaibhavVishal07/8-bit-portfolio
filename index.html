@@ -29,12 +29,21 @@
      own weather, a cat chasing a mouse along the bar and a rotating
      tip. The name and a bar say the same thing in under a second. -->
 <div class="boot" id="boot">
+  <!-- A dusk over Japan while it loads: a red rising sun with slow rays,
+       Mount Fuji on the horizon, and sakura drifting down past the name.
+       Purely decorative, drawn with CSS; the petals are spawned in JS. -->
+  <div class="boot__scene" aria-hidden="true">
+    <div class="boot__rays"></div>
+    <div class="boot__sun"></div>
+    <div class="boot__fuji"></div>
+    <div class="boot__petals" id="bootPetals"></div>
+  </div>
   <div class="boot__inner">
     <h1 class="boot__wm">
       <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
       <span class="wordmark__line wordmark__line--b">VISHAL</span>
     </h1>
-    <p class="boot__label">NOW LOADING</p>
+    <p class="boot__label" data-jp="ようこそ">NOW LOADING</p>
     <div class="boot__barwrap"><span class="boot__bar" id="bootBar"></span></div>
   </div>
 </div>
@@ -128,15 +137,14 @@
            width. Each one has something small hidden in it. -->
       <h2 class="sect">SELECTED WORK</h2>
 
+      <!-- Empty placeholder frames: the tactile tile is the whole card.
+           The generated poster art has been removed so real cover
+           designs can be dropped straight into each frame later. -->
       <ul class="cards">
-        <li><a class="tile" href="#w1" aria-label="01 — Lights, Camera, Banners: driving user engagement through dynamic banner design">
-          <canvas data-poster="cover" data-seed="1" aria-hidden="true"></canvas></a></li>
-        <li><a class="tile" href="#w2" aria-label="02 — The Sound of Style: a sleek, smarter music player built for seamless listening">
-          <canvas data-poster="cover" data-seed="2" aria-hidden="true"></canvas></a></li>
-        <li><a class="tile" href="#w3" aria-label="03 — Everything, All At Once: unifying OTT subscription and viewing experience">
-          <canvas data-poster="cover" data-seed="3" aria-hidden="true"></canvas></a></li>
-        <li><a class="tile" href="#w4" aria-label="04 — How to Decide?: easing user's decision making to purchase a service">
-          <canvas data-poster="cover" data-seed="4" aria-hidden="true"></canvas></a></li>
+        <li><a class="tile" href="#w1" aria-label="01 — Lights, Camera, Banners: driving user engagement through dynamic banner design"></a></li>
+        <li><a class="tile" href="#w2" aria-label="02 — The Sound of Style: a sleek, smarter music player built for seamless listening"></a></li>
+        <li><a class="tile" href="#w3" aria-label="03 — Everything, All At Once: unifying OTT subscription and viewing experience"></a></li>
+        <li><a class="tile" href="#w4" aria-label="04 — How to Decide?: easing user's decision making to purchase a service"></a></li>
       </ul>
 
       <div class="intro">
@@ -265,7 +273,7 @@
       <p class="cs__eyebrow">PROJECT 01 &middot; PRODUCT DESIGN &middot; 2025 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">LIGHTS, CAMERA, BANNERS</h2>
       <p class="cs__lede">Driving user engagement through dynamic banner design.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="1" aria-hidden="true"></canvas></span>
+      <span class="card__art card__art--wide cs__hero"></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Lead Product Designer</dd></div>
         <div><dt>Timeline</dt><dd>2025 · 4 months</dd></div>
@@ -298,7 +306,7 @@
       <p class="cs__eyebrow">PROJECT 02 &middot; DESIGN SYSTEMS &middot; 2024 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">THE SOUND OF STYLE</h2>
       <p class="cs__lede">A sleek, smarter music player built for seamless listening.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="2" aria-hidden="true"></canvas></span>
+      <span class="card__art card__art--wide cs__hero"></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Design Systems Lead</dd></div>
         <div><dt>Timeline</dt><dd>2024 · 6 months</dd></div>
@@ -331,7 +339,7 @@
       <p class="cs__eyebrow">PROJECT 03 &middot; MOBILE &middot; 2023 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">EVERYTHING, ALL AT ONCE</h2>
       <p class="cs__lede">Unifying OTT subscription and viewing experience.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="3" aria-hidden="true"></canvas></span>
+      <span class="card__art card__art--wide cs__hero"></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Product Designer</dd></div>
         <div><dt>Timeline</dt><dd>2023 · 3 months</dd></div>
@@ -364,7 +372,7 @@
       <p class="cs__eyebrow">PROJECT 04 &middot; BRAND &middot; 2022 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">HOW TO DECIDE?</h2>
       <p class="cs__lede">Easing user&rsquo;s decision making to purchase a service.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="4" aria-hidden="true"></canvas></span>
+      <span class="card__art card__art--wide cs__hero"></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Designer</dd></div>
         <div><dt>Timeline</dt><dd>2022 · 2 months</dd></div>
@@ -413,14 +421,14 @@
         <p class="read__lead">This is where the piece opens: one idea, stated plainly, before the reader has decided whether to stay. The measure is deliberately narrow, the type is set for reading rather than for looking, and nothing in the margin is competing for the eye.</p>
         <p>Placeholder copy sits in for the real argument. It runs long enough to show how a paragraph breaks across this measure, how the leading feels underneath a line or two, and where the reader's attention lands when there is nothing on the page but the words.</p>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="5" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 01</b> Placeholder art, drawn in code, in the shape the real figure will take. A caption earns its place by saying the thing the picture cannot say for itself.</figcaption>
         </figure>
         <h3>The part that carries the weight</h3>
         <p>A subhead marks the turn in the argument. Below it the paragraphs get more specific: an example, a number, a concession to the obvious objection. This is the section a skim-reader stops on, so it earns the most care.</p>
         <blockquote>A pull quote lifts the one sentence you would want a reader to remember if they remembered nothing else.</blockquote>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="22" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 02</b> Two figures is about as many as a piece this length can carry before they stop reading as evidence and start reading as decoration.</figcaption>
         </figure>
         <p>After the quote the piece widens back out. A short list often does the work here, because a list reads as a set of decisions rather than as prose asking to be believed:</p>
@@ -453,14 +461,14 @@
         <p class="read__lead">A note is shorter than an essay and knows it. It opens on the point instead of walking up to it, and it trusts the reader to already care.</p>
         <p>Placeholder copy stands in for the observation. It is long enough to feel like a thought and short enough to read in one sitting, which is the whole reason the form exists.</p>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="34" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 01</b> The rule, held: every position a whole pixel, every move landing on the step. Placeholder art in the finished shape.</figcaption>
         </figure>
         <h3>One rule, then the exception</h3>
         <p>State the rule the piece lives by, then spend the rest of it on the single case where the rule should be broken. That exception is the reason anyone is still reading.</p>
         <blockquote>The step is the identity; the exception is the craft.</blockquote>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="47" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 02</b> And the exception beside it. One element let off the step — the only one, which is the entire point of the note.</figcaption>
         </figure>
         <p>End on the exception, not the rule. A note that closes by restating its own premise has wasted the reader's last ten seconds.</p>
@@ -487,14 +495,14 @@
         <p class="read__lead">The longest piece in the set earns its length by taking the other side seriously before it disagrees. It opens by granting what the pattern gets right.</p>
         <p>Placeholder copy fills the body. It runs across several paragraphs so the measure, the leading and the rhythm of a real long-read are all visible here, ready for the actual words to replace it line for line.</p>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="57" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 01</b> The pattern as it ships: a row of pixels saved at the top, and the map of the product folded away behind them.</figcaption>
         </figure>
         <h3>Where it goes wrong</h3>
         <p>The middle section is the argument proper: the claim, the evidence, and the example that would be hard to explain away. This is the part worth writing carefully, because it is the part a fair reader came to test.</p>
         <blockquote>An interface that hides its map is asking the visitor to already know the building.</blockquote>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="63" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 02</b> The same screen with the map left showing. The cost is visible; so, now, is everything it was hiding.</figcaption>
         </figure>
         <h3>The honest objection</h3>
@@ -528,14 +536,14 @@
         <p class="read__lead">This piece reframes a familiar thing by asking who it is actually for, and lets the rest of the argument fall out of the answer.</p>
         <p>Placeholder copy stands in for the reframing. It gives the layout a few paragraphs to breathe so the shape of the finished essay is legible before a word of it is real.</p>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="72" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 01</b> The component as the person building with it actually meets it, rather than as it was presented in the review.</figcaption>
         </figure>
         <h3>Optimise for the second reader</h3>
         <p>The core idea gets its own section: the system serves the engineer opening it at midnight far more than the executive reviewing a mock. Design for that person and the surface takes care of itself.</p>
         <blockquote>A component nobody can find is a component nobody built.</blockquote>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="85" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 02</b> One obvious way through, and the escape hatch next to it. A system that offers only the first is a system people route around.</figcaption>
         </figure>
         <p>Supporting points work best as a short set of commitments a system makes to the people using it:</p>
@@ -568,14 +576,14 @@
         <p class="read__lead">A closing note, short by design. It states the idea and gets out of the way, which is also the argument it is making.</p>
         <p>Placeholder copy sits here in place of the real thought, long enough to read as a note and no longer than it needs to be.</p>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="91" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 01</b> The work at the date, with everything that was never going to make it already greyed back. Placeholder art in the finished shape.</figcaption>
         </figure>
         <h3>The deadline is a material</h3>
         <p>Treat the date the way you treat the grid or the palette: as a constraint that does part of the designing for you, if you let it.</p>
         <blockquote>A draft you keep is a decision you are avoiding.</blockquote>
         <figure class="read__fig">
-          <span class="card__art card__art--wide"><canvas data-poster="work" data-seed="96" aria-hidden="true"></canvas></span>
+          <span class="card__art card__art--wide"></span>
           <figcaption class="read__figcap"><b>Fig. 02</b> Shipped. The list of what got cut is the most honest design record a project ever produces.</figcaption>
         </figure>
         <p>It ends on the thing you can do today, and then, like a good ship date, it arrives.</p>

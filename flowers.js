@@ -581,34 +581,27 @@
     const bed = buffer(W, H)
     const plants = []
 
-    const cover = (x, y) => {
-      const base = 1 - (H - y) / geo.baseDepth
-      const ds = Math.min(x, W - 1 - x)
-      const ty = clamp01((y - (H - geo.armRise)) / geo.armRise)
-      const arm = (1 - ds / geo.armDepth) * Math.pow(ty, 1.7)
-      return clamp01(Math.max(base, arm))
-    }
+    /* The arms up the sides are gone: the drift is a low bed along the
+       bottom only now, and thinner than it was. So `cover` is just the
+       base term — how far up from the bottom edge a point sits — and
+       everything grows straight up out of the soil. */
+    const cover = (x, y) => clamp01(1 - (H - y) / geo.baseDepth)
 
-    /* Which way is "out of the garland" from here — down at the
-       bottom, sideways up the arms. Stems grow in along it and leaves
-       lie across it. */
-    const outward = (x, y) => {
-      const base = 1 - (H - y) / geo.baseDepth
-      const ds = Math.min(x, W - 1 - x)
-      const ty = clamp01((y - (H - geo.armRise)) / geo.armRise)
-      const arm = (1 - ds / geo.armDepth) * Math.pow(ty, 1.7)
-      if (arm > base) return x < W / 2 ? Math.PI : 0
-      return Math.PI / 2
-    }
+    /* Everything is planted in the floor, so "out of the garland" is
+       always straight down. Stems grow up along it; leaves lie across. */
+    const outward = () => Math.PI / 2
 
     /* Blooms are allowed to start outside the rectangle and be cut off
        by it. That is what makes the garland touch the edges of the
        column rather than stop politely a few pixels short of them. */
+    /* Fewer blooms than the old garland, and spaced further apart: this
+       is a sparse bed you fill in by watering, not a packed border. */
+    const CAP = Math.max(8, Math.round(geo.count || 60))
     const spots = []
     const tries = W * 15
-    for (let i = 0; i < tries && spots.length < 190; i++) {
+    for (let i = 0; i < tries && spots.length < CAP; i++) {
       const x = -5 + rnd() * (W + 10)
-      const y = H + 3 - rnd() * (geo.armRise + 6)
+      const y = H + 3 - rnd() * (geo.baseDepth + 6)
       const c = cover(x, y)
       if (c <= 0.02) continue
       if (rnd() > Math.pow(c, 0.68)) continue
@@ -630,9 +623,9 @@
        Leaves first, all of them, in a ramp two stops short of the full
        one so the foliage sits behind the blooms rather than competing
        with them. */
-    for (let i = 0; i < 2500; i++) {
+    for (let i = 0; i < 900; i++) {
       const x = -5 + rnd() * (W + 10)
-      const y = H + 3 - rnd() * (geo.armRise + 6)
+      const y = H + 3 - rnd() * (geo.baseDepth + 6)
       const c = cover(x, y)
       if (c <= 0.02 || rnd() > Math.pow(c, 0.75)) continue
       const a = outward(x, y) + Math.PI + (rnd() - 0.5) * 2.2
@@ -703,9 +696,12 @@
       form(sub, s.x - ox, s.y - oy, s.R, P, C, rnd, dim)
 
       plants.push({
-        buf: sub, ox: ox, oy: oy,
+        buf: sub, ox: ox, oy: oy, w: sw, h: sh,
         // the bloom's own centre, which is what a cursor is measured to
         cx: s.x, cy: s.y, R: s.R,
+        // the foot where the stem meets the soil — growth scales up from
+        // here, so a half-grown plant is a small plant rooted in place
+        fx: footX, fy: footY,
         dx: 0, dy: 0,
       })
     }
@@ -716,16 +712,16 @@
        and the few petals lying on the bottom edge, are what make it
        read as a heap. These stay in the bed: they are the litter the
        flowers stand in, and litter does not flinch. */
-    for (let i = 0; i < 900; i++) {
+    for (let i = 0; i < 300; i++) {
       const x = -4 + rnd() * (W + 8)
-      const y = H + 2 - rnd() * (geo.armRise + 4)
+      const y = H + 2 - rnd() * (geo.baseDepth + 4)
       const c = cover(x, y)
       if (c <= 0.06 || rnd() > Math.pow(c, 1.5) * 0.13) continue
       bud(bed, x, y, def.size[0] * (0.34 + rnd() * 0.26), P, S, rnd, -0.06,
         outward(x, y) + Math.PI + (rnd() - 0.5) * 1.4)
     }
 
-    for (let i = 0; i < 260; i++) {
+    for (let i = 0; i < 120; i++) {
       const x = -4 + rnd() * (W + 8)
       const y = H + 2 - rnd() * (geo.baseDepth * 0.55)
       if (cover(x, y) < 0.5 || rnd() > 0.22) continue
@@ -746,12 +742,21 @@
   canvas.setAttribute('aria-hidden', 'true')
   col.appendChild(canvas)
 
+  /* The band of clear air over the bed is a live surface: the cursor
+     becomes a watering can over it, and a tap there waters the soil. It
+     only covers the bottom padding, where there is no text, so it never
+     stands between a reader and a link. */
+  const waterer = document.createElement('div')
+  waterer.className = 'col__waterer'
+  waterer.setAttribute('aria-hidden', 'true')
+  col.appendChild(waterer)
+
   const src = document.createElement('canvas')
   const srcCtx = src.getContext('2d')
+  srcCtx.imageSmoothingEnabled = false
 
-  /* One canvas per sprite, cut once. Compositing is then two hundred
-     drawImage calls of a few dozen pixels each, which is cheap enough
-     to do on every step of the parting. */
+  /* One canvas per sprite, cut once, so growth is a scaled drawImage of a
+     few dozen pixels rather than a redraw. */
   function toCanvas(b) {
     const c = document.createElement('canvas')
     c.width = b.w
@@ -762,118 +767,85 @@
 
   let bedCanvas = null
   let plants = []
+  let drops = []
   let artW = 0
   let artH = 0
+  let up = 1
 
+  /* Each plant is drawn scaled by its own `grow`, anchored at the foot
+     where the stem meets the soil — so a seedling is a small plant
+     rooted in exactly the spot its full self will stand, and watering
+     just lets it up. The bed (leaves, buds, fallen petals) is always at
+     full size; it is the soil the flowers come up out of. */
   function paint() {
     if (!bedCanvas) return
     srcCtx.clearRect(0, 0, artW, artH)
     srcCtx.drawImage(bedCanvas, 0, 0)
     for (let i = 0; i < plants.length; i++) {
       const p = plants[i]
-      srcCtx.drawImage(p.canvas, p.ox + p.dx, p.oy + p.dy)
+      const g = p.grow
+      if (g <= 0.02) continue
+      if (g >= 0.999) { srcCtx.drawImage(p.canvas, p.ox, p.oy); continue }
+      const dw = Math.max(1, p.w * g)
+      const dh = Math.max(1, p.h * g)
+      const dx = p.fx + (p.ox - p.fx) * g
+      const dy = p.fy + (p.oy - p.fy) * g
+      srcCtx.drawImage(p.canvas, 0, 0, p.w, p.h, dx, dy, dw, dh)
     }
-    const g = canvas.getContext('2d')
-    g.imageSmoothingEnabled = false
-    g.clearRect(0, 0, canvas.width, canvas.height)
-    g.drawImage(src, 0, 0, canvas.width, canvas.height)
+    const ctx = canvas.getContext('2d')
+    ctx.imageSmoothingEnabled = false
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(src, 0, 0, canvas.width, canvas.height)
+    // water in the air, drawn straight on the display canvas over the bed
+    for (let i = 0; i < drops.length; i++) {
+      const d = drops[i]
+      ctx.fillStyle = d.c
+      ctx.fillRect(Math.round(d.x * up), Math.round(d.y * up), up, up * 2)
+    }
   }
 
   /* ==================================================================
-     THE PARTING
+     WATERING
 
-     Bring a cursor up to the garland and the flowers near it lean
-     away, then stand back up when it leaves. It is the one piece of
-     this page that answers to the mouse directly, so it has to behave
-     like everything else here: it steps at twelve frames a second, it
-     moves in whole art pixels, and it does not ease.
-
-     Only the flowering stems move. The bed they stand in — the
-     leaves, the buds, the petals on the floor — is one baked layer and
-     stays put, which is also what keeps the effect cheap.
+     The bed comes up sparse and small — a scatter of seedlings in the
+     soil. Bring the watering can over it and tap, and the seedlings
+     within reach of the pour grow up into full blooms. It steps at
+     twelve frames a second and moves in whole art pixels, like
+     everything else on this page; it does not ease.
      ================================================================== */
   const STILL = window.matchMedia('(prefers-reduced-motion: reduce)')
-
-  // how near the cursor has to be before a bloom notices, and how far
-  // it will go to get out of the way — both in art pixels
-  const REACH = 66
-  const SHOVE = 13
-  // a bloom leans sideways more readily than it lifts, because a stem
-  // bends and does not jump
-  const RISE = 0.62
-  // how far a bloom trembles once the cursor is on it
-  const SHIVER = 2.2
   const FPS = 12
-  const STEP = 3
+  const GROW_STEP = 0.085   // how much a watered plant grows per frame
+  const POUR = 48           // how far to each side of the pour it reaches
 
-  let pointerX = null
-  let pointerY = null
   let running = false
   let lastStep = 0
-  let beat = 0
-
-  function targets() {
-    if (pointerX === null || !plants.length) return false
-    const r = canvas.getBoundingClientRect()
-    if (!r.width || !r.height) return false
-    // client space to art space
-    const ax = ((pointerX - r.left) / r.width) * artW
-    const ay = ((pointerY - r.top) / r.height) * artH
-    // a cursor nowhere near the strip is the common case, so leave early
-    const near = pointerX >= r.left - 80 && pointerX <= r.right + 80 &&
-                 pointerY >= r.top - 80 && pointerY <= r.bottom + 80
-    for (let i = 0; i < plants.length; i++) {
-      const p = plants[i]
-      p.tx = 0
-      p.ty = 0
-      if (!near) continue
-      const gx = p.cx - ax
-      const gy = p.cy - ay
-      const d = Math.sqrt(gx * gx + gy * gy)
-      if (d >= REACH) continue
-      const f = 1 - d / REACH
-      const push = SHOVE * f * f
-      // dead centre gives no direction to run in, so pick one
-      const ux = d < 0.001 ? 0.7 : gx / d
-      const uy = d < 0.001 ? -0.7 : gy / d
-      const shake = SHIVER * f
-      p.tx = Math.round(ux * push + Math.sin(beat * 1.7 + p.ph) * shake)
-      p.ty = Math.round(uy * push * RISE + Math.cos(beat * 2.3 + p.ph * 1.7) * shake * 0.7)
-    }
-    return true
-  }
-
-  function step() {
-    let moved = false
-    for (let i = 0; i < plants.length; i++) {
-      const p = plants[i]
-      const wx = p.tx || 0
-      const wy = p.ty || 0
-      if (p.dx !== wx) {
-        const d = wx - p.dx
-        p.dx += Math.sign(d) * Math.min(STEP, Math.abs(d))
-        moved = true
-      }
-      if (p.dy !== wy) {
-        const d = wy - p.dy
-        p.dy += Math.sign(d) * Math.min(STEP, Math.abs(d))
-        moved = true
-      }
-    }
-    return moved
-  }
+  let pressing = false
 
   function tick(t) {
     if (t - lastStep >= 1000 / FPS) {
       lastStep = t
-      beat++
-      targets()
-      /* Nothing moved this step, so the garland is wherever it was asked
-         to be and there is no work left. Stop — a pointer resting near a
-         flower is a settled state, not an animation. The next move, or
-         the next scroll, wakes it. */
-      if (step()) paint()
-      else { running = false; return }
+      let alive = false
+      for (let i = 0; i < plants.length; i++) {
+        const p = plants[i]
+        if (p.grow < p.growTo) {
+          p.grow = Math.min(p.growTo, p.grow + GROW_STEP)
+          alive = true
+        }
+      }
+      if (drops.length) {
+        for (let i = 0; i < drops.length; i++) {
+          const d = drops[i]
+          d.x += d.vx
+          d.y += d.vy
+          d.vy += 0.55
+          d.life--
+        }
+        drops = drops.filter((d) => d.life > 0 && d.y < artH + 4)
+        alive = alive || drops.length > 0
+      }
+      paint()
+      if (!alive) { running = false; return }
     }
     requestAnimationFrame(tick)
   }
@@ -885,96 +857,115 @@
     requestAnimationFrame(tick)
   }
 
+  // pour at a client point: grow the seedlings under it, and let a
+  // handful of drops fall from the spout to the soil
+  function water(clientX, clientY) {
+    if (!plants.length || !artW) return
+    const r = canvas.getBoundingClientRect()
+    if (!r.width) return
+    const ax = ((clientX - r.left) / r.width) * artW
+    const ay = clamp(((clientY - r.top) / r.height) * artH, 0, artH)
+    for (let i = 0; i < plants.length; i++) {
+      const p = plants[i]
+      if (p.growTo < 1 && Math.abs(p.cx - ax) <= POUR) p.growTo = 1
+    }
+    for (let i = 0; i < 7; i++) {
+      drops.push({
+        x: ax + (rand() - 0.5) * 22,
+        y: ay + (rand() - 0.5) * 6,
+        vx: (rand() - 0.5) * 0.5,
+        vy: 1.1 + rand() * 1.3,
+        life: 9 + Math.round(rand() * 8),
+        c: rand() < 0.5 ? '#cdeeff' : '#93d3f6',
+      })
+    }
+    wake()
+  }
+
+  // ephemeral randomness only — nothing here decides layout, so it is
+  // allowed to differ between taps
+  function rand() { return Math.random() }
+
   if (!STILL.matches) {
-    window.addEventListener('pointermove', (e) => {
-      if (e.pointerType === 'touch') return
-      pointerX = e.clientX
-      pointerY = e.clientY
-      wake()
+    waterer.addEventListener('pointerdown', (e) => {
+      pressing = true
+      // capture only the mouse: capturing a touch would swallow the
+      // page scroll that starts on this band at the foot of the page
+      if (e.pointerType === 'mouse' && waterer.setPointerCapture) {
+        waterer.setPointerCapture(e.pointerId)
+      }
+      water(e.clientX, e.clientY)
+    })
+    waterer.addEventListener('pointermove', (e) => {
+      // drag-to-water is a mouse affordance; on touch a move is a scroll,
+      // so leave it alone
+      if (pressing && e.pointerType === 'mouse') water(e.clientX, e.clientY)
     }, { passive: true })
-
-    /* Pointer gone from the window: everything stands back up, and the
-       loop is allowed to stop once it has. */
-    document.addEventListener('pointerleave', () => { pointerX = null; pointerY = null; wake() })
-
-    /* Scrolling moves the strip out from under a stationary cursor, so
-       the garland has to be asked again where the cursor now is. */
-    const scroller = col.closest('.page')
-    if (scroller) scroller.addEventListener('scroll', wake, { passive: true })
-    window.addEventListener('blur', () => { pointerX = null; pointerY = null; wake() })
+    const release = () => { pressing = false }
+    waterer.addEventListener('pointerup', release)
+    waterer.addEventListener('pointercancel', release)
+    window.addEventListener('blur', release)
   }
 
   function build() {
     const root = document.documentElement
-    /* Day has no city theming anywhere in the stylesheet — no panel
-       colour, no neon frame — so it gets no garland either. New York
-       has no flower at all. Either way: nothing to draw. */
+    /* Day has no city theming anywhere in the stylesheet, and New York
+       has no flower at all — either way, nothing to plant. */
     const def = root.dataset.mode === 'day' ? null : FLOWERS[root.dataset.city]
-    /* The column reserves a deep bottom padding for the garland to grow
-       into. With no garland that is just a hole under the copyright, so
-       the column is told to close up. */
     col.classList.toggle('col--bare', !def)
     if (!def) {
       canvas.style.display = 'none'
+      waterer.style.display = 'none'
       bedCanvas = null
       plants = []
       return
     }
     canvas.style.display = 'block'
+    waterer.style.display = 'block'
 
-    /* The band reaches exactly as far in as the column's own padding
-       allows: the arms live in the side padding, the base in the
-       bottom padding. Read rather than restated, so moving the padding
-       in the stylesheet moves the flowers with it and they never land
-       on a line of text. */
     const cs = getComputedStyle(col)
     const cssW = col.clientWidth
     if (cssW < 80) return
     const W = Math.ceil(cssW / SCALE)
 
-    /* GAP is clear air, held between the top of the drift and whatever
-       is above it. Without it the garland grows to fill whatever room
-       the padding gives it and ends up touching the copyright again —
-       the padding says how much room there is, this says how much of
-       that room stays empty. */
-    const GAP = 14
-    /* The drift grows up from the bottom edge, and a bloom sitting at
-       the top of it sticks out by its own radius — so the band stops one
-       bloom short of the padding rather than filling it, which is what
-       keeps a clear gap under the copyright line. */
+    /* The bed grows up out of the bottom edge only, into the column's
+       bottom padding, stopping a bloom short of it so a clear gap stays
+       under the copyright. No arms up the sides any more. */
+    const GAP = 12
     const baseDepth = Math.max(14, Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP))
-    /* Same allowance sideways, at half strength: a bloom on the inner
-       lip of an arm should mostly sit in the padding, but a few breaking
-       the line is what stops the arms reading as two ruled stripes. On a
-       phone the side padding is 16px and this collapses to just about
-       exactly that. */
-    const armDepth = clamp(
-      Math.round(parseFloat(cs.paddingLeft) / SCALE - def.size[1] * 0.5 - GAP * 0.4), 8, 34)
-    const armRise = Math.round(Math.min(cssW * 0.46, 400) / SCALE)
-    const H = Math.max(baseDepth, armRise) + 2
+    // headroom for a full-grown bloom sitting at the top of the band
+    const H = baseDepth + Math.ceil(def.size[1]) + 6
+    // sparse: roughly one seedling per ~50 css px of width
+    const count = clamp(Math.round(cssW / 50), 8, 46)
 
     artW = W
     artH = H
-    const built = garland(W, H, def, { baseDepth: baseDepth, armDepth: armDepth, armRise: armRise })
+    const built = garland(W, H, def, { baseDepth: baseDepth, count: count })
     bedCanvas = toCanvas(built.bed)
-    plants = built.plants.map((p, i) => ({
-      canvas: toCanvas(p.buf),
-      ox: p.ox, oy: p.oy, cx: p.cx, cy: p.cy,
-      dx: 0, dy: 0, tx: 0, ty: 0,
-      // golden angle, so no two neighbours shake together
-      ph: (i * 2.39996) % 6.28318,
-    }))
+    plants = built.plants.map((p) => {
+      // seedlings start small; reduced motion just shows them grown,
+      // since there is no watering to do without the animation
+      const g = STILL.matches ? 1 : 0.1 + rand() * 0.14
+      return {
+        canvas: toCanvas(p.buf),
+        ox: p.ox, oy: p.oy, w: p.w, h: p.h,
+        cx: p.cx, cy: p.cy, fx: p.fx, fy: p.fy,
+        grow: g, growTo: g,
+      }
+    })
+    drops = []
 
     src.width = W
     src.height = H
     srcCtx.imageSmoothingEnabled = false
 
-    const up = Math.max(1, Math.round(SCALE * Math.min(2, window.devicePixelRatio || 1)))
+    up = Math.max(1, Math.round(SCALE * Math.min(2, window.devicePixelRatio || 1)))
     canvas.width = W * up
     canvas.height = H * up
     canvas.style.height = (H * SCALE) + 'px'
+    // the watering surface covers exactly the bed's band
+    waterer.style.height = (H * SCALE) + 'px'
     paint()
-    wake()
   }
 
   let queued = 0
@@ -989,9 +980,7 @@
     attributeFilter: ['data-city', 'data-mode'],
   })
 
-  /* Only the column's WIDTH changes the garland. Its height changes
-     every time a font settles or a section opens, and re-laying out a
-     few hundred blooms for that would be work nobody can see. */
+  /* Only the column's WIDTH changes the bed. */
   let lastW = -1
   new ResizeObserver(() => {
     const w = col.clientWidth

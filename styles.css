@@ -107,10 +107,12 @@
      stops resolving below 8px (its glyphs are 5x7) and the reading
      face stops being comfortable below 11px, so --d1 and --b1/--b2
      clamp there rather than following the ratio down into mush. */
-  --d1: 10px;   /* micro labels, paths, footers  (floor) */
-  --d2: 13px;   /* meta, chips, buttons, card titles */
-  --d3: 18px;   /* section headings */
-  --d4: 26px;   /* numerals */
+  /* Bumped a notch: every text token is up 3px from where it was, for a
+     more generous read across the whole page. */
+  --d1: 13px;   /* micro labels, paths, footers */
+  --d2: 16px;   /* meta, chips, buttons, card titles */
+  --d3: 21px;   /* section headings */
+  --d4: 29px;   /* numerals */
   --wm: 38px;   /* wordmark, lower line */
   --wm-a: 25px; /* wordmark, upper line */
   --wmo: 3px;   /* one step of the extrusion */
@@ -125,10 +127,10 @@
      --t1 and --t2 are aliases. Rules written against the page layout
      use them so the prose scale can move without hunting through
      every component. */
-  --b1: 14px;
-  --b2: 14px;
-  --b3: 16px;
-  --b4: 26px;
+  --b1: 17px;
+  --b2: 17px;
+  --b3: 19px;
+  --b4: 29px;
 
   --t1: var(--b1);
   --t2: var(--b3);
@@ -185,34 +187,34 @@
 
 @media (min-width: 1500px) {
   :root {
-    --d1: 10px;
-    --d2: 13px;
-    --d3: 18px;
-    --d4: 31px;
+    --d1: 13px;
+    --d2: 16px;
+    --d3: 21px;
+    --d4: 34px;
     --wm: 53px;
     --wm-a: 31px;
     --wmo: 4px;
-    --b1: 14px;
-    --b2: 14px;
-    --b3: 17px;
-    --b4: 26px;
+    --b1: 17px;
+    --b2: 17px;
+    --b3: 20px;
+    --b4: 29px;
     --dicon: 80px;
   }
 }
 
 @media (min-width: 2400px) {
   :root {
-    --d1: 13px;
-    --d2: 18px;
-    --d3: 26px;
-    --d4: 36px;
+    --d1: 16px;
+    --d2: 21px;
+    --d3: 29px;
+    --d4: 39px;
     --wm: 69px;
     --wm-a: 44px;
     --wmo: 5px;
-    --b1: 14px;
-    --b2: 17px;
-    --b3: 21px;
-    --b4: 30px;
+    --b1: 17px;
+    --b2: 20px;
+    --b3: 24px;
+    --b4: 33px;
     --taskbar-h: 62px;
     --dicon: 96px;
   }
@@ -660,8 +662,8 @@ svg { display: block; image-rendering: pixelated; }
    It still forces the night palette locally: this is a CRT before the
    OS paints, so it does not follow the theme. */
 .boot {
-  --wm-face: #7dfcff;
-  --boot-cell: #ff3ea5;
+  --wm-face: #fff2f6;
+  --boot-cell: #ff5c7a;
 
   position: fixed;
   inset: 0;
@@ -670,13 +672,93 @@ svg { display: block; image-rendering: pixelated; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  background: #05070f;
+  /* dusk over the bay: deep indigo overhead falling to a warm rose band
+     on the horizon, the light the rising sun is throwing up into it */
+  background:
+    linear-gradient(180deg,
+      #0a0b26 0%, #14103a 34%, #351a4e 60%, #7a2c52 82%, #b24a54 100%);
   padding: var(--s7);
+  overflow: hidden;
 }
 
 .boot[hidden] { display: none; }
 
-.boot__inner { width: min(88vw, 440px); }
+/* ---- the scene behind the name ---- */
+.boot__scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+
+/* The red rising sun (hinomaru), low and large behind the wordmark. */
+.boot__sun {
+  position: absolute;
+  left: 50%; top: 46%;
+  width: 300px; height: 300px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 44%, #ffd0b0 0%, #ff7a5c 34%, #ff3e5f 60%, #e0264f 100%);
+  box-shadow:
+    0 0 0 7px rgba(255, 120, 120, 0.16),
+    0 0 90px 30px rgba(255, 62, 95, 0.28);
+}
+
+/* Rising-sun rays fanning out behind it, turning very slowly so the
+   frame is never quite still. Stepped rotation, to match the house
+   style — the rays jump a spoke at a time rather than sweeping. */
+.boot__rays {
+  position: absolute;
+  left: 50%; top: 46%;
+  width: 900px; height: 900px;
+  transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 120, 130, 0.13) 0deg 7deg,
+    transparent 7deg 22deg);
+  -webkit-mask: radial-gradient(circle, #000 24%, transparent 62%);
+  mask: radial-gradient(circle, #000 24%, transparent 62%);
+  animation: boot-rays 9s steps(24, end) infinite;
+}
+@keyframes boot-rays { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* Mount Fuji on the horizon: a dark indigo silhouette with a ragged
+   snow cap, both drawn with clip-paths so the edges stay hard. */
+.boot__fuji {
+  position: absolute;
+  left: 50%; bottom: 0;
+  width: 150%; height: 40%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #241a45 0%, #150f30 100%);
+  clip-path: polygon(0% 100%, 39% 34%, 44% 26%, 48% 21%, 52% 21%, 56% 26%, 61% 34%, 100% 100%);
+}
+.boot__fuji::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0;
+  width: 26%; height: 46%;
+  transform: translateX(-50%);
+  background: #eaf0ff;
+  clip-path: polygon(50% 0%, 62% 30%, 74% 46%, 63% 40%, 56% 58%, 50% 44%, 44% 60%, 37% 42%, 26% 48%, 38% 30%);
+  opacity: 0.9;
+}
+
+/* Sakura petals, spawned in JS as little squares that drift down. */
+.boot__petals { position: absolute; inset: 0; }
+.boot__petal {
+  position: absolute;
+  width: 6px; height: 5px;
+  background: #ffb3cf;
+  box-shadow: inset -1px -1px 0 rgba(200, 90, 130, 0.5);
+  animation: boot-fall linear forwards;
+}
+@keyframes boot-fall {
+  0%   { transform: translateY(-12vh) translateX(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(112vh) translateX(40px) rotate(220deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot__rays, .boot__petal { animation: none; }
+}
+
+.boot__inner { position: relative; z-index: 2; width: min(88vw, 440px); }
 
 /* The extra room underneath is for the wordmark's own cast shadow,
    which hangs below its baseline — set it flush and the bar reads as
@@ -702,6 +784,20 @@ svg { display: block; image-rendering: pixelated; }
   font-size: clamp(8px, 0.8vw, 11px);
   letter-spacing: 4px;
   color: var(--wm-face);
+}
+
+/* A welcome in Japanese over the loading line — set in a CJK-capable
+   system face, since the pixel display font carries no kana. */
+.boot__label::before {
+  content: attr(data-jp);
+  display: block;
+  margin: 0 0 10px;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 8px;
+  text-indent: 8px;
+  color: #ffd6e0;
 }
 
 /* The caret, blinking the way a machine waiting on itself does. */
@@ -2228,6 +2324,13 @@ html[data-city='dubai']:not([data-mode='day']) .col {
 .card__art canvas { aspect-ratio: 16 / 9; }
 .card--tall .card__art canvas { aspect-ratio: 3 / 4; }
 
+/* With the generated posters removed, the FRAME carries the shape, so an
+   empty slot still reads as a placeholder box waiting for a real image
+   rather than collapsing to nothing. A dropped-in <img> fills it. */
+.card__art { aspect-ratio: 16 / 9; }
+.card--tall .card__art,
+.card__art--big { aspect-ratio: 3 / 4; }
+
 /* the scanline veil, so a poster reads as something on a screen */
 .card__art::after {
   content: '';
@@ -2870,7 +2973,7 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
    FIRST project stays fully pixel/mono, on the JetBrains face, so there
    is one study that is the machine talking and the rest read plainly. */
 .cs .prose { font-family: var(--font-read); }
-.cs .prose p { font-size: 19px; line-height: 1.7; color: var(--cream); margin: 0 0 var(--s5); max-width: 62ch; }
+.cs .prose p { font-size: 22px; line-height: 1.82; color: var(--cream); margin: 0 0 var(--s5); max-width: 62ch; }
 .cs .prose p:last-child { margin-bottom: 0; }
 
 .page[data-page='w1'] .cs__lede,
@@ -3030,8 +3133,8 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 /* the body is the reading face at a real reading size */
 .read__body p {
   font-family: var(--font-read);
-  font-size: 19px;
-  line-height: 1.75;
+  font-size: 22px;
+  line-height: 1.86;
   color: var(--cream);
   margin: 0 0 var(--s5);
   max-width: 62ch;
@@ -3054,8 +3157,8 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 }
 .read__body li {
   font-family: var(--font-read);
-  font-size: 19px;
-  line-height: 1.7;
+  font-size: 22px;
+  line-height: 1.82;
   color: var(--cream);
   margin: 0 0 var(--s2);
 }
@@ -3145,7 +3248,7 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 .read__nav__link:hover { color: var(--panel-edge); }
 
 @media (max-width: 760px) {
-  .read__body p, .read__body li { font-size: 17px; }
+  .read__body p, .read__body li { font-size: 20px; }
   .read__lead::first-letter { font-size: 2.7em; }
 }
 
@@ -3769,9 +3872,9 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
    larger; at 16px it opens a gap between lines wide enough that a
    paragraph stops reading as a block and starts reading as a list of
    sentences. 1.5 is the mono's own comfortable measure. */
-.intro { font-size: var(--b3); line-height: 1.5; }
-.prose { font-size: var(--b3); line-height: 1.5; }
-.reads a { font-size: var(--b3); line-height: 1.35; }
+.intro { font-size: var(--b3); line-height: 1.62; }
+.prose { font-size: var(--b3); line-height: 1.62; }
+.reads a { font-size: var(--b3); line-height: 1.5; }
 .reads__meta { font-size: var(--b1); }
 .card__name { font-size: var(--d2); }
 .card__meta { font-size: var(--b1); }
@@ -4389,6 +4492,22 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   pointer-events: none;
   image-rendering: pixelated;
 }
+
+/* The watering surface over the seed bed. It covers only the bottom
+   padding band (sized in flowers.js), so it never sits over the copyright
+   or the links above it. The cursor becomes a watering can here; a tap
+   pours, and the seedlings under the pour grow. */
+.col__waterer {
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%;
+  z-index: 1;
+  pointer-events: auto;
+  touch-action: manipulation;
+  cursor: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2234%22%20height%3D%2234%22%20viewBox%3D%220%200%2034%2034%22%20shape-rendering%3D%22geometricPrecision%22%3E%0A%20%20%3C%21--%20handle%20--%3E%0A%20%20%3Cpath%20d%3D%22M19%2012%20v-3%20a5%205%200%200%201%2010%200%20v3%22%20fill%3D%22none%22%20stroke%3D%22%230a3a44%22%20stroke-width%3D%223%22%2F%3E%0A%20%20%3Cpath%20d%3D%22M19%2012%20v-3%20a5%205%200%200%201%2010%200%20v3%22%20fill%3D%22none%22%20stroke%3D%22%237fe3f0%22%20stroke-width%3D%221.4%22%2F%3E%0A%20%20%3C%21--%20body%20--%3E%0A%20%20%3Cpath%20d%3D%22M13%2014%20h17%20v11%20a3%203%200%200%201%20-3%203%20h-11%20a3%203%200%200%201%20-3%20-3%20z%22%20fill%3D%22%232bb3c9%22%20stroke%3D%22%230a3a44%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3C%21--%20rim%20--%3E%0A%20%20%3Crect%20x%3D%2211%22%20y%3D%2210%22%20width%3D%2221%22%20height%3D%225%22%20rx%3D%221.5%22%20fill%3D%22%2335c6d6%22%20stroke%3D%22%230a3a44%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3C%21--%20body%20highlight%20--%3E%0A%20%20%3Crect%20x%3D%2215%22%20y%3D%2216%22%20width%3D%223%22%20height%3D%229%22%20rx%3D%221%22%20fill%3D%22%239fe8f2%22%2F%3E%0A%20%20%3C%21--%20spout%20--%3E%0A%20%20%3Cpath%20d%3D%22M13%2017%20L3%2010%20L1%2013%20L4%2016%20L13%2022%20Z%22%20fill%3D%22%232bb3c9%22%20stroke%3D%22%230a3a44%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3C%21--%20rose%20head%20--%3E%0A%20%20%3Cpath%20d%3D%22M1%208%20L7%2012%20L4%2015%20L-1%2011%20Z%22%20fill%3D%22%2312707f%22%20stroke%3D%22%230a3a44%22%20stroke-width%3D%221.6%22%2F%3E%0A%20%20%3C%21--%20water%20--%3E%0A%20%20%3Cg%20fill%3D%22%23bfe9ff%22%3E%3Crect%20x%3D%223%22%20y%3D%2216%22%20width%3D%222%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%221.5%22%20y%3D%2220%22%20width%3D%222%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%224.5%22%20y%3D%2223%22%20width%3D%222%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%0A%3C%2Fsvg%3E%0A") 2 12, pointer;
+}
+@media (prefers-reduced-motion: reduce) { .col__waterer { display: none; } }
+
 /* ==================================================================
    THE MODAL READS IN SATOSHI
 

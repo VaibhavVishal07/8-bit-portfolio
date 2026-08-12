@@ -44,6 +44,31 @@
     if (skip) {
       boot.hidden = true
     } else {
+      /* Sakura drifting down past the name. A handful of petals, each
+         given its own column, size, delay and fall time off a fixed
+         seed so the drift is the same every boot — the deterministic
+         rule the rest of the scene follows. */
+      const petals = document.getElementById('bootPetals')
+      if (petals) {
+        let seed = 0x9e3779b9
+        const rnd = () => {
+          seed = (Math.imul(seed ^ (seed >>> 15), 1 | seed) + 0x6d2b79f5) >>> 0
+          return seed / 4294967296
+        }
+        for (let n = 0; n < 16; n++) {
+          const p = document.createElement('span')
+          p.className = 'boot__petal'
+          const s = 4 + Math.round(rnd() * 4)
+          p.style.left = (rnd() * 100).toFixed(1) + '%'
+          p.style.width = s + 'px'
+          p.style.height = s - 1 + 'px'
+          p.style.opacity = (0.6 + rnd() * 0.4).toFixed(2)
+          p.style.animationDuration = (1.6 + rnd() * 1.8).toFixed(2) + 's'
+          p.style.animationDelay = (rnd() * 1.4).toFixed(2) + 's'
+          petals.appendChild(p)
+        }
+      }
+
       const TOTAL = 780
       const STEPS = 12
       let i = 0
