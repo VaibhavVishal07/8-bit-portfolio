@@ -2914,44 +2914,48 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    base .page / .col--doc layout, so nothing needs re-stating here.
    ================================================================== */
 
-/* the one way back, shown only while a page is open */
-.l2-home { display: none; }
-html:not([data-page='home']) .l2-home {
-  display: inline-block;
-  position: fixed;
-  z-index: 7;
-  /* Top left, in the gutter beside the page rather than floating over
-     the middle of it. Centred at the foot it landed on whatever the
-     piece happened to end with — the Next link, the last paragraph —
-     and a control that sits on the content is a control you have to
-     read around. Out here it is on the city, where there is nothing
-     to cover. */
-  top: var(--s5);
-  left: var(--s5);
+/* ==================================================================
+   THE TACTILE CTA + THE L2 TOP NAV
+
+   One button, used for every call to action and every back link: the
+   home CTAs ("All writing", "Know more about me") and the navigation bar
+   at the top of each L2 page. It is tactile in the language of the rest
+   of the scene — proud on a hard offset shadow, and it drops flat onto
+   that shadow on press, no easing, a snap. Set in Satoshi like the rest
+   of the reading type.
+   ================================================================== */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-family: var(--font-read);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   padding: var(--s3) var(--s5);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 2px;
-  color: var(--panel-text);
   text-decoration: none;
-  background: var(--panel);
   border: 2px solid var(--panel-edge);
-  /* Tactile: it sits proud on a hard offset shadow and presses in on
-     click — the whole button drops onto its own shadow. No easing, so
-     the press is a snap, which is the whole language of this scene. */
+  background: var(--panel);
+  color: var(--panel-text);
   box-shadow: 4px 4px 0 var(--ink);
 }
-html:not([data-page='home']) .l2-home:hover { color: var(--panel-edge); background: var(--panel-bar); }
-html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+.cta:hover,
+.cta:focus-visible { color: var(--panel-edge); background: var(--panel-bar); outline: none; }
+.cta:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+/* primary: the filled, accent CTA for the two forward actions on home */
+.cta--primary { background: var(--panel-edge); color: var(--ink); border-color: var(--ink); }
+.cta--primary:hover,
+.cta--primary:focus-visible { background: var(--panel-accent); color: var(--ink); }
+/* ghost: the quieter back link that leads each L2 page */
+.cta--ghost { background: transparent; }
 
-/* Under about 1100px the gutter is too narrow to hold the button, so
-   it comes in over the page's own top padding instead. The column is
-   given the height back at the top, which is the one place on a page
-   where nothing is being read yet. */
-@media (max-width: 1099px) {
-  html:not([data-page='home']) .l2-home { top: var(--s3); left: var(--s3); }
-  html:not([data-page='home']) .col--doc { padding-top: calc(var(--s7) + var(--s5)); }
-}
+/* the CTAs on home sit on their own line with a little room around them */
+.home-cta { margin: var(--s5) 0 0; }
+
+/* The L2 navigation bar: a back link on the first fold at the top of every
+   L2 column, so where "back" goes is always named and always in view
+   without scrolling. Replaces the old single floating button. */
+.l2nav { margin: 0 0 var(--s6); }
 
 /* ==================================================================
    THE CASE STUDY
@@ -3345,8 +3349,11 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   background: radial-gradient(130% 100% at 50% -10%, #14121f 0%, #0b0913 52%, #060410 100%);
 }
 html[data-l2='read'] .reading-surface { display: block; }
-/* the city controls belong to the city, which is not on screen here */
-html[data-l2='read'] .controls { display: none; }
+/* The city controls belong to the city, which is not the subject of any L2
+   page — the reader is here to read, not to change the weather behind the
+   panel. Hidden on the reading pages AND the case studies. */
+html[data-l2='read'] .controls,
+html[data-l2='stage'] .controls { display: none; }
 /* Frameless reading column: no border, no neon cast, no panel fill. The
    per-city `.col` rules that paint the frame carry specificity (0,3,1), so
    this has to out-weigh them — hence the trebled class. Without it the
@@ -3452,17 +3459,6 @@ html[data-l2='read'] .read__nav__back { font-size: 15px; letter-spacing: 0.02em;
 html[data-l2='read'] .read__nav__dir { font-size: 13px; letter-spacing: 0.02em; text-transform: none; }
 html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
 html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
-
-/* Under ~1100px the CLOSE button drops out of the side gutter and sits over
-   the page's own top padding, so the reading column has to give that height
-   back or the button lands on the eyebrow. (Matches the case-study rule; our
-   frameless override out-weighs it, so it is restated here.) */
-@media (max-width: 1099px) {
-  html[data-l2='read'] .col.col--doc.read,
-  html[data-l2='read'] .col.col--doc.windex {
-    padding-top: calc(var(--s7) + var(--s5));
-  }
-}
 
 .windex { text-align: left; }
 .windex__year { margin: var(--s6) 0 0; }

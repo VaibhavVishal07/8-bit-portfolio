@@ -159,6 +159,8 @@
 
     const html =
       '<article class="col col--doc read">' +
+      '<nav class="l2nav"><a class="cta cta--ghost" href="#writing">' +
+        '<span aria-hidden="true">←</span> All writing</a></nav>' +
       '<p class="read__eyebrow">' + eyebrow + '</p>' +
       '<h2 class="read__title">' + a.title + '</h2>' +
       '<p class="read__standfirst">' + a.standfirst + '</p>' +
@@ -202,6 +204,8 @@
 
     section.innerHTML =
       '<div class="col col--doc windex">' +
+      '<nav class="l2nav"><a class="cta cta--ghost" href="#home">' +
+        '<span aria-hidden="true">←</span> Home</a></nav>' +
       '<p class="read__eyebrow">WRITING <span class="read__sep">·</span> ' + ARTICLES.length + ' PIECES</p>' +
       '<h2 class="read__title">Writing</h2>' +
       '<p class="read__standfirst">Notes and essays on design, motion, and the craft of building products.</p>' +
@@ -221,7 +225,8 @@
         '<span class="reads__meta">' + a.year + ' · ' + a.read + '</span></a></li>'
     })
     rows += '</ul>'
-    rows += '<a class="writing-home__all" href="#writing">All writing (' + ARTICLES.length + ') →</a>'
+    rows += '<p class="home-cta"><a class="cta cta--primary" href="#writing">' +
+      'All writing (' + ARTICLES.length + ') <span aria-hidden="true">→</span></a></p>'
     host.innerHTML = rows
   }
 

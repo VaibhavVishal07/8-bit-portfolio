@@ -110,11 +110,9 @@
      ================================================================== -->
 <main class="app">
 
-  <!-- A single back-to-home control, shown only while an L2 page is
-       open. It replaces the per-page header the docs used to carry, so a
-       project or an article opens as its own full page and this is the
-       one way back. -->
-  <a class="l2-home" href="#home">CLOSE</a>
+  <!-- L2 pages carry their own navigation inline, at the top of the column
+       (see the .l2nav bar on each) — a back link on the first fold rather
+       than a single floating button, so where "back" goes is always named. -->
 
   <section class="page page--home is-on" data-page="home">
     <div class="col">
@@ -216,6 +214,10 @@
            want to say hello, here are the ways to reach me.</p>
       </div>
 
+      <!-- The longer version — background, how I work, the road here — sits
+           on its own reading page, one tactile tap away. -->
+      <p class="home-cta"><a class="cta cta--primary" href="#about">Know more about me <span aria-hidden="true">→</span></a></p>
+
       <!-- ---- contact ----
            Four icons in a row. It was four full-width rows with a
            label, a value and a hover affordance in each — a table of
@@ -242,6 +244,54 @@
     </div>
   </section>
 
+  <!-- ==== ABOUT (L2) ====
+       The longer read behind the home "Know more about me" button. Same
+       frameless reading surface as the articles (data-kind="read"). The
+       body is placeholder for now — swap the paragraphs for the real story. -->
+  <section class="page" data-page="about" data-kind="read" hidden>
+    <article class="col col--doc read about">
+      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
+      <p class="read__eyebrow">ABOUT <span class="read__sep">&middot;</span> VAIBHAV VISHAL</p>
+      <h2 class="read__title">More about me</h2>
+      <p class="read__standfirst">Placeholder standfirst — a couple of lines that set up who I am
+        and how I work before the longer story begins. Replace this with the real thing.</p>
+      <div class="read__byline"><span class="read__by">Vaibhav Vishal</span>
+        <span class="read__dot" aria-hidden="true"></span><span>Product Designer</span></div>
+      <div class="read__rule" aria-hidden="true"></div>
+      <div class="prose read__body">
+        <p class="read__lead">Placeholder opening paragraph. This is where the fuller story
+          starts — the through-line of the work, what I keep coming back to, and the kind of
+          problem I do my best thinking on. It runs a few lines so the measure and the leading
+          are visible before the real words replace it.</p>
+        <p>A second placeholder paragraph carries the background: where I have worked, the
+          shape of the teams, and the sort of product I have spent the most time on. Concrete
+          when the real copy lands; for now it is only holding the space.</p>
+
+        <h3>How I work</h3>
+        <p>Placeholder copy on the way I approach a problem — how I frame it, who I pull in,
+          and what I insist on before calling anything done. A paragraph a reader could repeat
+          back as a fair account of what it is like to build something with me.</p>
+        <p>A short placeholder list of the things that stay true across projects:</p>
+        <ul>
+          <li>Start from the user's first five seconds, not the feature list.</li>
+          <li>Let the data settle the argument the room cannot.</li>
+          <li>Ship the smallest honest version, then learn in public.</li>
+        </ul>
+
+        <h3>Away from the screen</h3>
+        <p>Placeholder paragraph for the human bits — what I read, what I build for no reason,
+          and how I spend the hours that are not work. This is the part that says who you would
+          actually be working with, so the real version is worth writing well.</p>
+        <p>Closing placeholder line, handing the reader somewhere to go next — a link to the
+          work, or a way to get in touch — before it stops.</p>
+      </div>
+
+      <nav class="read__nav">
+        <a class="read__nav__back" href="#home"><span aria-hidden="true">←</span> Back home</a>
+      </nav>
+    </article>
+  </section>
+
   <!-- ==== CASE STUDIES ====
        All client work is under NDA, so no real screens are shown. Each
        study leads with an NDA note, redacts its four screens behind a
@@ -249,6 +299,7 @@
        invitation: the story is here, the pixels are a call away. -->
   <section class="page" data-page="w1" hidden>
     <article class="col col--doc cs">
+      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
       <p class="cs__eyebrow">PROJECT 01 &middot; PRODUCT DESIGN &middot; 2025 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">LIGHTS, CAMERA, BANNERS</h2>
       <p class="cs__lede">Driving user engagement through dynamic banner design.</p>
@@ -282,6 +333,7 @@
 
   <section class="page" data-page="w2" hidden>
     <article class="col col--doc cs">
+      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
       <p class="cs__eyebrow">PROJECT 02 &middot; DESIGN SYSTEMS &middot; 2024 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">THE SOUND OF STYLE</h2>
       <p class="cs__lede">A sleek, smarter music player built for seamless listening.</p>
@@ -315,6 +367,7 @@
 
   <section class="page" data-page="w3" hidden>
     <article class="col col--doc cs">
+      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
       <p class="cs__eyebrow">PROJECT 03 &middot; MOBILE &middot; 2023 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">EVERYTHING, ALL AT ONCE</h2>
       <p class="cs__lede">Unifying OTT subscription and viewing experience.</p>
@@ -348,6 +401,7 @@
 
   <section class="page" data-page="w4" hidden>
     <article class="col col--doc cs">
+      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
       <p class="cs__eyebrow">PROJECT 04 &middot; BRAND &middot; 2022 <span class="cs__nda">UNDER NDA</span></p>
       <h2 class="cs__title">HOW TO DECIDE?</h2>
       <p class="cs__lede">Easing user&rsquo;s decision making to purchase a service.</p>
