@@ -3379,10 +3379,12 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   inset: 0;
   z-index: 1;
   display: none;
-  /* A darker wash over the city, not a solid lid. The skyline still reads
-     faintly behind the modal — turned down and pushed back — so an L2 page
-     feels like a card opened OVER the city rather than a different place. */
-  background: rgba(4, 3, 11, 0.58);
+  /* A wash over the city, pushed down hard so the modal never merges with
+     the skyline behind it. The city is still there — a trace of it reads at
+     the very edges — but it is turned right down, so an L2 page reads as a
+     card opened OVER the city, cleanly separated from it, not a dim panel
+     floating in the same murk. */
+  background: rgba(3, 2, 8, 0.9);
 }
 html[data-l2='read'] .reading-surface,
 html[data-l2='stage'] .reading-surface { display: block; }
@@ -3408,10 +3410,16 @@ html[data-l2='stage'] .col.col--doc.cs {
   width: min(94vw, 860px);
   margin-inline: auto;
   min-height: 0;
-  background: rgba(12, 10, 20, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Fully opaque and a touch lighter than the scrim behind it, so the card
+     is a distinct surface — the city never bleeds THROUGH the panel — with
+     a defined edge and a real drop that lifts it off the dimmed backdrop. */
+  background: #16131f;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-image: none;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 30px 90px rgba(0, 0, 0, 0.7),
+    0 6px 24px rgba(0, 0, 0, 0.5);
   filter: none;
   padding: clamp(26px, 3.6vw, 48px) clamp(22px, 3.4vw, 44px) clamp(36px, 5vw, 64px);
 }
