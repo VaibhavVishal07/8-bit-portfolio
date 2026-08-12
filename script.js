@@ -1002,12 +1002,20 @@
       pages.forEach((el) => el.removeAttribute('data-active'))
       if (live) live.setAttribute('data-active', '')
 
-      /* Away from home the city does NOT stop — it keeps crossing, at
-         half light, behind the open page. The stage wash turns the neon
-         down without freezing the frame, which is what was asked for:
-         things still move, the lights just come down. */
-      if (window.__scene && window.__scene.setStage) {
-        window.__scene.setStage(id !== 'home')
+      /* Three kinds of page, three treatments behind them:
+           home   — the living city, full strength; it IS the shot.
+           stage  — case studies: the city keeps crossing at half light,
+                    an atmospheric backdrop to visual work.
+           read   — articles, the writing index, about: a place to read.
+                    The city stops and a solid dark reading surface covers
+                    it, so nothing moves behind the prose. Marked with
+                    data-kind="read" on the generated pages. */
+      const kind = id === 'home' ? 'home'
+        : (live && live.dataset.kind === 'read') ? 'read' : 'stage'
+      document.documentElement.dataset.l2 = kind === 'home' ? '' : kind
+      if (window.__scene) {
+        if (window.__scene.setFocus) window.__scene.setFocus(kind === 'read')
+        if (window.__scene.setStage) window.__scene.setStage(kind === 'stage')
       }
     }
 

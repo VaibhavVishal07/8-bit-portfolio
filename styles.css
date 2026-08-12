@@ -3093,13 +3093,18 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 }
 .read__sep { margin: 0 2px; }
 
+/* Title in the READING face, not the pixel one: a headline is meant to
+   be read, and Press Start 2P is a logotype, not a headline. The pixel
+   font stays on the chrome — eyebrow, labels, nav — where it is short. */
 .read__title {
-  font-family: var(--font-display);
-  font-size: var(--d4);
-  line-height: 1.32;
+  font-family: var(--font-read);
+  font-weight: 700;
+  font-size: clamp(30px, 4.4vw, 46px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--cream);
   margin: 0 0 var(--s5);
-  max-width: 18ch;
+  max-width: 20ch;
 }
 
 .read__standfirst {
@@ -3143,9 +3148,10 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 /* A subhead keeps the pixel face — it is still structure, and the
    step in scale is what marks the turn — but not the neon. */
 .read__body h3 {
-  font-family: var(--font-display);
-  font-size: var(--d3);
-  line-height: 1.4;
+  font-family: var(--font-read);
+  font-weight: 700;
+  font-size: clamp(22px, 2.4vw, 28px);
+  line-height: 1.25;
   color: var(--cream);
   margin: var(--s7) 0 var(--s4);
 }
@@ -3200,6 +3206,23 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   font-weight: 500;
   letter-spacing: 1px;
   margin-right: var(--s2);
+}
+
+/* ---- the hero ----
+   Optional, and it sits under the intro rather than over the headline, so
+   the piece stays text-first. Full measure, a caption beneath. A real image
+   drops straight in; the placeholder is the same canvas art as everything
+   else, a slot waiting for its picture. */
+.read__hero {
+  margin: 0 0 var(--s6);
+  max-width: 62ch;
+}
+.read__hero .card__art--wide,
+.read__hero__img { display: block; width: 100%; margin-bottom: var(--s4); }
+.read__hero__img {
+  height: auto;
+  image-rendering: pixelated;
+  border: 2px solid var(--panel-dim);
 }
 
 /* a drop cap opens the body — one big letter in the reading face, in the
@@ -3296,6 +3319,41 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
    at five pieces or fifty. Each row is a title and a compact kind/length
    tag; the whole thing is one quiet column, the same as an article.
    ================================================================== */
+/* ==================================================================
+   THE READING SURFACE
+
+   A place to read is not a place to watch a city. On article, index and
+   about pages the scene stops (script.js setFocus) and this solid, still
+   surface covers it, so the prose sits on a calm dark ground. And the
+   reading column sheds its neon frame here — on a clean page the text
+   does not need to sit inside a lit box; the measure and the type carry
+   it. Home and the case studies keep the framed panel over the city.
+   ================================================================== */
+.reading-surface {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: none;
+  background: radial-gradient(130% 100% at 50% -10%, #14121f 0%, #0b0913 52%, #060410 100%);
+}
+html[data-l2='read'] .reading-surface { display: block; }
+/* the city controls belong to the city, which is not on screen here */
+html[data-l2='read'] .controls { display: none; }
+/* Frameless reading column: no border, no neon cast, no panel fill. The
+   per-city `.col` rules that paint the frame carry specificity (0,3,1), so
+   this has to out-weigh them — hence the trebled class. Without it the
+   extruded drop-shadow falls on the bare glyphs and ghosts every letter,
+   and the border-image/box-shadow keep drawing the neon box we are shedding. */
+html[data-l2='read'] .col.col--doc.read,
+html[data-l2='read'] .col.col--doc.windex {
+  background: transparent;
+  border: 0;
+  border-image-source: none;
+  box-shadow: none;
+  filter: none;
+  padding-top: clamp(48px, 7vw, 96px);
+}
+
 .windex { text-align: left; }
 .windex__year { margin: var(--s6) 0 0; }
 .windex__yh {
