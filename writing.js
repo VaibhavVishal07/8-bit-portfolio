@@ -27,10 +27,6 @@
       id: 'r1', kind: 'ESSAY', year: 2026, date: 'March 2026', read: '6 min',
       title: 'Designing for the first five seconds',
       standfirst: 'Most of what a product will ever say to a new user, it says before they have read a single word. Here is how to spend that budget.',
-      // Optional hero: `src` when you have art, or just a caption for a
-      // placeholder slot. The piece still leads with words — the image
-      // sits under the standfirst, not above the headline.
-      hero: { cap: 'Placeholder hero, drawn in code. Swap it for your own image by setting hero.src.' },
       body: [
         { t: 'lead', html: 'This is where the piece opens: one idea, stated plainly, before the reader has decided whether to stay. The measure is deliberately narrow, the type is set for reading rather than for looking, and nothing in the margin is competing for the eye.' },
         { t: 'p', html: 'Placeholder copy sits in for the real argument. It runs long enough to show how a paragraph breaks across this measure, how the leading feels underneath a line or two, and where the reader’s attention lands when there is nothing on the page but the words.' },
@@ -111,21 +107,25 @@
   }
   const meta = (a) => a.kind + ' · ' + a.read
 
-  // The hero is optional and text-first: it renders under the standfirst,
-  // so the headline and the opening line land before any picture does. Give
-  // it a `src` for a real image, or leave it as a caption-only placeholder.
+  /* Art is DRAWN, not left blank. Every hero and figure is a procedural
+     poster painted by posters.js (the same engine the covers use), so the
+     pages are never a wall of empty grey boxes. `artSeed` is set per article
+     so its pictures are its own and stay the same every reload; a real
+     <img> in hero.src still takes over when you have one. */
+  let artSeed = 1
+  let figCount = 0
+
   function heroHTML(a) {
-    if (!a.hero) return ''
-    const art = a.hero.src
+    if (a.hero === false) return ''
+    const art = (a.hero && a.hero.src)
       ? '<img class="read__hero__img" src="' + a.hero.src + '" alt="' + (a.hero.alt || '') + '">'
-      : '<span class="card__art card__art--wide"></span>'
-    const cap = a.hero.cap
+      : '<canvas class="card__art card__art--wide" data-poster="work" data-seed="' + artSeed + '" aria-hidden="true"></canvas>'
+    const cap = (a.hero && a.hero.cap)
       ? '<figcaption class="read__figcap">' + a.hero.cap + '</figcaption>'
       : ''
     return '<figure class="read__hero">' + art + cap + '</figure>'
   }
 
-  let figCount = 0
   function blockHTML(b) {
     switch (b.t) {
       case 'lead': return '<p class="read__lead">' + b.html + '</p>'
@@ -135,7 +135,9 @@
       case 'ul': return '<ul>' + b.items.map((i) => '<li>' + i + '</li>').join('') + '</ul>'
       case 'fig': {
         const n = String(++figCount).padStart(2, '0')
-        return '<figure class="read__fig"><span class="card__art card__art--wide"></span>' +
+        const seed = artSeed * 7 + figCount
+        return '<figure class="read__fig">' +
+          '<canvas class="card__art card__art--wide" data-poster="work" data-seed="' + seed + '" aria-hidden="true"></canvas>' +
           '<figcaption class="read__figcap"><b>Fig. ' + n + '</b> ' + b.cap + '</figcaption></figure>'
       }
       default: return ''
@@ -145,6 +147,8 @@
   // ---- build one article page ----
   function articlePage(a, prev, next) {
     figCount = 0
+    // the article's own art seed — its pictures are its own, stable per reload
+    artSeed = parseInt(String(a.id).replace(/\D/g, ''), 10) || 1
     const eyebrow = a.kind + ' <span class="read__sep">·</span> ' + a.date +
       ' <span class="read__sep">·</span> ' + a.read.toUpperCase() + ' READ'
 
@@ -239,6 +243,9 @@
       frag.appendChild(articlePage(a, ARTICLES[i - 1], ARTICLES[i + 1]))
     })
     main.appendChild(frag)
+    // paint the heroes and figures we just generated (posters.js also runs
+    // its own pass on load; this covers the case where it already ran).
+    if (window.Posters && window.Posters.paintAll) window.Posters.paintAll(main)
   }
 
   const host = document.getElementById('writingHome')
