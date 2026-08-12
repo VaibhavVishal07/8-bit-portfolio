@@ -2032,16 +2032,10 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
   gap: var(--s4);
   padding: var(--s4) var(--s2);
   border-bottom: 2px solid var(--panel-dim);
-  /* Ranged left like the WRITING list below, not centred with the
-     masthead: the label reads down the left edge, the title follows
-     it, and the value sits out at the right. */
-  text-align: left;
+  text-align: center;
 }
 
-/* The value column sits at the right of the row, so its text ranges
-   right — the same label-left / value-right split the writing rows
-   have. */
-.shelf i { text-align: right; }
+.shelf i { text-align: center; }
 
 .shelf span {
   font-family: var(--font-display);
@@ -2555,23 +2549,12 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
   text-wrap: balance;
 }
 
-.masthead .sub {
-  max-width: 54ch;
-  margin: 0 auto;
-  font-family: var(--font-body);
-  font-size: 14.5px;
-  line-height: 1.7;
-  color: var(--panel-text);
-  text-wrap: pretty;
-}
-
 /* ==================================================================
    HOME — the sections inside the panel
    ================================================================== */
 
-/* The panel is centred for the masthead; everything under it is a
-   document and ranges left. */
-.page--home .band { text-align: left; }
+/* The panel is centred throughout — masthead, sections and all. */
+.page--home .band { text-align: center; }
 
 .band {
   padding: 88px 0 0;
@@ -2763,7 +2746,7 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
   font-size: 13px;
   line-height: 1.7;
   color: var(--read-3);
-  text-align: left;
+  text-align: center;
 }
 
 /* The shelf is inherited from the section above; it just needs to stop
@@ -3313,7 +3296,6 @@ html[data-l2='case'] .col.col--doc.cs {
 
 @media (max-width: 760px) {
   .masthead .lede { font-size: 22px; max-width: 22ch; }
-  .masthead .sub { font-size: 13.5px; }
   .band { padding-top: 64px; }
 
   /* One column of cards on a phone: two-up makes a 150px plate, which is
@@ -3386,7 +3368,6 @@ html[data-l2='case'] .col.col--doc.cs {
   .masthead .role { font-size: 11px; gap: 5px 10px; }
   .masthead .role span + span::before { margin-right: 10px; }
   .masthead .lede { font-size: 21px; max-width: 20ch; }
-  .masthead .sub { font-size: 13px; max-width: 40ch; }
 }
 
 @media (max-width: 560px) {
@@ -3448,11 +3429,6 @@ html[data-l2='case'] .col.col--doc.cs {
   color: var(--teal);
   line-height: 1.5;
 }
-.page--home .col .sub {
-  font-family: var(--font-body);
-  font-weight: 400;
-  letter-spacing: 0;
-}
 
 .page--home .col .wk__n {
   font-family: var(--font-display);
@@ -3486,7 +3462,6 @@ html[data-l2='case'] .col.col--doc.cs {
 /* A line of Satoshi at 27px in an 860px panel: wide enough to be a
    sentence, narrow enough to stay a masthead. */
 .page--home .col .lede { max-width: 32ch; }
-.page--home .col .sub { max-width: 58ch; }
 
 @media (max-width: 760px) {
   .page--home .col .lede { max-width: 24ch; }
@@ -3534,3 +3509,44 @@ html[data-l2='case'] .col.col--doc.cs {
   outline-offset: 6px;
 }
 
+
+/* ==================================================================
+   THE PANEL READS CENTRED
+
+   Everything in the column is centred on the masthead's axis — the
+   section ledes, the cards, the four statements, the shelf and the
+   colophon. The bands were ranging left, which put two different
+   alignments in one panel and made the masthead look like a separate
+   object sitting on top of a document.
+
+   This stops at the panel. A case study is long-form prose set to a
+   720px measure, and centred body copy gives the eye no consistent
+   place to start each line — so .cs and .read keep their left range.
+   ================================================================== */
+
+.page--home .band__lede {
+  margin-inline: auto;
+}
+
+/* The number and the title under each plate travel together, centred as
+   a pair rather than pinned to the plate's left corner. */
+.wk__foot { justify-content: center; }
+
+.page--home .pov li { text-align: center; }
+.page--home .pov h3::before {
+  display: block;
+  margin: 0 auto 10px;
+}
+
+/* The shelf keeps its three columns — a row is still label, title,
+   value — but each cell centres in its own track. */
+.page--home .col .shelf li {
+  grid-template-columns: 1fr 1.4fr 1fr;
+  text-align: center;
+}
+.page--home .col .shelf b::before {
+  display: inline-block;
+  margin-right: var(--s2);
+}
+
+.page--home .home-cta { text-align: center; }
