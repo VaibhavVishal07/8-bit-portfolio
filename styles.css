@@ -3614,25 +3614,4 @@ html[data-l2='case'] .col.col--doc.cs {
 .cta--primary:focus-visible { --cta-side: #8a1f57; }
 .cta--ghost { --cta-side: #2a1a5c; }
 
-/* ---- the nameplate ----
-   What the pointer is over, out in the city. Mono, small, on the ink,
-   with the same hard offset block the rest of the interface stands on. */
-.nameplate {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 40;
-  display: none;
-  pointer-events: none;
-  padding: 7px 11px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--cream);
-  background: var(--ink);
-  border: 2px solid var(--panel-edge);
-  box-shadow: 3px 3px 0 rgba(2, 1, 6, 0.75);
-}
-.nameplate.is-on { display: block; }
+
