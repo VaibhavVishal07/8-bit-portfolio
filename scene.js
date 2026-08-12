@@ -1610,21 +1610,18 @@
     return fn.apply(null, args)
   }
 
-  /* One read per layer, and not of the layer.
+  /* Sampling a layer, cheaply.
 
      Reading a 5760x1356 device buffer costs thirty megabytes and eight
-     million pixel tests per plane, four times over, every time the city
-     is rebuilt — which froze the renderer outright. The buffer is
-     scaled into a small scratch canvas instead and measured there: four
-     authored pixels to a sample is far finer than a hit box needs, and
-     it is fifty thousand pixels rather than eight million.
-
-     Everything below is in SCALED space and multiplied back at the end. */
+     million pixel tests a plane, four planes, every rebuild — which
+     froze the renderer outright the first time. The buffer is scaled
+     into a small scratch canvas and read there instead: four authored
+     pixels to a sample, fifty thousand pixels rather than eight million,
+     and far finer than a hit box needs. */
   const MARK_DIV = 4
   let markScratch = null
 
-  function measureMarks(buf, list, layer) {
-    if (!list.length) return
+  function sampleBuf(buf) {
     const sw = Math.ceil(buf.w / MARK_DIV)
     const sh = Math.ceil(buf.h / MARK_DIV)
     if (!markScratch || markScratch.c.width !== sw || markScratch.c.height !== sh) {
@@ -1636,35 +1633,50 @@
     const g2 = markScratch.x
     g2.clearRect(0, 0, sw, sh)
     g2.drawImage(buf.c, 0, 0, sw, sh)
-    let data
     try {
-      data = g2.getImageData(0, 0, sw, sh).data
+      return { w: sw, h: sh, d: g2.getImageData(0, 0, sw, sh).data }
     } catch (e) {
-      return
+      return null
     }
+  }
 
+  /* Everything below is in SAMPLED space and multiplied back at the end. */
+  function measureMarks(buf, list, layer, before) {
+    const after = sampleBuf(buf)
+    if (!after || !before || before.w !== after.w) return
+    const { w: sw, h: sh } = after
+    const A = after.d
+    const B = before.d
+
+    // a column is a landmark column if any sample in it moved
     const inked = new Uint8Array(sw)
     const colTop = new Int16Array(sw).fill(-1)
     const colBot = new Int16Array(sw).fill(-1)
     for (let py = 0; py < sh; py++) {
       const row = py * sw
       for (let px = 0; px < sw; px++) {
-        if (data[(row + px) * 4 + 3] <= 8) continue
+        const k = (row + px) * 4
+        if (A[k] === B[k] && A[k + 1] === B[k + 1] && A[k + 2] === B[k + 2] && A[k + 3] === B[k + 3]) continue
         inked[px] = 1
         if (colTop[px] < 0) colTop[px] = py
         colBot[px] = py
       }
     }
 
-    // walk out from the anchor until the ink stops for a clear run
-    const GAP = Math.max(2, Math.round(6 / MARK_DIV))
+    /* Walk out from the anchor until the change stops for a clear run.
+       Capped, because two landmarks placed close together on one plane
+       would otherwise be measured as a single very wide object. */
+    const GAP = Math.max(2, Math.round(8 / MARK_DIV))
+    const REACH = Math.round(150 / MARK_DIV)
     for (const m of list) {
       const cx = Math.round(m.x / MARK_DIV)
       if (cx < 0 || cx >= sw) continue
+      const lo = Math.max(0, cx - REACH)
+      const hi = Math.min(sw - 1, cx + REACH)
       let l = cx
-      for (let run = 0; l > 0 && run < GAP; l--) run = inked[l] ? 0 : run + 1
+      for (let run = 0; l > lo && run < GAP; l--) run = inked[l] ? 0 : run + 1
       let r = cx
-      for (let run = 0; r < sw - 1 && run < GAP; r++) run = inked[r] ? 0 : run + 1
+      for (let run = 0; r < hi && run < GAP; r++) run = inked[r] ? 0 : run + 1
       if (r - l < 1) continue
       let top = sh
       let bot = -1
@@ -1768,12 +1780,8 @@
       }
     }
 
-    /* Landmarks only. The generated stock — three hundred anonymous
-       towers a plane — was the backdrop; it is the thing that made the
-       skyline read as a city and also the thing nobody could name. What
-       is left is what somebody would point at. */
     let x = -30
-    while (!o.landmarksOnly && x < LOOP_W + 30) {
+    while (x < LOOP_W + 30) {
       let w = o.minW + Math.floor(rnd() * (o.maxW - o.minW))
       let h = o.minH + Math.floor(rnd() * (o.maxH - o.minH))
 
@@ -2684,9 +2692,23 @@
 
     // Landmarks go in with the buildings, before the wash, so they take
     // the same aerial perspective as everything else at this depth.
+    /* The hit boxes are found by DIFFERENCE now.
+
+       With an empty sky behind them a landmark could be measured by
+       walking out to the first clear column. There is a city behind them
+       again, so there are no clear columns — the walk would swallow the
+       whole skyline. The layer is sampled before the landmarks go in and
+       again straight after, and anything that changed between the two is
+       a landmark. It is two reads of a downsampled copy, which is fifty
+       thousand pixels, and it is exact whatever is standing behind. */
     markPending = o.markLayer == null ? null : []
+    const markBefore = o.markLayer == null ? null : sampleBuf(buf)
     if (o.landmarks) o.landmarks(g, o, windows, beamSources)
-    const mine = markPending
+    if (markPending && markPending.length) {
+      // before the wash, which touches every pixel and would read as
+      // the whole layer having changed
+      measureMarks(buf, markPending, o.markLayer, markBefore)
+    }
     markPending = null
 
     /* Aerial perspective. Everything at this depth is washed toward the
@@ -2720,9 +2742,6 @@
       }
       g.globalCompositeOperation = 'source-over'
     }
-
-    // measured last, so the wash and every void are already in
-    if (mine && mine.length) measureMarks(buf, mine, o.markLayer)
 
     return { buf, windows, fill: o.fill }
   }
@@ -5362,10 +5381,6 @@
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
-      /* Nothing is drawn on the ridge but stock, so with the stock gone
-         the ridge is gone: an empty plane still costs a buffer and a
-         blit every frame. */
-      landmarksOnly: true,
       minW: 35, maxW: 80, minH: 16, maxH: 54, gapChance: 0.72, gap: 14,
       step: 3, ww: 1, wh: 1, litChance: 0.028,
       neon: T.neon, neonChance: 0.0000, halo: 0, fog: 0.11,
@@ -5463,8 +5478,7 @@
       /* Spread across the loop so that at any moment one or two are
          in frame and the rest are on their way round. */
       landmarks: marks(L.key),
-      // landmarks only, and tell the registry which plane they land on
-      landmarksOnly: true,
+      // which plane the registry should file this layer's landmarks under
       markLayer: i + 1,
     })
   }
