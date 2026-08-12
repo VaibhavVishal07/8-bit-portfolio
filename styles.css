@@ -2957,40 +2957,39 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
    THE CASE STUDY
 
    Roomier than the rest of the site on purpose — a case study is read,
-   not scanned. The long prose sets in Satoshi; every label, heading and
-   number stays on the pixel/mono so the page still reads as this place.
+   not scanned. Set entirely in Satoshi, on the same pinned scale as the
+   articles, so the work reads in parity with the writing. The city still
+   crosses at half light behind the panel; only the type is unified.
    ================================================================== */
 /* A case study is a document: it ranges LEFT, so the eye has an edge to
    return to. (The rest of the site centres; this deliberately does not.) */
 .cs { text-align: left; padding: var(--s4) var(--s2) var(--s7); }
 
-/* Same rule as the reader: the kicker is quiet, the title is not. */
-.cs__eyebrow { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 2px; color: var(--panel-quiet); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
-.cs__title { font-family: var(--font-display); font-size: var(--d4); color: var(--cream); margin: 0 0 var(--s4); line-height: 1.4; }
-.cs__lede { font-family: var(--font-read); font-size: var(--b4); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 34ch; }
+/* Set entirely in Satoshi, on the same pinned scale as the article and
+   index pages, so a case study reads in parity with the writing rather
+   than in a second, louder voice. Labels (kicker, meta terms) are the
+   reading face doing small, upper, letter-spaced chrome work. */
+.cs__eyebrow { font-family: var(--font-read); font-size: 14px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--panel-quiet); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.cs__title { font-family: var(--font-read); font-size: clamp(30px, 3.6vw, 42px); font-weight: 700; letter-spacing: -0.015em; color: var(--cream); margin: 0 0 var(--s5); line-height: 1.14; }
+.cs__lede { font-family: var(--font-read); font-size: clamp(20px, 2.2vw, 23px); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 40ch; }
 .cs__hero { display: block; width: 100%; margin: 0 0 var(--s6); }
 .cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5) var(--s5); margin: 0 0 var(--s6); padding: var(--s5) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
-.cs__meta dt { font-family: var(--font-display); font-size: var(--d1); letter-spacing: 1px; color: var(--panel-quiet); margin: 0 0 var(--s2); }
-.cs__meta dd { margin: 0; font-size: var(--b3); color: var(--panel-text); }
-.cs__h { font-family: var(--font-display); font-size: var(--d3); color: var(--cream); margin: var(--s7) 0 var(--s4); }
+.cs__meta dt { font-family: var(--font-read); font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--panel-quiet); margin: 0 0 var(--s2); }
+.cs__meta dd { font-family: var(--font-read); margin: 0; font-size: 17px; color: var(--panel-text); }
+.cs__h { font-family: var(--font-read); font-size: clamp(22px, 2vw, 26px); font-weight: 700; color: var(--cream); margin: var(--s7) 0 var(--s4); }
 
-/* The reading prose. Satoshi by default, at a comfortable size; but the
-   FIRST project stays fully pixel/mono, on the JetBrains face, so there
-   is one study that is the machine talking and the rest read plainly. */
+/* The reading prose, at body size in the same face as the articles. */
 .cs .prose { font-family: var(--font-read); }
-.cs .prose p { font-size: 22px; line-height: 1.82; color: var(--cream); margin: 0 0 var(--s5); max-width: 62ch; }
+.cs .prose p { font-size: 19px; line-height: 1.72; color: var(--cream); margin: 0 0 var(--s5); max-width: 62ch; }
 .cs .prose p:last-child { margin-bottom: 0; }
-
-.page[data-page='w1'] .cs__lede,
-.page[data-page='w1'] .cs__note,
-.page[data-page='w1'] .cs .prose { font-family: var(--font-body); }
-.page[data-page='w1'] .cs .prose p { font-size: var(--b3); }
 
 /* ---- the NDA badge, note and redacted screens ---- */
 .cs__nda {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
+  font-family: var(--font-read);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--ink);
   background: var(--panel-accent);
   padding: 3px 7px;
@@ -2998,7 +2997,7 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 }
 .cs__note {
   font-family: var(--font-read);
-  font-size: var(--b3);
+  font-size: 17px;
   line-height: 1.6;
   color: var(--panel-text);
   margin: 0 0 var(--s6);
@@ -3036,9 +3035,11 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 .cs__shot__tag {
   position: absolute; top: 0; left: 0;
   padding: 3px 7px;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
+  font-family: var(--font-read);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--panel-quiet);
 }
 .cs__shot__lock {
@@ -3050,20 +3051,22 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 .cs__shot figcaption {
   position: absolute; bottom: 0; right: 0;
   padding: 3px 7px;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
+  font-family: var(--font-read);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--panel-quiet);
 }
 
 /* both end-of-study actions are tactile buttons: proud on a hard
    offset, and they drop onto their shadow on press */
 .cs__cta { margin: var(--s7) 0 0; }
-.cs__cta a { font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--ink); background: var(--panel-edge); padding: var(--s3) var(--s4); text-decoration: none; box-shadow: 4px 4px 0 var(--ink); display: inline-block; }
+.cs__cta a { font-family: var(--font-read); font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink); background: var(--panel-edge); padding: var(--s3) var(--s4); text-decoration: none; box-shadow: 4px 4px 0 var(--ink); display: inline-block; }
 .cs__cta a:hover { background: var(--panel-accent); }
 .cs__cta a:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
 
-.cs__next { display: inline-block; margin-top: var(--s6); font-family: var(--font-display); font-size: var(--d2); letter-spacing: 1px; color: var(--panel-text); text-decoration: none; padding: var(--s3) var(--s4); background: var(--panel); border: 2px solid var(--panel-dim); box-shadow: 4px 4px 0 var(--ink); }
+.cs__next { display: inline-block; margin-top: var(--s6); font-family: var(--font-read); font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--panel-text); text-decoration: none; padding: var(--s3) var(--s4); background: var(--panel); border: 2px solid var(--panel-dim); box-shadow: 4px 4px 0 var(--ink); }
 .cs__next:hover { color: var(--panel-edge); border-color: var(--panel-edge); }
 .cs__next:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
 
