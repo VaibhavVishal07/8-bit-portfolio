@@ -620,22 +620,10 @@
     }
 
     /* ---- the bed ----
-       A thin scatter of leaves, not a hedge. Far fewer than before, and
-       weighted hard to the very bottom of the band (cover^2.4), so the
-       foliage hugs the floor and thins out fast as it climbs. */
-    for (let i = 0; i < 240; i++) {
-      const x = -5 + rnd() * (W + 10)
-      const y = H + 3 - rnd() * (geo.baseDepth + 6)
-      const c = cover(x, y)
-      if (c <= 0.06 || rnd() > Math.pow(c, 2.4)) continue
-      const a = outward(x, y) + Math.PI + (rnd() - 0.5) * 2.2
-      const len = def.size[1] * (0.9 + rnd() * 1.1)
-      leaf(bed, x, y, a, len, len * 0.30, Lback, {
-        base: -0.10 + c * 0.10,
-        veins: 5,
-        serr: def.leafSerr,
-      })
-    }
+       No loose foliage lying in the soil any more: it read as clutter.
+       The only leaves are the one or two on each flower's own stem, drawn
+       with the plant below and grown in with it. Bare soil to start,
+       flowers (and their leaves) on watering. */
 
     /* ---- the drift ----
        Sorted top to bottom and drawn in that order, so a bloom lower
@@ -706,30 +694,8 @@
       })
     }
 
-    /* ---- buds and fallen petals ----
-       The small stuff that fills the gaps between blooms. A garland
-       that is all open flowers reads as a pattern; the half-open ones,
-       and the few petals lying on the bottom edge, are what make it
-       read as a heap. These stay in the bed: they are the litter the
-       flowers stand in, and litter does not flinch. */
-    for (let i = 0; i < 120; i++) {
-      const x = -4 + rnd() * (W + 8)
-      const y = H + 2 - rnd() * (geo.baseDepth + 4)
-      const c = cover(x, y)
-      if (c <= 0.06 || rnd() > Math.pow(c, 1.5) * 0.13) continue
-      bud(bed, x, y, def.size[0] * (0.34 + rnd() * 0.26), P, S, rnd, -0.06,
-        outward(x, y) + Math.PI + (rnd() - 0.5) * 1.4)
-    }
-
-    for (let i = 0; i < 80; i++) {
-      const x = -4 + rnd() * (W + 8)
-      const y = H + 2 - rnd() * (geo.baseDepth * 0.55)
-      if (cover(x, y) < 0.5 || rnd() > 0.22) continue
-      const len = def.size[0] * (0.42 + rnd() * 0.34)
-      petal(bed, x, y, rnd() * TAU, len, len * 0.60, P, {
-        prof: PROFILE.round, notch: def.form === 'blossom', tipBias: 0.8, base: -0.04,
-      })
-    }
+    /* No loose buds or fallen petals in the soil either — the bed starts
+       bare and everything on it is a flower you grew. */
 
     return { bed: bed, plants: plants }
   }
@@ -785,7 +751,7 @@
       const p = plants[i]
       const g = p.grow
       if (g <= 0.02) continue
-      if (g >= 0.999) { srcCtx.drawImage(p.canvas, p.ox, p.oy); continue }
+      if (g > 0.995 && g < 1.005) { srcCtx.drawImage(p.canvas, p.ox, p.oy); continue }
       const dw = Math.max(1, p.w * g)
       const dh = Math.max(1, p.h * g)
       const dx = p.fx + (p.ox - p.fx) * g
@@ -815,8 +781,11 @@
      ================================================================== */
   const STILL = window.matchMedia('(prefers-reduced-motion: reduce)')
   const FPS = 12
-  const GROW_STEP = 0.085   // how much a watered plant grows per frame
-  const POUR = 48           // how far to each side of the pour it reaches
+  const GROW_STEP = 0.09    // how much a growing plant climbs per frame
+  const POUR = 44           // the core of the pour: a full, growing bloom
+  const POUR_WIDE = 120     // and a wider reach that nudges the sides awake
+  const GROW_MAX = 1.6      // repeated watering keeps a bloom growing bigger
+  const SPREAD = 36         // a grown bloom coaxes a neighbour this near
 
   let running = false
   let lastStep = 0
@@ -832,6 +801,26 @@
           p.grow = Math.min(p.growTo, p.grow + GROW_STEP)
           alive = true
         }
+      }
+      /* Spreading. A bloom that has fully opened coaxes its nearest
+         still-dormant neighbour up — once — so a watered patch does not
+         stay a patch: it creeps outward, along the bottom and out to the
+         sides, a flower at a time. */
+      for (let i = 0; i < plants.length; i++) {
+        const p = plants[i]
+        if (p.grow < 0.9 || p.spread) continue
+        p.spread = true
+        let best = -1
+        let bestD = SPREAD * SPREAD
+        for (let j = 0; j < plants.length; j++) {
+          const q = plants[j]
+          if (q.growTo > 0.3) continue
+          const dx = q.cx - p.cx
+          const dy = q.cy - p.cy
+          const d = dx * dx + dy * dy
+          if (d < bestD) { bestD = d; best = j }
+        }
+        if (best >= 0) { plants[best].growTo = 1; alive = true }
       }
       if (drops.length) {
         for (let i = 0; i < drops.length; i++) {
@@ -867,7 +856,14 @@
     const ay = clamp(((clientY - r.top) / r.height) * artH, 0, artH)
     for (let i = 0; i < plants.length; i++) {
       const p = plants[i]
-      if (p.growTo < 1 && Math.abs(p.cx - ax) <= POUR) p.growTo = 1
+      const d = Math.abs(p.cx - ax)
+      if (d <= POUR) {
+        // right under the pour: bloom, and keep growing bigger each pour
+        p.growTo = Math.min(GROW_MAX, Math.max(p.growTo, 0.55) + 0.4)
+      } else if (d <= POUR_WIDE && p.growTo < 1) {
+        // out toward the sides: nudge the seedlings awake a little
+        p.growTo = Math.min(1, p.growTo + 0.18)
+      }
     }
     for (let i = 0; i < 7; i++) {
       drops.push({
@@ -938,10 +934,12 @@
        under the copyright. */
     const room = Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP)
     const baseDepth = clamp(room, 14, 30)
-    // headroom for a full-grown bloom sitting at the top of the band
-    const H = baseDepth + Math.ceil(def.size[1]) + 6
-    // sparse: roughly one seedling per ~44 css px of width
-    const count = clamp(Math.round(cssW / 44), 8, 54)
+    // headroom for a bloom watered past its base size sitting at the top
+    const H = baseDepth + Math.ceil(def.size[1] * 1.7) + 8
+    // a denser seed grid so there is always somewhere for the bloom to
+    // spread into — including out to the sides. They start invisibly
+    // small, so the bed still reads as bare until it is watered.
+    const count = clamp(Math.round(cssW / 32), 12, 78)
 
     artW = W
     artH = H
@@ -961,7 +959,7 @@
         canvas: toCanvas(p.buf),
         ox: p.ox, oy: p.oy, w: p.w, h: p.h,
         cx: p.cx, cy: p.cy, fx: p.fx, fy: p.fy,
-        grow: g, growTo: g,
+        grow: g, growTo: g, spread: false,
       }
     })
     drops = []
