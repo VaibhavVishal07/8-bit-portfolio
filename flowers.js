@@ -599,27 +599,24 @@
     const CAP = Math.max(8, Math.round(geo.count || 60))
     const RMAX = def.size[1]
     const spots = []
-    const tries = W * 26
-    for (let i = 0; i < tries && spots.length < CAP; i++) {
-      const x = -6 + rnd() * (W + 12)
-      /* Bloom centres sit ABOVE the ground by at least their own radius,
-         so the flower head is never sliced by the bottom edge; the stem
-         reaches down to the soil on its own. Weighted low, so the bed is
-         densest along the floor and thins upward. */
-      const lift = rnd() * rnd() * (geo.baseDepth * 0.55)
-      const y = H - RMAX - 2 - lift
-      const R = def.size[0] + rnd() * (def.size[1] - def.size[0])
-      // pack them closer than the old garland — this is a full bed
-      let ok = true
-      for (let j = 0; j < spots.length; j++) {
-        const s = spots[j]
-        const gx = s.x - x
-        const gy = s.y - y
-        const gap = (s.R + R) * 0.6
-        if (gx * gx + gy * gy < gap * gap) { ok = false; break }
+    /* Seeds go down on an EVEN jittered grid, not a random scatter: two
+       staggered rows of columns across the width, each seed nudged off
+       its slot by a fraction of a column. Random scatter clumps and
+       leaves bald gaps, so a watered bed came up in patches; an even grid
+       fills flat. Bloom centres still sit at least their own radius above
+       the ground, so no head is sliced by the bottom edge. */
+    const cols = Math.max(4, Math.round(CAP / 2))
+    const colW = (W + 12) / cols
+    for (let row = 0; row < 2; row++) {
+      for (let i = 0; i < cols; i++) {
+        const jitter = (rnd() - 0.5) * colW * 0.7
+        const x = -6 + (i + 0.5 + (row ? 0.5 : 0)) * colW + jitter
+        // back row sits a little higher up the band; front row hugs the floor
+        const lift = (row ? 0.35 + rnd() * 0.4 : rnd() * 0.4) * (geo.baseDepth * 0.7)
+        const y = H - RMAX - 2 - lift
+        const R = def.size[0] + rnd() * (def.size[1] - def.size[0])
+        spots.push({ x: x, y: y, R: R, c: 1 - lift / (geo.baseDepth + 1) })
       }
-      if (!ok) continue
-      spots.push({ x: x, y: y, R: R, c: 1 - lift / (geo.baseDepth + 1) })
     }
 
     /* ---- the bed ----
@@ -806,25 +803,24 @@
           alive = true
         }
       }
-      /* Spreading. A bloom that has fully opened coaxes its nearest
-         still-dormant neighbour up — once — so a watered patch does not
-         stay a patch: it creeps outward, along the bottom and out to the
-         sides, a flower at a time. */
+      /* Spreading. A bloom that is opening wakes EVERY dormant neighbour
+         within reach — not just the single nearest — so the growth fills
+         out as an even front instead of creeping along as a one-flower
+         tendril, which is what read as patchy. It fires early (half open)
+         and once per plant, so a watered spot fans out smoothly across
+         the bottom and out to the sides. */
+      const SP2 = SPREAD * SPREAD
       for (let i = 0; i < plants.length; i++) {
         const p = plants[i]
-        if (p.grow < 0.9 || p.spread) continue
+        if (p.grow < 0.5 || p.spread) continue
         p.spread = true
-        let best = -1
-        let bestD = SPREAD * SPREAD
         for (let j = 0; j < plants.length; j++) {
           const q = plants[j]
           if (q.growTo > 0.3) continue
           const dx = q.cx - p.cx
           const dy = q.cy - p.cy
-          const d = dx * dx + dy * dy
-          if (d < bestD) { bestD = d; best = j }
+          if (dx * dx + dy * dy <= SP2) { q.growTo = 1; alive = true }
         }
-        if (best >= 0) { plants[best].growTo = 1; alive = true }
       }
       if (drops.length) {
         for (let i = 0; i < drops.length; i++) {
