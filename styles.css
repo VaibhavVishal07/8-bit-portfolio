@@ -3379,35 +3379,41 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   inset: 0;
   z-index: 1;
   display: none;
-  background: radial-gradient(130% 100% at 50% -10%, #14121f 0%, #0b0913 52%, #060410 100%);
+  /* A darker wash over the city, not a solid lid. The skyline still reads
+     faintly behind the modal — turned down and pushed back — so an L2 page
+     feels like a card opened OVER the city rather than a different place. */
+  background: rgba(4, 3, 11, 0.58);
 }
-html[data-l2='read'] .reading-surface { display: block; }
+html[data-l2='read'] .reading-surface,
+html[data-l2='stage'] .reading-surface { display: block; }
 /* The city controls belong to the city, which is not the subject of any L2
    page — the reader is here to read, not to change the weather behind the
    panel. Hidden on the reading pages AND the case studies. */
 html[data-l2='read'] .controls,
 html[data-l2='stage'] .controls { display: none; }
-/* Frameless reading column: no border, no neon cast, no panel fill. The
-   per-city `.col` rules that paint the frame carry specificity (0,3,1), so
-   this has to out-weigh them — hence the trebled class. Without it the
-   extruded drop-shadow falls on the bare glyphs and ghosts every letter,
-   and the border-image/box-shadow keep drawing the neon box we are shedding. */
+/* ---- the L2 modal ----
+   ONE treatment for every L2 page — articles, the index, the about and the
+   case studies alike: a calm dark card, the reading measure wide, centred
+   over the dimmed city. It replaces the old split (frameless reading vs a
+   neon-framed case study) with a single, simpler thing, and it reads as
+   what it is — a modal opened over the scene.
+
+   The per-city `.col` rules that paint the neon frame carry specificity
+   (0,3,1); the trebled class ties them and wins on source order, so the
+   border-image, its cast and the extruded drop-shadow filter all step off
+   and this quiet card takes their place. */
 html[data-l2='read'] .col.col--doc.read,
-html[data-l2='read'] .col.col--doc.windex {
-  background: transparent;
-  border: 0;
-  border-image-source: none;
-  box-shadow: none;
-  filter: none;
-  /* The frame is gone, so a 940px box left the text at 62ch stranded in a
-     wide empty column. Pin the column to the reading measure and centre it:
-     the whitespace becomes symmetric margin, the way an article's does,
-     instead of a lopsided right-hand void. Padding is trimmed to match — a
-     frameless page needs no inset, only a little air at the very top. */
+html[data-l2='read'] .col.col--doc.windex,
+html[data-l2='stage'] .col.col--doc.cs {
   width: min(92vw, 720px);
   margin-inline: auto;
   min-height: 0;
-  padding: clamp(28px, 4vw, 52px) 0 clamp(40px, 6vw, 72px);
+  background: rgba(12, 10, 20, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-image: none;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  filter: none;
+  padding: clamp(26px, 3.6vw, 48px) clamp(22px, 3.4vw, 44px) clamp(36px, 5vw, 64px);
 }
 
 /* ==================================================================

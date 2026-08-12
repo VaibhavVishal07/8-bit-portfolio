@@ -1002,20 +1002,22 @@
       pages.forEach((el) => el.removeAttribute('data-active'))
       if (live) live.setAttribute('data-active', '')
 
-      /* Three kinds of page, three treatments behind them:
-           home   — the living city, full strength; it IS the shot.
-           stage  — case studies: the city keeps crossing at half light,
-                    an atmospheric backdrop to visual work.
-           read   — articles, the writing index, about: a place to read.
-                    The city stops and a solid dark reading surface covers
-                    it, so nothing moves behind the prose. Marked with
-                    data-kind="read" on the generated pages. */
+      /* Two treatments now, not three:
+           home  — the living city, full strength; it IS the shot.
+           L2    — every article, index, about AND case study opens as a
+                   modal over the SAME backdrop: the city crosses at half
+                   light behind a dark scrim, dimmed and pushed back but
+                   still there. One simple thing instead of a frameless
+                   reading page and a framed case study. `kind` (read vs
+                   stage) still drives the type/label styling; the scene
+                   treatment is shared. */
       const kind = id === 'home' ? 'home'
         : (live && live.dataset.kind === 'read') ? 'read' : 'stage'
       document.documentElement.dataset.l2 = kind === 'home' ? '' : kind
       if (window.__scene) {
-        if (window.__scene.setFocus) window.__scene.setFocus(kind === 'read')
-        if (window.__scene.setStage) window.__scene.setStage(kind === 'stage')
+        // never the full lights-out — we want the city visible, just dim
+        if (window.__scene.setFocus) window.__scene.setFocus(false)
+        if (window.__scene.setStage) window.__scene.setStage(kind !== 'home')
       }
     }
 
