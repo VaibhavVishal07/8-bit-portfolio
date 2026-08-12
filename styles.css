@@ -4287,8 +4287,8 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
    run of text with some pictures in it. A section needs to start, and
    a start needs silence in front of it.
    ================================================================== */
-.page--home .intro { margin: var(--s7) 0; }
-.page--home .cards { margin: var(--s7) 0; gap: var(--s5); }
+.page--home .intro { margin: var(--s6) 0; }
+.page--home .cards { margin: var(--s6) 0; gap: var(--s5); }
 /* ---- a heading belongs to what it heads ----
    The gap under ABOUT was the same 48px as the gap between two
    unrelated blocks — .sect closed with --s5 and the .intro under it
@@ -4299,15 +4299,15 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 
    Down 60%: 48px becomes 19. The silence stays in FRONT of the
    heading, where it separates the sections. */
-.page--home .sect { margin: calc(var(--s7) * 1.5) 0 calc(var(--s7) * 0.4); }
+.page--home .sect { margin: var(--s7) 0 calc(var(--s7) * 0.4); }
 
 /* Whatever follows a section label — a paragraph, the writing list —
    opens with the same short gap, so the collapse resolves to 19px
    instead of snapping back to --s7. */
 .page--home .sect + * { margin-top: calc(var(--s7) * 0.4); }
-.page--home .reads { margin-bottom: var(--s7); }
-.page--home .links { margin-top: calc(var(--s7) * 1.5); padding-top: var(--s6); }
-.page--home .copyright { margin-top: var(--s7); }
+.page--home .reads { margin-bottom: var(--s6); }
+.page--home .links { margin-top: var(--s7); padding-top: var(--s6); }
+.page--home .copyright { margin-top: var(--s6); }
 /* More room under the role line. The masthead is tight above it — ten
    pixels between the name and this — so the block reads as one unit,
    and the only thing that then separates the masthead from the
@@ -4913,6 +4913,27 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
   height: 2px;
   background: var(--panel-dim);
 }
+
+/* ==================================================================
+   REFINING THE ONE COLUMN
+
+   Not stacked cards — one panel still — but tuned so it reads as a
+   composed page rather than an endlessly overflowing modal:
+
+   - the panel is a touch narrower than the L2 max, so a clear band of
+     city shows down both sides and it sits ON the skyline, not over it;
+   - the top and bottom are trimmed, the wordmark no longer floats in a
+     pool of empty panel;
+   - each section leads with the same measured silence and a full-width
+     joint, so the eye reads a rhythm of sections instead of one scroll.
+   ================================================================== */
+.page--home .col { width: min(90vw, 860px); }
+.page--home .col { padding-top: clamp(30px, 3.6vw, 56px); }
+/* the joint reads as a deliberate seam: a hair brighter than the dim
+   hairlines inside a section, and the label spaced off it */
+.page--home .sect { letter-spacing: 3px; gap: var(--s5); }
+.page--home .sect::before,
+.page--home .sect::after { height: 2px; background: var(--panel-quiet); opacity: 0.5; }
 
 /* ---- the shelf, one colour a row ----
    Four labels in one accent read as a single field with four values
