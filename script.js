@@ -760,6 +760,53 @@
 
     const frameRect = () => ({ x: 0, y: 0, w: window.innerWidth, h: window.innerHeight })
 
+    /* Where the card we are opening INTO will be.
+
+       This is the whole correction. The morph used to grow to the full
+       viewport, which meant it opened past the destination and the real
+       card then appeared inside it — a second modal arriving inside the
+       first, which is not what opening something looks like. It has to
+       land exactly on the card, so the card has to be measured before it
+       is shown.
+
+       The page is un-hidden and made invisible for one synchronous
+       reflow, with data-l2 set to the treatment it is about to get,
+       because the card's width comes from that attribute. Nothing is
+       painted in between — the attribute and the visibility are both put
+       back before this returns. */
+    function targetRect(id) {
+      const page = pages.get(id)
+      if (!page) return frameRect()
+      const root = document.documentElement
+      const wasHidden = page.hidden
+      const wasVis = page.style.visibility
+      const wasL2 = root.dataset.l2
+
+      page.hidden = false
+      page.style.visibility = 'hidden'
+      root.dataset.l2 = page.dataset.kind || 'read'
+
+      const el = page.querySelector('.col')
+      const r = el ? el.getBoundingClientRect() : null
+
+      root.dataset.l2 = wasL2 || ''
+      page.style.visibility = wasVis
+      page.hidden = wasHidden
+
+      if (!r || !r.width) return frameRect()
+      const top = Math.max(0, r.top)
+      const bottom = Math.min(window.innerHeight, r.bottom)
+      return { x: r.left, y: top, w: r.width, h: Math.max(8, bottom - top) }
+    }
+
+    /* The city dims behind the card as it opens. Without this the scrim
+       arrives in one piece at the swap, and a background that snaps dark
+       under a box that is moving smoothly reads as two events. */
+    const scrim = document.createElement('div')
+    scrim.className = 'morph-scrim'
+    scrim.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(scrim)
+
     function wear(src) {
       const c = getComputedStyle(src)
       /* NOT the panel background. The morph starts life sitting exactly on
@@ -847,12 +894,14 @@
     function open(id) {
       busy = true
       const from = cardRect() || frameRect()
-      const to = frameRect()
+      const to = targetRect(id)
       const src = document.querySelector('.page.is-on .col')
       if (src) wear(src)
       put(from)
       morph.style.setProperty('--dim', '0')
       morph.classList.add('is-on')
+      scrim.style.setProperty('--scrim', '0')
+      scrim.classList.add('is-on')
 
       let t0 = null
       let done = false
@@ -868,6 +917,9 @@
         fill(() => {
           morph.classList.remove('is-on')
           morph.removeAttribute('style')
+          // the real reading surface is up now and carries the same value
+          scrim.classList.remove('is-on')
+          scrim.removeAttribute('style')
         })
         busy = false
       }
@@ -887,6 +939,7 @@
         // page underneath is unreadable well before the frame lands and
         // nothing is ever seen half-swapped
         morph.style.setProperty('--dim', Math.pow(t, 0.55).toFixed(3))
+        scrim.style.setProperty('--scrim', t.toFixed(3))
         if (t >= 0.66) morph.style.borderImageSource = 'none'
         if (p >= 1) { land(); return }
         requestAnimationFrame(frame)

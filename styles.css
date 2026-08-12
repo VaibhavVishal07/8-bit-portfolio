@@ -2500,7 +2500,7 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
   --read-3: #8b8299;
   --mag: #ff3ea5;
   --teal: #3ef0ff;
-  --measure: 640px;
+  --measure: 720px;
 }
 
 /* ---- skip link ----
@@ -2633,101 +2633,92 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
 }
 
 /* ==================================================================
-   THE WORK — an index, not a gallery
+   THE WORK — four cards
 
-   Four cover images would be four decorative pictures standing where
-   four sentences should be. What a reader needs from this list is
-   what each project WAS, and that is a line of text. The number, the
-   title, the subject and the domains — readable in the two seconds
-   somebody gives a portfolio before deciding whether to open one.
+   A 2x2 rack. Each card is a plate and a title: the plate is a
+   placeholder until real cover art exists, drawn as a fine grid with
+   the project number sitting in it, so an empty slot reads as a slot
+   rather than as a hole in the page.
    ================================================================== */
 
 .wks {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 2px solid var(--ground-line);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 24px;
 }
-.wk { border-bottom: 2px solid var(--ground-line); }
 
 .wk__a {
-  display: grid;
-  grid-template-columns: 88px 1fr 40px;
-  align-items: start;
-  gap: 0 8px;
-  padding: 30px 12px 32px;
+  display: block;
   text-decoration: none;
   color: inherit;
-  position: relative;
 }
-.wk__a::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--ground-2);
-  opacity: 0;
+
+.wk__plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 2px solid var(--ground-line);
+  background-color: rgba(255, 255, 255, 0.028);
+  /* A 8px grid rather than a flat fill: an empty plate with texture in
+     it is a surface waiting for something, and a flat one is a mistake. */
+  background-image:
+    repeating-linear-gradient(90deg, rgba(234, 240, 255, 0.05) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(0deg, rgba(234, 240, 255, 0.05) 0 1px, transparent 1px 8px);
 }
-.wk__a > * { position: relative; }
+
+.wk__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.wk__no {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 40px);
+  color: rgba(234, 240, 255, 0.13);
+}
+
+.wk__foot {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 14px;
+}
 
 .wk__n {
+  flex: none;
   font-family: var(--font-display);
-  font-size: 18px;
-  line-height: 1.35;
+  font-size: 12px;
   color: var(--panel-quiet);
-  padding-top: 4px;
 }
 
 .wk__title {
-  display: block;
   font-family: var(--font-read);
-  font-size: clamp(24px, 2.5vw, 32px);
+  font-size: clamp(17px, 1.7vw, 21px);
   font-weight: 700;
-  letter-spacing: -0.015em;
-  line-height: 1.16;
+  letter-spacing: -0.012em;
+  line-height: 1.24;
   color: var(--read);
-}
-.wk__subject {
-  display: block;
-  max-width: 52ch;
-  text-wrap: pretty;
-  margin-top: 10px;
-  font-family: var(--font-read);
-  font-size: 17px;
-  line-height: 1.5;
-  color: var(--read-2);
-}
-.wk__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-  margin-top: 18px;
-}
-.wk__tag {
-  font-family: var(--font-body);
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--read-3);
-  border: 1px solid var(--ground-line);
-  padding: 4px 8px;
-}
-.wk__go {
-  align-self: center;
-  justify-self: end;
-  font-size: 22px;
-  line-height: 1;
-  color: var(--panel-quiet);
+  text-wrap: balance;
 }
 
-.wk__a:hover::before,
-.wk__a:focus-visible::before { opacity: 1; }
+.wk__a:hover .wk__plate,
+.wk__a:focus-visible .wk__plate {
+  border-color: var(--mag);
+  background-color: rgba(255, 62, 165, 0.06);
+}
 .wk__a:hover .wk__n,
 .wk__a:focus-visible .wk__n { color: var(--mag); }
-.wk__a:hover .wk__go,
-.wk__a:focus-visible .wk__go { color: var(--mag); transform: translateX(4px); }
 .wk__a:hover .wk__title,
 .wk__a:focus-visible .wk__title { color: #fff; }
-.wk__a:focus-visible { outline: 3px solid var(--teal); outline-offset: -3px; }
+.wk__a:focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; }
 
 /* ==================================================================
    HOW I WORK
@@ -2819,8 +2810,11 @@ html[data-l2='case'] .controls { display: none; }
 /* Same card the articles and the about page open in — the modal over the
    dimmed city, at the width it has always been. The case study earns its
    room from the measure inside it rather than from a wider card. */
+/* Wider than the panel it opens out of — that width change IS the
+   transition. A case study also has more to hold than the index does:
+   a reading measure with figures breaking out either side of it. */
 html[data-l2='case'] .col.col--doc.cs {
-  width: min(94vw, 860px);
+  width: min(96vw, 1080px);
   margin-inline: auto;
   min-height: 0;
   background: #16131f;
@@ -3343,20 +3337,10 @@ html[data-l2='case'] .col.col--doc.cs {
   .masthead .sub { font-size: 13.5px; }
   .band { padding-top: 64px; }
 
-  .wk__a {
-    grid-template-columns: minmax(0, 1fr) 28px;
-    padding: 24px 4px 26px;
-  }
-  .wk__n {
-    grid-column: 1;
-    grid-row: 1;
-    padding: 0 0 8px;
-    font-size: 13px;
-  }
-  .wk__body { grid-column: 1 / -1; grid-row: 2; }
-  .wk__go { grid-column: 2; grid-row: 1; align-self: start; }
-  .wk__title { font-size: 24px; }
-  .wk__subject { font-size: 16px; }
+  /* One column of cards on a phone: two-up makes a 150px plate, which is
+     a thumbnail of nothing. */
+  .wks { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .wk__title { font-size: 19px; }
 
   .pov li { padding: 22px 20px 24px; }
 
@@ -3382,8 +3366,8 @@ html[data-l2='case'] .col.col--doc.cs {
    already skipped in script.js when this is set; these are the loops.
    ================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  .wk__a:hover .wk__go,
-  .wk__a:focus-visible .wk__go { transform: none; }
+  .wk__a:hover .wk__plate,
+  .wk__a:focus-visible .wk__plate { transform: none; }
 }
 
 /* ---- the shelf ----
@@ -3496,12 +3480,7 @@ html[data-l2='case'] .col.col--doc.cs {
   font-size: 15px;
   font-weight: 400;
 }
-.page--home .col .wk__tag {
-  font-family: var(--font-body);
-  font-size: 11.5px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-}
+
 
 .page--home .col .shelf span {
   font-family: var(--font-body);
@@ -3575,3 +3554,17 @@ html[data-l2='case'] .col.col--doc.cs {
   outline: 3px solid var(--teal);
   outline-offset: 6px;
 }
+
+/* The city dimming behind the card while it opens. It carries exactly the
+   value .reading-surface settles on, so when the real surface takes over
+   at the swap there is no step. */
+.morph-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+  display: none;
+  pointer-events: none;
+  background: rgba(3, 2, 8, 0.9);
+  opacity: var(--scrim, 0);
+}
+.morph-scrim.is-on { display: block; }

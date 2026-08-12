@@ -538,22 +538,31 @@
   }
 
   /* ---- the four cards on the home page ----
-     A card has to answer "what is this, and why would I open it" without
-     being opened. Number, title, the subject in one plain line, and the
-     three domains it sits in — no cover art, because a decorative cover
-     on a case study is a picture standing where a sentence should be. */
+     A 2x2 rack of covers. The index that was here carried the subject and
+     three domain tags per row, which is the whole case study restated on
+     the way to it — read the four and you have read the section twice.
+
+     A card is a number, a plate and a title. The plate is a placeholder:
+     a fine dither with the project number sitting in it, so an empty slot
+     reads as a slot rather than a hole. Give an entry a `cover` and the
+     image takes the plate verbatim — that is the only change needed once
+     the real cover art exists.
+
+     What the card drops, the link keeps: the subject rides on aria-label,
+     so it is still announced and still indexed. */
   function cardsHTML() {
     return WORK.map((w) =>
-      '<li class="wk"><a class="wk__a" href="#' + w.id + '">' +
-      '<span class="wk__n" aria-hidden="true">' + w.n + '</span>' +
-      '<span class="wk__body">' +
-      '<span class="wk__title">' + w.title + '</span>' +
-      '<span class="wk__subject">' + w.subject + '</span>' +
-      '<span class="wk__tags">' + w.tags.map((t) =>
-        '<span class="wk__tag">' + t + '</span>').join('') + '</span>' +
+      '<li class="wk"><a class="wk__a" href="#' + w.id + '" ' +
+      'aria-label="' + esc(w.title + ' — ' + w.subject) + '">' +
+      '<span class="wk__plate">' +
+      (w.cover
+        ? '<img class="wk__img" src="' + w.cover + '" alt="" loading="lazy">'
+        : '<span class="wk__no" aria-hidden="true">' + w.n + '</span>') +
       '</span>' +
-      '<span class="wk__go" aria-hidden="true">&rarr;</span>' +
-      '</a></li>').join('')
+      '<span class="wk__foot">' +
+      '<span class="wk__n" aria-hidden="true">' + w.n + '</span>' +
+      '<span class="wk__title">' + w.title + '</span>' +
+      '</span></a></li>').join('')
   }
 
   // ---- wire it up ----

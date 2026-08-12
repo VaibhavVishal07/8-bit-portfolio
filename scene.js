@@ -4754,10 +4754,10 @@
       shape: { ziggurat: 0.14, needle: 0.03, slab: -0.04 },
       roofKit: 'tank',
       stock: [
-        { gapChance: 0.46, gap: 6, minH: 58, maxH: 128 },
-        { gapChance: 0.46, gap: 6, minH: 76, maxH: 160 },
-        { gapChance: 0.44, gap: 7, minH: 88, maxH: 188 },
-        { gapChance: 0.48, gap: 8, minH: 54, maxH: 122 },
+        { gapChance: 0.67, gap: 10, minH: 58, maxH: 128 },
+        { gapChance: 0.67, gap: 10, minH: 76, maxH: 160 },
+        { gapChance: 0.64, gap: 12, minH: 88, maxH: 188 },
+        { gapChance: 0.70, gap: 14, minH: 54, maxH: 122 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 420)
@@ -4831,10 +4831,10 @@
       shape: { zakkyo: 0.30, ziggurat: -0.26, banded: 0.04, needle: 0.02, slab: 0.03 },
       roofKit: 'billboard',
       stock: [
-        { gapChance: 0.58, gap: 9, minW: 14, maxW: 26, minH: 46, maxH: 88 },
-        { gapChance: 0.58, gap: 10, minW: 17, maxW: 31, minH: 56, maxH: 108 },
-        { gapChance: 0.56, gap: 11, minW: 20, maxW: 37, minH: 66, maxH: 132 },
-        { gapChance: 0.60, gap: 13, minW: 24, maxW: 46, minH: 46, maxH: 98 },
+        { gapChance: 0.80, gap: 15, minW: 17, maxW: 31, minH: 46, maxH: 88 },
+        { gapChance: 0.80, gap: 17, minW: 20, maxW: 37, minH: 56, maxH: 108 },
+        { gapChance: 0.80, gap: 19, minW: 24, maxW: 44, minH: 66, maxH: 132 },
+        { gapChance: 0.80, gap: 22, minW: 28, maxW: 54, minH: 46, maxH: 98 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 380)
@@ -4950,10 +4950,10 @@
       },
       roofKit: 'cistern',
       stock: [
-        { gapChance: 0.50, gap: 7, minW: 22, maxW: 44, minH: 36, maxH: 68 },
-        { gapChance: 0.50, gap: 7, minW: 26, maxW: 52, minH: 42, maxH: 82 },
-        { gapChance: 0.52, gap: 8, minW: 30, maxW: 62, minH: 48, maxH: 96 },
-        { gapChance: 0.54, gap: 9, minW: 38, maxW: 78, minH: 40, maxH: 84 },
+        { gapChance: 0.72, gap: 12, minW: 26, maxW: 52, minH: 36, maxH: 68 },
+        { gapChance: 0.72, gap: 12, minW: 31, maxW: 61, minH: 42, maxH: 82 },
+        { gapChance: 0.75, gap: 14, minW: 35, maxW: 73, minH: 48, maxH: 96 },
+        { gapChance: 0.78, gap: 15, minW: 45, maxW: 92, minH: 40, maxH: 84 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 400)
@@ -5027,10 +5027,10 @@
       },
       roofKit: 'pots',
       stock: [
-        { gapChance: 0.44, gap: 6, minW: 21, maxW: 42, minH: 48, maxH: 86 },
-        { gapChance: 0.44, gap: 6, minW: 24, maxW: 48, minH: 56, maxH: 102 },
-        { gapChance: 0.46, gap: 7, minW: 27, maxW: 56, minH: 66, maxH: 128 },
-        { gapChance: 0.48, gap: 8, minW: 36, maxW: 72, minH: 52, maxH: 110 },
+        { gapChance: 0.64, gap: 10, minW: 25, maxW: 50, minH: 48, maxH: 86 },
+        { gapChance: 0.64, gap: 10, minW: 28, maxW: 57, minH: 56, maxH: 102 },
+        { gapChance: 0.67, gap: 12, minW: 32, maxW: 66, minH: 66, maxH: 128 },
+        { gapChance: 0.70, gap: 14, minW: 42, maxW: 85, minH: 52, maxH: 110 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 430)
@@ -5094,10 +5094,10 @@
       shape: { needle: 0.26, drum: 0.10, ziggurat: -0.22, slab: -0.05, banded: 0.04 },
       roofKit: 'dish',
       stock: [
-        { gapChance: 0.72, gap: 15, minW: 11, maxW: 23, minH: 60, maxH: 146 },
-        { gapChance: 0.72, gap: 16, minW: 13, maxW: 28, minH: 78, maxH: 178 },
-        { gapChance: 0.70, gap: 18, minW: 16, maxW: 34, minH: 92, maxH: 210 },
-        { gapChance: 0.70, gap: 17, minW: 21, maxW: 45, minH: 52, maxH: 132 },
+        { gapChance: 0.80, gap: 26, minW: 13, maxW: 27, minH: 60, maxH: 146 },
+        { gapChance: 0.80, gap: 27, minW: 15, maxW: 33, minH: 78, maxH: 178 },
+        { gapChance: 0.80, gap: 31, minW: 19, maxW: 40, minH: 92, maxH: 210 },
+        { gapChance: 0.80, gap: 29, minW: 25, maxW: 53, minH: 52, maxH: 132 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 400)
@@ -5189,9 +5189,9 @@
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
-      minW: 30, maxW: 68, minH: 16, maxH: 54, gapChance: 0.5, gap: 8,
-      step: 3, ww: 1, wh: 1, litChance: 0.1,
-      neon: T.neon, neonChance: 0, halo: 0, fog: 0.11,
+      minW: 35, maxW: 80, minH: 16, maxH: 54, gapChance: 0.72, gap: 14,
+      step: 3, ww: 1, wh: 1, litChance: 0.028,
+      neon: T.neon, neonChance: 0.0000, halo: 0, fog: 0.11,
       ...localGlass(recede(depthen(T.cityFar, 0.2), 0.5)),
     })
   }
@@ -5229,20 +5229,20 @@
      distance you look at it. */
   const LAYERS = [
     { key: 'layer0', seed: 4411, recede: 0.40, fog: 0.085, pan: 0.16,
-      minW: 13, maxW: 27, minH: 54, maxH: 134, gapChance: 0.42, gap: 5,
-      step: 3, ww: 1, wh: 1, litChance: 0.13, neonChance: 0.02 },
+      minW: 15, maxW: 32, minH: 54, maxH: 134, gapChance: 0.61, gap: 9,
+      step: 3, ww: 1, wh: 1, litChance: 0.033, neonChance: 0.0050 },
 
     { key: 'layer1', seed: 5273, recede: 0.25, fog: 0.062, pan: 0.26,
-      minW: 16, maxW: 33, minH: 74, maxH: 172, gapChance: 0.42, gap: 6,
-      step: 3, ww: 1, wh: 2, litChance: 0.15, neonChance: 0.03 },
+      minW: 19, maxW: 39, minH: 74, maxH: 172, gapChance: 0.61, gap: 10,
+      step: 3, ww: 1, wh: 2, litChance: 0.037, neonChance: 0.0075 },
 
     { key: 'layer2', seed: 881, recede: 0.11, fog: 0.032, pan: 0.42,
-      minW: 19, maxW: 40, minH: 90, maxH: 205, gapChance: 0.44, gap: 7,
-      step: 3, ww: 1, wh: 2, litChance: 0.18, neonChance: 0.05, escapes: true },
+      minW: 22, maxW: 47, minH: 90, maxH: 205, gapChance: 0.64, gap: 12,
+      step: 3, ww: 1, wh: 2, litChance: 0.045, neonChance: 0.0125, escapes: true },
 
     { key: 'layer3', seed: 2266, recede: 0, fog: 0, pan: 0.68,
-      minW: 26, maxW: 54, minH: 50, maxH: 130, gapChance: 0.46, gap: 8,
-      step: 4, ww: 2, wh: 2, litChance: 0.17, neonChance: 0.05, escapes: true },
+      minW: 31, maxW: 64, minH: 50, maxH: 130, gapChance: 0.67, gap: 14,
+      step: 4, ww: 2, wh: 2, litChance: 0.043, neonChance: 0.0125, escapes: true },
   ]
 
   /* Four planes off a three-stop authored ramp. The stops are the
@@ -6890,10 +6890,15 @@
          which means it holds steady for a long while and then STUTTERS
          — out, back, out, caught — in a fast burst. So signs run their
          own cycle: mostly nothing, and a couple of frames of trouble
-         every few seconds, at a period unique to each sign so no two
-         ever gutter together. */
+         every so often, at a period unique to each sign so no two ever
+         gutter together.
+
+         Four times longer than it was. One sign stuttering is a detail;
+         forty signs stuttering on twelve-second cycles is a city that
+         will not sit still, and it was the loudest moving thing in the
+         frame. */
       if (wnd.sign) {
-        const period = 150 + ((i * 37) % 130)
+        const period = 600 + ((i * 37) % 520)
         const beat = (frame + i * 13) % period
         // the stutter: three flicks in the last handful of frames
         if (beat < period - 7) continue
@@ -6910,7 +6915,7 @@
          is what reads as the wheel's lights chasing round it. */
       const on = wnd.cabin
         ? (frame + i * 2) % 26 < 9
-        : ((frame + i * 7) % (beacon ? 8 : 96)) < (beacon ? 3 : 4)
+        : ((frame + i * 7) % (beacon ? 32 : 384)) < (beacon ? 3 : 4)
       if (!on) continue
       const sx = wnd.x - o
       if (sx < -8 || sx >= W) continue
