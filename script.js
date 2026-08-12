@@ -711,254 +711,131 @@
       }
     }
 
-    /* ==================================================================
-       THE PANEL OPENS
+    /* ---- the iris ----
+       Moving between home and a page is a scene change, so it gets one.
+       A near-black circle rushes out from wherever you tapped; its edge
+       is a field of dither dots rather than a clean arc. At full black
+       the page swaps underneath, then the new page is uncovered by the
+       same circle opening back up. Chunky, pixelated and quick — under
+       half a second — so it reads as stepping into a world, not loading
+       a page. The Close button fires the same thing in reverse, so home
+       and a project feel like one place entered and left. */
+    const iris = document.createElement('canvas')
+    iris.className = 'iris'
+    iris.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(iris)
+    const ictx = iris.getContext('2d')
 
-       Going into a case study is not a cut and it is not a wipe over the
-       top. The panel you are already looking at OPENS: its frame steps
-       outward until it is the whole frame, the page swaps behind it at
-       full cover, and the new card fills back down from the top.
+    let pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+    window.addEventListener('pointerdown', (e) => { pointer = { x: e.clientX, y: e.clientY } }, true)
 
-       It is one object the whole way through, which is the point — the
-       case study is not somewhere else, it is what was behind the panel.
-       The old iris (a dithered circle rushing out from the tap) said the
-       opposite: a scene change, one place replaced by another.
-
-       Stepped, like everything else here. Six frames out, six frames
-       down; arcade hardware swapped frames, it did not tween.
-
-       The morph wears the panel's own frame rather than restating it.
-       That frame is a nine-slice border-image whose colour is baked into
-       an SVG per city, so the computed value is copied off the live
-       element — the only version that cannot drift out of step with the
-       stylesheet.
-       ================================================================== */
-    const morph = document.createElement('div')
-    morph.className = 'morph'
-    morph.setAttribute('aria-hidden', 'true')
-    document.body.appendChild(morph)
-
-    const STEPS = 6
-    const OPEN_MS = 260
-    const FILL_MS = 280
-
-    let busy = false
-
-    /* The visible rectangle of the card on screen, clipped to the
-       viewport. The panel runs off the top and the bottom at most scroll
-       positions, and starting the movement from a rect that is mostly
-       off-frame reads as the panel jumping before it opens. */
-    function cardRect() {
-      const el = document.querySelector('.page.is-on .col')
-      if (!el) return null
-      const r = el.getBoundingClientRect()
-      const top = Math.max(0, r.top)
-      const bottom = Math.min(window.innerHeight, r.bottom)
-      if (bottom - top < 8) return null
-      return { x: r.left, y: top, w: r.width, h: bottom - top }
-    }
-
-    const frameRect = () => ({ x: 0, y: 0, w: window.innerWidth, h: window.innerHeight })
-
-    /* Where the card we are opening INTO will be.
-
-       This is the whole correction. The morph used to grow to the full
-       viewport, which meant it opened past the destination and the real
-       card then appeared inside it — a second modal arriving inside the
-       first, which is not what opening something looks like. It has to
-       land exactly on the card, so the card has to be measured before it
-       is shown.
-
-       The page is un-hidden and made invisible for one synchronous
-       reflow, with data-l2 set to the treatment it is about to get,
-       because the card's width comes from that attribute. Nothing is
-       painted in between — the attribute and the visibility are both put
-       back before this returns. */
-    function targetRect(id) {
-      const page = pages.get(id)
-      if (!page) return frameRect()
-      const root = document.documentElement
-      const wasHidden = page.hidden
-      const wasVis = page.style.visibility
-      const wasL2 = root.dataset.l2
-
-      page.hidden = false
-      page.style.visibility = 'hidden'
-      root.dataset.l2 = page.dataset.kind || 'read'
-
-      const el = page.querySelector('.col')
-      const r = el ? el.getBoundingClientRect() : null
-
-      root.dataset.l2 = wasL2 || ''
-      page.style.visibility = wasVis
-      page.hidden = wasHidden
-
-      if (!r || !r.width) return frameRect()
-      const top = Math.max(0, r.top)
-      const bottom = Math.min(window.innerHeight, r.bottom)
-      return { x: r.left, y: top, w: r.width, h: Math.max(8, bottom - top) }
-    }
-
-    /* The city dims behind the card as it opens. Without this the scrim
-       arrives in one piece at the swap, and a background that snaps dark
-       under a box that is moving smoothly reads as two events. */
-    const scrim = document.createElement('div')
-    scrim.className = 'morph-scrim'
-    scrim.setAttribute('aria-hidden', 'true')
-    document.body.appendChild(scrim)
-
-    function wear(src) {
-      const c = getComputedStyle(src)
-      /* NOT the panel background. The morph starts life sitting exactly on
-         top of the panel, so if it is opaque the content it is standing on
-         is gone before the movement has started — a cut, then a growing
-         black box. Transparent, and the ::after does the covering: the
-         panel is still there and still readable while its frame walks
-         outward, and it is dimmed out on the way rather than cut. */
-      morph.style.background = 'transparent'
-      morph.style.borderStyle = c.borderStyle
-      morph.style.borderWidth = c.borderWidth
-      morph.style.borderColor = c.borderColor
-      morph.style.borderImageSource = c.borderImageSource
-      morph.style.borderImageSlice = c.borderImageSlice
-      morph.style.borderImageWidth = c.borderImageWidth
-      morph.style.borderImageRepeat = c.borderImageRepeat
-      morph.style.boxShadow = c.boxShadow
-    }
-
-    function put(r) {
-      morph.style.transform =
-        'translate3d(' + Math.round(r.x) + 'px,' + Math.round(r.y) + 'px,0)'
-      morph.style.width = Math.round(r.w) + 'px'
-      morph.style.height = Math.round(r.h) + 'px'
-    }
-
-    const tween = (a, b, t) => ({
-      x: a.x + (b.x - a.x) * t,
-      y: a.y + (b.y - a.y) * t,
-      w: a.w + (b.w - a.w) * t,
-      h: a.h + (b.h - a.h) * t,
-    })
-
-    const step = (p) => Math.round(p * STEPS) / STEPS
-
-    /* ---- the fill ----
-       The card arrives clipped to nothing and is uncovered downward, so
-       the content reads as filling the space the panel just opened. The
-       clip is measured against the VIEWPORT rather than the card: a case
-       study is three thousand pixels tall, and a percentage of that
-       fills the screen in the first fifth of the animation and then
-       animates nothing anybody can see. */
-    function fill(after) {
-      const card = document.querySelector('.page.is-on .col')
-      if (!card) { if (after) after(); return }
-      const r = card.getBoundingClientRect()
-      const reveal = Math.max(1, Math.min(window.innerHeight - r.top, r.height))
-      const clipTo = (px) =>
-        (card.style.clipPath = 'inset(0 0 ' + Math.max(0, Math.round(r.height - px)) + 'px 0)')
-
-      clipTo(0)
-      if (after) after()
-
-      let t0 = null
-      let done = false
-      const end = () => {
-        if (done) return
-        done = true
-        card.style.clipPath = ''
-        document.removeEventListener('visibilitychange', onHide)
-        clearTimeout(guard)
-      }
-      const onHide = () => { if (document.hidden) end() }
-      document.addEventListener('visibilitychange', onHide)
-      const guard = setTimeout(end, FILL_MS + 600)
-
-      const frame = (now) => {
-        if (done) return
-        if (t0 == null) t0 = now
-        const p = Math.min(1, (now - t0) / FILL_MS)
-        clipTo(step(p) * reveal)
-        if (p >= 1) { end(); return }
-        requestAnimationFrame(frame)
-      }
-      requestAnimationFrame(frame)
-    }
+    // 8x8 ordered dither — the same kind of matrix the scene dithers
+    // with, so the edge of the wipe is made of the same dots as the city
+    const BAYER = [
+      0, 48, 12, 60, 3, 51, 15, 63,
+      32, 16, 44, 28, 35, 19, 47, 31,
+      8, 56, 4, 52, 11, 59, 7, 55,
+      40, 24, 36, 20, 43, 27, 39, 23,
+      2, 50, 14, 62, 1, 49, 13, 61,
+      34, 18, 46, 30, 33, 17, 45, 29,
+      10, 58, 6, 54, 9, 57, 5, 53,
+      42, 26, 38, 22, 41, 25, 37, 21,
+    ]
+    const CELL = 10
+    let irisBusy = false
 
     /* rAF does not run in a background tab. Without a guard, a navigation
        fired while the tab is hidden — a restored session, a link opened in
        the background, a phone locked mid-tap — starts the cover, never gets
-       another frame, and the visitor comes back to an opaque page with no
-       way out. Three belts: do not start one while hidden, finish it if the
-       tab goes away mid-run, and a wall-clock backstop under everything.
+       another frame, and the visitor comes back to an opaque black page with
+       no way out. Three belts: do not start one while hidden, finish it if
+       the tab goes away mid-run, and a wall-clock backstop under everything.
        A transition is decoration; it must never be able to trap the page. */
-    function open(id) {
-      busy = true
-      const from = cardRect() || frameRect()
-      const to = targetRect(id)
-      const src = document.querySelector('.page.is-on .col')
-      if (src) wear(src)
-      put(from)
-      morph.style.setProperty('--dim', '0')
-      morph.classList.add('is-on')
-      scrim.style.setProperty('--scrim', '0')
-      scrim.classList.add('is-on')
+    function finishIris(id) {
+      iris.classList.remove('is-on')
+      if (window.__scene && window.__scene.pause) window.__scene.pause(false)
+      irisBusy = false
+      if (id != null && current !== id) show(id)
+    }
 
-      let t0 = null
+    function irisRun(id) {
+      irisBusy = true
+      /* Freeze the city for the duration. The wipe covers it completely
+         at the midpoint, so a frozen scene is never seen — and with the
+         scene's heavy render off the main thread, the wipe animates at a
+         full frame rate instead of fighting it for the thread. That
+         contention was the whole reason it did not read as smooth. */
+      if (window.__scene && window.__scene.pause) window.__scene.pause(true)
+      const W = window.innerWidth, H = window.innerHeight
+      iris.width = W
+      iris.height = H
+      iris.classList.add('is-on')
+      const ox = pointer.x, oy = pointer.y
+      const maxR = Math.hypot(Math.max(ox, W - ox), Math.max(oy, H - oy)) + CELL * 3
+      /* A wider dithered edge, so the pixel character of the wipe is
+         actually visible as it crosses rather than being a hard arc that
+         is over before the eye catches it. */
+      const band = maxR * 0.24
+      /* Long enough to read as one movement — close, hold, open — and
+         short enough that nobody waits on it. Under half a second, door
+         to door. */
+      const COVER = 200, HOLD = 60, REVEAL = 220
+      const cols = Math.ceil(W / CELL), rows = Math.ceil(H / CELL)
+      let t0 = null, swapped = false, released = false
       let done = false
 
-      const land = () => {
+      const bail = () => {
         if (done) return
         done = true
         document.removeEventListener('visibilitychange', onHide)
         clearTimeout(guard)
-        // clip the incoming card BEFORE the cover comes off, or one frame
-        // of the finished page shows through underneath it
-        if (current !== id) show(id)
-        fill(() => {
-          morph.classList.remove('is-on')
-          morph.removeAttribute('style')
-          // the real reading surface is up now and carries the same value
-          scrim.classList.remove('is-on')
-          scrim.removeAttribute('style')
-        })
-        busy = false
+        finishIris(id)
       }
-      const onHide = () => { if (document.hidden) land() }
+      const onHide = () => { if (document.hidden) bail() }
       document.addEventListener('visibilitychange', onHide)
-      const guard = setTimeout(land, OPEN_MS + 600)
+      const guard = setTimeout(bail, COVER + HOLD + REVEAL + 600)
 
-      const frame = (now) => {
-        if (done) return
+      function draw(now) {
         if (t0 == null) t0 = now
-        const p = Math.min(1, (now - t0) / OPEN_MS)
-        const t = step(p)
-        put(tween(from, to, t))
-        // the panel stops being a panel on the way out: its neon frame
-        // lets go and its violet ground darkens into the reading scrim
-        // the cover leads the movement rather than tracking it, so the
-        // page underneath is unreadable well before the frame lands and
-        // nothing is ever seen half-swapped
-        morph.style.setProperty('--dim', Math.pow(t, 0.55).toFixed(3))
-        scrim.style.setProperty('--scrim', t.toFixed(3))
-        if (t >= 0.66) morph.style.borderImageSource = 'none'
-        if (p >= 1) { land(); return }
-        requestAnimationFrame(frame)
+        const e = now - t0
+        // ease the cover/reveal so the edge accelerates in and out rather
+        // than crossing at one flat speed — that is what reads as smooth
+        const ease = (p) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2)
+        let coverR, holeR
+        if (e < COVER) { coverR = ease(e / COVER) * (maxR + band); holeR = 0 }
+        else if (e < COVER + HOLD) { coverR = maxR + band; holeR = 0 }
+        else if (e < COVER + HOLD + REVEAL) { coverR = maxR + band; holeR = ease((e - COVER - HOLD) / REVEAL) * (maxR + band) }
+        else { bail(); return }
+
+        // swap the page while the frame is fully black
+        if (!swapped && e >= COVER) { swapped = true; show(id) }
+        // let the city move again the instant the hole starts opening, so
+        // by the time it is uncovered it is already live under the reveal
+        if (!released && e >= COVER + HOLD && window.__scene && window.__scene.pause) {
+          released = true
+          window.__scene.pause(false)
+        }
+
+        ictx.clearRect(0, 0, W, H)
+        ictx.fillStyle = '#04030a'
+        for (let gy = 0; gy < rows; gy++) {
+          const by = (gy & 7) * 8
+          for (let gx = 0; gx < cols; gx++) {
+            const x = gx * CELL + CELL / 2, y = gy * CELL + CELL / 2
+            const d = Math.hypot(x - ox, y - oy)
+            const th = (BAYER[by + (gx & 7)] + 0.5) / 64 * band
+            if (d < coverR - th && !(d < holeR - th)) ictx.fillRect(gx * CELL, gy * CELL, CELL, CELL)
+          }
+        }
+        if (!done) requestAnimationFrame(draw)
       }
-      requestAnimationFrame(frame)
+      requestAnimationFrame(draw)
     }
 
-    /* Home is the only page with a panel to open, so it is the only
-       route that gets the full movement. Everything deeper — the next
-       project, the way back — just fills: the card you are leaving goes,
-       the card you are arriving at draws itself down. One family, and
-       nothing pretends to be a container transform when there is no
-       container to transform. */
     function go(id, instant) {
       if (id === current) return
-      if (instant || !animate || busy || document.hidden) { show(id); return }
-      if (current === 'home') { open(id); return }
-      show(id)
-      fill()
+      if (instant || !animate || irisBusy || document.hidden) { show(id); return }
+      irisRun(id)
     }
 
     /* ---- in-page anchors ----
