@@ -620,14 +620,14 @@
     }
 
     /* ---- the bed ----
-       Leaves first, all of them, in a ramp two stops short of the full
-       one so the foliage sits behind the blooms rather than competing
-       with them. */
-    for (let i = 0; i < 900; i++) {
+       A thin scatter of leaves, not a hedge. Far fewer than before, and
+       weighted hard to the very bottom of the band (cover^2.4), so the
+       foliage hugs the floor and thins out fast as it climbs. */
+    for (let i = 0; i < 240; i++) {
       const x = -5 + rnd() * (W + 10)
       const y = H + 3 - rnd() * (geo.baseDepth + 6)
       const c = cover(x, y)
-      if (c <= 0.02 || rnd() > Math.pow(c, 0.75)) continue
+      if (c <= 0.06 || rnd() > Math.pow(c, 2.4)) continue
       const a = outward(x, y) + Math.PI + (rnd() - 0.5) * 2.2
       const len = def.size[1] * (0.9 + rnd() * 1.1)
       leaf(bed, x, y, a, len, len * 0.30, Lback, {
@@ -712,7 +712,7 @@
        and the few petals lying on the bottom edge, are what make it
        read as a heap. These stay in the bed: they are the litter the
        flowers stand in, and litter does not flinch. */
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 120; i++) {
       const x = -4 + rnd() * (W + 8)
       const y = H + 2 - rnd() * (geo.baseDepth + 4)
       const c = cover(x, y)
@@ -721,7 +721,7 @@
         outward(x, y) + Math.PI + (rnd() - 0.5) * 1.4)
     }
 
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 80; i++) {
       const x = -4 + rnd() * (W + 8)
       const y = H + 2 - rnd() * (geo.baseDepth * 0.55)
       if (cover(x, y) < 0.5 || rnd() > 0.22) continue
@@ -932,7 +932,12 @@
        bottom padding, stopping a bloom short of it so a clear gap stays
        under the copyright. No arms up the sides any more. */
     const GAP = 12
-    const baseDepth = Math.max(14, Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP))
+    /* A LOW strip along the very bottom of the screen, not a tall band up
+       the modal. Capped well under what the padding would allow, so the
+       bed hugs the floor and the rest of the padding is just clear air
+       under the copyright. */
+    const room = Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP)
+    const baseDepth = clamp(room, 14, 30)
     // headroom for a full-grown bloom sitting at the top of the band
     const H = baseDepth + Math.ceil(def.size[1]) + 6
     // sparse: roughly one seedling per ~44 css px of width

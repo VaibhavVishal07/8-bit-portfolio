@@ -4481,7 +4481,9 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   /* So the canvas can sit at a negative z-index — above the panel and
      its inset lighting, under every word in the column. */
   isolation: isolate;
-  padding-bottom: 156px;
+  /* Just enough room for the low flower strip and a bloom's headroom —
+     the bed hugs the very bottom now, so it no longer needs a tall band. */
+  padding-bottom: 112px;
 }
 .col__flowers {
   position: absolute;
@@ -4652,5 +4654,5 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   background: var(--row, var(--panel-edge));
 }
 @media (max-width: 760px) {
-  .page--home .col { padding-bottom: 120px; }
+  .page--home .col { padding-bottom: 92px; }
 }
