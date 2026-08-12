@@ -935,12 +935,18 @@
     const baseDepth = Math.max(14, Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP))
     // headroom for a full-grown bloom sitting at the top of the band
     const H = baseDepth + Math.ceil(def.size[1]) + 6
-    // sparse: roughly one seedling per ~50 css px of width
-    const count = clamp(Math.round(cssW / 50), 8, 46)
+    // sparse: roughly one seedling per ~44 css px of width
+    const count = clamp(Math.round(cssW / 44), 8, 54)
 
     artW = W
     artH = H
-    const built = garland(W, H, def, { baseDepth: baseDepth, count: count })
+    /* Smaller plants: shrink the whole flower — bloom, leaves, buds and
+       stems — together, so a watered bed is a low, fine scatter rather
+       than a row of big heads. The band keeps its size (off the original
+       bloom), so the small flowers sit in a little more air. */
+    const PLANT_SCALE = 0.62
+    const sdef = { ...def, size: [def.size[0] * PLANT_SCALE, def.size[1] * PLANT_SCALE] }
+    const built = garland(W, H, sdef, { baseDepth: baseDepth, count: count })
     bedCanvas = toCanvas(built.bed)
     plants = built.plants.map((p) => {
       // seedlings start small; reduced motion just shows them grown,
