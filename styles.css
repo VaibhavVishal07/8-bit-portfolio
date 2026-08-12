@@ -3223,29 +3223,116 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
 
 /* hands the reader the next piece — a tactile block like the rest of the
    L2 furniture */
+/* Foot navigation: a quiet way back to the index, then Previous / Next
+   stepping along the reading order. This is what makes the set navigable
+   at any length — you can walk the sequence or jump back to the list. */
 .read__nav {
-  margin: var(--s6) 0 0;
+  margin: var(--s7) 0 0;
   padding-top: var(--s5);
   border-top: 2px solid var(--panel-dim);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
 }
-.read__nav__label {
+.read__nav__back {
+  display: inline-block;
+  margin-bottom: var(--s5);
   font-family: var(--font-display);
   font-size: var(--d1);
   letter-spacing: 2px;
   color: var(--panel-quiet);
+  text-decoration: none;
+}
+.read__nav__back:hover { color: var(--panel-edge); }
+
+.read__nav__seq {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s4);
 }
 .read__nav__link {
-  font-family: var(--font-read);
-  font-size: var(--b4);
-  font-weight: 500;
-  color: var(--cream);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s4);
+  background: var(--panel-bar);
+  border: 2px solid var(--panel-dim);
+  box-shadow: 4px 4px 0 var(--panel-cast-1);
   text-decoration: none;
-  width: fit-content;
+  min-width: 0;
 }
-.read__nav__link:hover { color: var(--panel-edge); }
+.read__nav__prev { align-items: flex-start; text-align: left; }
+/* a lone Next (the first article has no Previous) sits on the right */
+.read__nav__next { align-items: flex-end; text-align: right; grid-column: 2; }
+.read__nav__link:hover { border-color: var(--panel-edge); }
+.read__nav__link:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--panel-cast-1); }
+.read__nav__dir {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1.5px;
+  color: var(--panel-edge);
+}
+.read__nav__ttl {
+  font-family: var(--font-read);
+  font-size: var(--b3);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--cream);
+}
+
+/* ---- the home writing preview ---- */
+.writing-home__all {
+  display: inline-block;
+  margin-top: var(--s4);
+  font-family: var(--font-display);
+  font-size: var(--d2);
+  letter-spacing: 1px;
+  color: var(--panel-edge);
+  text-decoration: none;
+}
+.writing-home__all:hover { color: var(--panel-accent); }
+
+/* ==================================================================
+   THE WRITING INDEX — its own L2 page
+
+   Where all the writing lives, grouped by year, so it stays scannable
+   at five pieces or fifty. Each row is a title and a compact kind/length
+   tag; the whole thing is one quiet column, the same as an article.
+   ================================================================== */
+.windex { text-align: left; }
+.windex__year { margin: var(--s6) 0 0; }
+.windex__yh {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 3px;
+  color: var(--panel-quiet);
+  margin: 0 0 var(--s2);
+}
+.windex__list { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--panel-dim); }
+.windex__list a {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4) var(--s2);
+  border-bottom: 2px solid var(--panel-dim);
+  text-decoration: none;
+  color: var(--cream);
+}
+.windex__list a:hover,
+.windex__list a:focus-visible { background: var(--panel-bar); color: var(--panel-edge); outline: none; }
+.windex__title { font-family: var(--font-read); font-size: var(--b4); font-weight: 500; line-height: 1.3; }
+.windex__meta {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 1px;
+  color: var(--panel-quiet);
+}
+
+@media (max-width: 760px) {
+  .read__nav__seq { grid-template-columns: 1fr; }
+  .read__nav__next { grid-column: 1; align-items: flex-start; text-align: left; }
+  .windex__list a { flex-direction: column; gap: var(--s1); }
+  .windex__title { font-size: var(--b3); }
+}
 
 @media (max-width: 760px) {
   .read__body p, .read__body li { font-size: 20px; }
