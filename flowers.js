@@ -597,26 +597,29 @@
     /* Fewer blooms than the old garland, and spaced further apart: this
        is a sparse bed you fill in by watering, not a packed border. */
     const CAP = Math.max(8, Math.round(geo.count || 60))
+    const RMAX = def.size[1]
     const spots = []
-    const tries = W * 15
+    const tries = W * 26
     for (let i = 0; i < tries && spots.length < CAP; i++) {
-      const x = -5 + rnd() * (W + 10)
-      const y = H + 3 - rnd() * (geo.baseDepth + 6)
-      const c = cover(x, y)
-      if (c <= 0.02) continue
-      if (rnd() > Math.pow(c, 0.68)) continue
-      const R = (def.size[0] + rnd() * (def.size[1] - def.size[0])) * (0.72 + 0.44 * c)
-      // overlapping is the point; landing on the same pixel is a smudge
+      const x = -6 + rnd() * (W + 12)
+      /* Bloom centres sit ABOVE the ground by at least their own radius,
+         so the flower head is never sliced by the bottom edge; the stem
+         reaches down to the soil on its own. Weighted low, so the bed is
+         densest along the floor and thins upward. */
+      const lift = rnd() * rnd() * (geo.baseDepth * 0.55)
+      const y = H - RMAX - 2 - lift
+      const R = def.size[0] + rnd() * (def.size[1] - def.size[0])
+      // pack them closer than the old garland — this is a full bed
       let ok = true
       for (let j = 0; j < spots.length; j++) {
         const s = spots[j]
         const gx = s.x - x
         const gy = s.y - y
-        const gap = (s.R + R) * 0.78
+        const gap = (s.R + R) * 0.6
         if (gx * gx + gy * gy < gap * gap) { ok = false; break }
       }
       if (!ok) continue
-      spots.push({ x: x, y: y, R: R, c: c })
+      spots.push({ x: x, y: y, R: R, c: 1 - lift / (geo.baseDepth + 1) })
     }
 
     /* ---- the bed ----
@@ -645,22 +648,23 @@
       const sin = Math.sin(out)
 
       // everything the plant is made of, decided before it is drawn,
-      // because the sprite has to be cut to fit it
-      const reach = s.R * (1.9 + rnd() * 1.8)
-      const bend = (rnd() - 0.5) * 2.4
+      // because the sprite has to be cut to fit it.
+      // The stem roots at the ground line (H) however tall the bloom
+      // stands, so the flower head is always clear of the bottom edge.
+      const footX = s.x + (rnd() - 0.5) * 4
+      const footY = H + 4
+      const reach = footY - s.y
+      const bend = (rnd() - 0.5) * 2.0
       const count = 1 + (rnd() < 0.5 ? 1 : 0)
       const leaves = []
       for (let k = 0; k < count; k++) {
         leaves.push({
-          t: 0.35 + rnd() * 0.45,
+          t: 0.4 + rnd() * 0.4,
           side: k % 2 ? 1 : -1,
           len: s.R * (0.9 + rnd() * 0.8),
           lean: 0.7 + rnd() * 0.5,
         })
       }
-
-      const footX = s.x + cos * reach
-      const footY = s.y + sin * reach
       const pad = s.R * 2.2 + 8
       const ox = Math.floor(Math.min(s.x, footX) - pad)
       const oy = Math.floor(Math.min(s.y, footY) - pad)
@@ -784,8 +788,8 @@
   const GROW_STEP = 0.09    // how much a growing plant climbs per frame
   const POUR = 44           // the core of the pour: a full, growing bloom
   const POUR_WIDE = 120     // and a wider reach that nudges the sides awake
-  const GROW_MAX = 1.6      // repeated watering keeps a bloom growing bigger
-  const SPREAD = 36         // a grown bloom coaxes a neighbour this near
+  const GROW_MAX = 1.15     // repeated watering grows a bloom a little bigger
+  const SPREAD = 30         // a grown bloom coaxes a neighbour this near
 
   let running = false
   let lastStep = 0
@@ -933,13 +937,13 @@
        bed hugs the floor and the rest of the padding is just clear air
        under the copyright. */
     const room = Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP)
-    const baseDepth = clamp(room, 14, 30)
-    // headroom for a bloom watered past its base size sitting at the top
-    const H = baseDepth + Math.ceil(def.size[1] * 1.7) + 8
-    // a denser seed grid so there is always somewhere for the bloom to
-    // spread into — including out to the sides. They start invisibly
-    // small, so the bed still reads as bare until it is watered.
-    const count = clamp(Math.round(cssW / 32), 12, 78)
+    const baseDepth = clamp(room, 14, 26)
+    // headroom above the band for a bloom's head and a little growth
+    const H = baseDepth + Math.ceil(def.size[1] * 1.9) + 6
+    // a dense seed grid so a watered bed fills in fully, like a real bed,
+    // and there is always somewhere to spread into — including the sides.
+    // They start invisibly small, so the bed reads as bare until watered.
+    const count = clamp(Math.round(cssW / 22), 18, 120)
 
     artW = W
     artH = H

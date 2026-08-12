@@ -4654,5 +4654,5 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   background: var(--row, var(--panel-edge));
 }
 @media (max-width: 760px) {
-  .page--home .col { padding-bottom: 92px; }
+  .page--home .col { padding-bottom: 108px; }
 }
