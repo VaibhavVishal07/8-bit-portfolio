@@ -252,19 +252,34 @@ svg { display: block; image-rendering: pixelated; }
    Nearest-neighbour upscale is the whole point — the canvas is 960px
    wide and every pixel is blown up as a hard square.
    ================================================================== */
+/* ---- how far the city sits below the fold ----
+   The bottom fifth of the authored frame is the rooftop foreground, and
+   at night it is very nearly black. The old layout hid it behind a tall
+   panel; on a full-bleed hero it was exposed as a dead shelf between the
+   skyline and the reading ground.
+
+   So the canvas is dropped: the element is a fifth taller than the
+   viewport and anchored at the top, which pushes that dark foreground
+   off the bottom edge and brings the skyline down to meet the ground.
+   `cover` does the rest — the scene comes up a fifth larger, which on a
+   pixel grid is no loss at all.
+
+   One number. scene.js reads the element's own box and its computed
+   object-position rather than repeating any of this, so the firework and
+   the cat still land where you tapped. */
+:root { --scene-drop: 1.2; }
+
 #scene,
 #weather {
   position: fixed;
-  inset: 0;
+  inset: 0 0 auto 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% * var(--scene-drop));
   object-fit: cover;
-  /* Anchored low rather than centred. `cover` on a viewport wider than
-     16:9 crops top and bottom, and the two are not worth the same: the
-     sky is mostly gradient and repeats, while the rooftop is the
-     closest, most detailed thing in the scene and the only part you can
-     read individual objects in. So the crop is taken out of the sky. */
-  object-position: 50% 72%;
+  /* Anchored at the TOP now. Everything cropped comes off the bottom,
+     which is the rooftop — the same trade the old `50% 72%` anchor was
+     making on a wide viewport, in the same direction, but always. */
+  object-position: 50% 0%;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -382,63 +397,12 @@ svg { display: block; image-rendering: pixelated; }
 }
 
 /* ---- Menu ---- */
-.menu ul {
-  /* Every other line on this panel centres itself, so the menu rows do
-     too — each row shrink-wraps and centres on its own text, and the
-     heart cursor hangs OFF the row's left edge instead of reserving a
-     gutter inside it. A reserved gutter is why the text kept drifting
-     right of centre no matter which side the counterweight went. */
-  margin: 0;
-  align-items: center;
-  padding: 0;
-  list-style: none;
-  display: inline-flex;
-  flex-direction: column;
-  gap: clamp(15px, 1.5vw, 26px);
-  text-align: center;
-}
-
-.menu a {
-  position: relative;
-  display: inline-block;
-  padding-left: 0;
-  font-family: var(--font-display);
-  font-size: clamp(13px, 1.25vw, 22px);
-  letter-spacing: 1px;
-  color: var(--cream);
-  text-decoration: none;
-}
-
 /* The number is a MARKER, not part of the word. In flow it made every
    row read as "1 WORK" and the eye centres on the word — so the word
    always sat right of the axis by half the prefix. Both ornaments hang
    in the margin now and the word owns the centre. */
-.menu__num {
-  position: absolute;
-  left: -1.7em;
-  color: var(--leaf);
-}
-
-.cursor {
-  position: absolute;
-  left: -3.4em;
-  top: 50%;
-  transform: translateY(-50%);
-  width: clamp(16px, 1.5vw, 26px);
-  height: auto;
-  visibility: hidden;
-}
-
 /* Attract-mode default: row 1 sits selected on load, so the cursor is
    already blinking before the visitor touches anything. */
-.menu li:first-child a { color: var(--gold); }
-.menu li:first-child a .menu__num { color: var(--gold); }
-
-.menu li:first-child .cursor {
-  visibility: visible;
-  animation: blink 0.5s steps(1, end) infinite;
-}
-
 /* Once the menu is in use, row one stops being the attract-mode
    default and behaves like any other row - cream word, GREEN number,
    matching every other unselected line.
@@ -450,39 +414,7 @@ svg { display: block; image-rendering: pixelated; }
    WORK appeared not to respond to hover. :not(:hover):not(:focus-visible)
    makes them stop matching at that moment, and the normal hover rule
    takes over. */
-.menu:hover li:first-child a:not(:hover):not(:focus-visible) { color: var(--cream); }
-.menu:hover li:first-child a:not(:hover):not(:focus-visible) .menu__num { color: var(--leaf); }
-
-.menu:hover li:first-child .cursor {
-  visibility: hidden;
-  animation: none;
-}
-
-.menu a:hover,
-.menu a:focus-visible {
-  color: var(--gold);
-  outline: none;
-}
-
-.menu a:hover .menu__num,
-.menu a:focus-visible .menu__num { color: var(--gold); }
-
-.menu a:hover .cursor,
-.menu a:focus-visible .cursor {
-  visibility: visible;
-  animation: blink 0.5s steps(1, end) infinite;
-}
-
 /* ---- Press any key ---- */
-.press {
-  margin: clamp(30px, 3.4vw, 56px) 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(9px, 0.85vw, 14px);
-  letter-spacing: 3px;
-  color: #fff;
-  animation: blink 1.06s steps(1, end) infinite;
-}
-
 @keyframes blink {
   0%, 55%   { opacity: 1; }
   56%, 100% { opacity: 0; }
@@ -497,153 +429,23 @@ svg { display: block; image-rendering: pixelated; }
 }
 
 .accent { color: var(--gold); }
-
-.doc__path {
-  margin: 0 0 clamp(16px, 1.8vw, 28px);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-
-.doc__h {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  padding-bottom: var(--s3);
-  border-bottom: 2px solid var(--panel-dim);
-  font-family: var(--font-display);
-  font-size: var(--d3);
-  letter-spacing: 3px;
-  color: var(--panel-edge);
-  /* a heading belongs to what FOLLOWS it, so the gap above is
-     large and the gap below is small. */
-  margin: var(--s7) 0 var(--s4);
-}
-
-.doc__h:first-child { margin-top: 0; }
-
-.doc__h-mark {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  background: var(--panel-accent);
-}
-
-.doc__foot {
-  margin: clamp(22px, 2.4vw, 36px) 0 0;
-  padding-top: 12px;
-  border-top: 2px solid var(--panel-dim);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-
-.doc__foot span { color: var(--panel-accent); }
-
 /* ---- experience ----
    Named .job, not .role. The title screen already has a `.role`
    paragraph — "YOUR ROLE · PORTFOLIO 2026" — and a class name reused
    across two unrelated components is not a style question, it is a
    bug: this rule made that line a flex container and knocked it out of
-   centre on a screen that has nothing to do with this one. */
-/* ---- case studies ---- */
-/* Case studies are entry points, not footnotes. They were sized like
+   centre on a screen that has nothing to do with this one. *//* ---- case studies ---- *//* Case studies are entry points, not footnotes. They were sized like
    list rows and read as an afterthought under the experience; they are
    the thing you actually want clicked, so they get a thumbnail, a
    number you can read across the room, and a border thick enough to
-   make them objects rather than boxes. */
-/* Two by two. Four across was a row of thumbnails; two across gives
+   make them objects rather than boxes. *//* Two by two. Four across was a row of thumbnails; two across gives
    each project enough room to be a project. */
-.cases {
-  display: grid;
-  gap: clamp(14px, 1.4vw, 26px);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 /* And at that width the card lies down: thumbnail on the left, the
    words on the right. Stacked, a 16:9 still on a card this wide was
    taller than everything under it put together. */
-.case {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
-  gap: clamp(16px, 1.4vw, 30px);
-  align-items: center;
-  padding: clamp(18px, 1.6vw, 30px);
-  background: var(--panel-bar);
-  border: 3px solid var(--panel-dim);
-  box-shadow: var(--s2) var(--s2) 0 var(--cast);
-  text-decoration: none;
-}
-
-.case:hover,
-.case:focus-visible {
-  border-color: var(--panel-edge);
-  box-shadow: var(--s2) var(--s2) 0 var(--panel-accent);
-  outline: none;
-}
-
 /* Where the thumbnail goes. Vertical bars rather than the usual
    diagonal hatch, because a diagonal edge is the one thing on this
    page that would have to be antialiased. */
-.case__body { display: block; min-width: 0; }
-
-.case__thumb {
-  display: block;
-  aspect-ratio: 16 / 9;
-  border: 2px solid var(--panel-dim);
-  background: var(--panel);
-  border-style: dashed;
-}
-
-.case:hover .case__thumb,
-.case:focus-visible .case__thumb { border-color: var(--panel-edge); }
-
-.case__no {
-  display: block;
-  margin-bottom: clamp(10px, 1vw, 16px);
-  font-family: var(--font-display);
-  font-size: var(--d3);
-  line-height: 1;
-  color: var(--panel-dim);
-}
-
-.case:hover .case__no,
-.case:focus-visible .case__no { color: var(--panel-accent); }
-
-.case__title {
-  display: block;
-  margin: 0 0 clamp(9px, 0.8vw, 14px);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 1px;
-  line-height: 1.6;
-  color: var(--cream);
-}
-
-.case__sub {
-  display: block;
-  margin: 0 0 clamp(18px, 1.6vw, 28px);
-  font-size: var(--b2);
-  line-height: 1.6;
-  color: var(--panel-quiet);
-}
-
-.case__go {
-  display: inline-block;
-  margin-top: var(--s2);
-  padding: var(--s2) var(--s3);
-  border: 2px solid var(--panel-edge);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 2px;
-  color: var(--panel-edge);
-}
-
-.case__go b { color: var(--panel-accent); }
-
 /* ==================================================================
    LOADING
    ================================================================== */
@@ -778,35 +580,9 @@ svg { display: block; image-rendering: pixelated; }
    so you can count them. The frame is drawn in the same cyan as the
    wordmark and the cells in the hot pink, which is the only pair of
    colours the boot screen owns. */
-.boot__label {
-  margin: 0 0 12px;
-  font-family: var(--font-display);
-  font-size: clamp(8px, 0.8vw, 11px);
-  letter-spacing: 4px;
-  color: var(--wm-face);
-}
-
 /* A welcome in Japanese over the loading line — set in a CJK-capable
    system face, since the pixel display font carries no kana. */
-.boot__label::before {
-  content: attr(data-jp);
-  display: block;
-  margin: 0 0 10px;
-  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 8px;
-  text-indent: 8px;
-  color: #ffd6e0;
-}
-
 /* The caret, blinking the way a machine waiting on itself does. */
-.boot__label::after {
-  content: '_';
-  color: var(--boot-cell);
-  animation: blink 0.5s steps(1, end) infinite;
-}
-
 .boot__barwrap {
   height: 26px;
   padding: 4px;
@@ -827,66 +603,6 @@ svg { display: block; image-rendering: pixelated; }
   );
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .boot__label::after { animation: none; }
-}
-/* ==================================================================
-   ABOUT: BIO, NOW PLAYING, STATS, CHIPS
-   ================================================================== */
-.bio {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: clamp(18px, 1.8vw, 34px);
-  align-items: start;
-  margin-bottom: clamp(24px, 2.2vw, 40px);
-}
-
-/* Portrait slot. Blocks until there is a picture. */
-.bio__portrait {
-  width: clamp(96px, 9vw, 168px);
-  aspect-ratio: 1;
-  background: var(--panel);
-  border-style: dashed;
-  border: 3px solid var(--panel-dim);
-  box-shadow: var(--s2) var(--s2) 0 var(--cast);
-}
-
-.bio__lead {
-  margin: 0 0 12px;
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  line-height: 1.8;
-  letter-spacing: 1px;
-  color: var(--gold);
-}
-
-.bio__text {
-  margin: 0 0 var(--s4);
-  max-width: 68ch;
-  font-size: var(--b3);
-  line-height: 1.7;
-  color: var(--panel-text);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.chip {
-  padding: 6px 10px;
-  background: var(--panel);
-  border: 2px solid var(--panel-dim);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-edge);
-}
-
 /* ==================================================================
    CONTACT
 
@@ -895,156 +611,7 @@ svg { display: block; image-rendering: pixelated; }
    two links occupying a 2360px window to say four lines. A contact is
    a glyph, a label, a value and a verb, at a sane measure.
    ================================================================== */
-.contacts {
-  display: grid;
-  gap: var(--s4);
-  max-width: 720px;
-}
-
-.contact {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--s5);
-  align-items: center;
-  padding: var(--s5);
-  background: var(--panel-bar);
-  border: 3px solid var(--panel-dim);
-  box-shadow: var(--s2) var(--s2) 0 var(--cast);
-  text-decoration: none;
-}
-
-.contact:hover,
-.contact:focus-visible {
-  border-color: var(--panel-edge);
-  box-shadow: var(--s2) var(--s2) 0 var(--panel-accent);
-  outline: none;
-}
-
 /* Blocks, in the same language as the desktop icons. */
-.contact__glyph {
-  position: relative;
-  width: 38px;
-  height: 30px;
-  border: 2px solid var(--ink);
-  background: var(--panel-edge);
-}
-
-.contact__glyph--mail::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 5px;
-  width: 3px;
-  height: 3px;
-  background: var(--ink);
-  box-shadow:
-    3px 3px 0 var(--ink), 6px 6px 0 var(--ink), 9px 6px 0 var(--ink),
-    12px 3px 0 var(--ink), 15px 0 0 var(--ink), 18px 0 0 var(--ink);
-}
-
-.contact__glyph--at { background: var(--gold); box-shadow: inset 0 0 0 6px var(--ink), inset 0 0 0 9px var(--gold); }
-.contact__glyph--doc { background: var(--cream); box-shadow: inset 0 6px 0 var(--ink), inset 0 12px 0 var(--cream), inset 0 18px 0 var(--ink); }
-
-.contact__k {
-  display: block;
-  margin-bottom: var(--s2);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-quiet);
-}
-
-.contact__v {
-  display: block;
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  line-height: 1.5;
-  color: var(--cream);
-  word-break: break-all;
-}
-
-.contact__go {
-  flex: none;
-  padding: var(--s2) var(--s3);
-  border: 2px solid var(--panel-edge);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-edge);
-}
-
-.contact__go b { color: var(--panel-accent); }
-
-/* ==================================================================
-   WORK: EXPANDING CASE STUDIES
-   ================================================================== */
-.cell { min-width: 0; }
-
-/* An open case takes the full width of the grid, so its detail has
-   somewhere to go — and the thumbnail is capped once it does, or a
-   16:9 still at four-tenths of the full width becomes taller than
-   everything it was opened to show. */
-.cell.is-open { grid-column: 1 / -1; }
-.cell.is-open .case { grid-template-columns: minmax(0, 260px) minmax(0, 1fr); }
-
-/* One shadow for the opened assembly, not a magenta L sticking 9px
-   past the panel it is joined to. */
-.cell.is-open .case { box-shadow: none; }
-.cell.is-open { box-shadow: var(--s2) var(--s2) 0 var(--cast); }
-
-.case { width: 100%; text-align: center; cursor: pointer; appearance: none; }
-
-.case[aria-expanded='true'] {
-  border-color: var(--panel-edge);
-  box-shadow: var(--s2) var(--s2) 0 var(--panel-accent);
-}
-
-.detail {
-  padding: clamp(18px, 1.6vw, 30px);
-  margin-top: -3px;
-  background: var(--panel);
-  border: 3px solid var(--panel-edge);
-}
-
-
-.detail__h {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 2px;
-  color: var(--panel-accent);
-}
-
-.detail__p {
-  margin: 0 0 var(--s5);
-  max-width: 68ch;
-  font-size: var(--b3);
-  line-height: 1.7;
-  color: var(--panel-text);
-}
-
-/* A strip of stills, in the same placeholder bars as the card. */
-.strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--s3);
-  max-width: 720px;
-}
-
-.strip span {
-  aspect-ratio: 4 / 3;
-  border: 2px solid var(--panel-dim);
-  background: var(--panel);
-  border-style: dashed;
-}
-
-/* Mobile has no hover, and a card pinned to the side of a 44px icon on
-   a 360px screen would run off it. */
-@media (max-width: 760px), (hover: none) {
-}
-
-
-
 /* ==================================================================
    DAY MODE
    The scene repaints itself from its own palette; the window has to
@@ -1104,10 +671,7 @@ html[data-mode='day'] {
 /* Everything else follows from the swapped custom properties above —
    the role, the menu numerals and the selected row already read from
    --moon, --leaf and --gold. Only what was hard-coded pale needs a
-   value here. */
-html[data-mode='day'] .menu a { color: #241428; }
-html[data-mode='day'] .press { color: #1a0e20; }
-html[data-mode='day'] .copyright { color: #7c6a86; }
+   value here. */html[data-mode='day'] .copyright { color: #7c6a86; }
 
 /* ==================================================================
    PER-CITY THEME
@@ -1460,9 +1024,6 @@ html[data-city='dubai']:not([data-mode='day']) .col {
 #rainToggle[aria-pressed='true'] .btn__glyph--rain::after  { background: var(--panel-edge); box-shadow: 5px 1px 0 var(--panel-edge); }
 
 /* ==================================================================
-   RESPONSIVE
-   ================================================================== */
-/* ==================================================================
    MOBILE
 
    Not a squeeze — a re-block. The scene becomes a tall window into the
@@ -1472,51 +1033,17 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    not exist here.
    ================================================================== */
 @media (max-width: 760px) {
-
-
-  .screen__inner { padding: var(--s6) var(--s4) var(--s5); }
-
   /* Bigger touch rows on the title menu. */
-  .menu a { font-size: 16px; padding: var(--s1) 0; }
-
-  /* One column for everything, and the case card stands back up. */
-  .cases { grid-template-columns: minmax(0, 1fr); }
-  .case { grid-template-columns: minmax(0, 1fr); }
-  /* The window is 100% wide here, so a persistent icon column would be
+  /* One column for everything, and the case card stands back up. */  /* The window is 100% wide here, so a persistent icon column would be
      behind it at all times and never once clickable. The taskbar is
      the way back on a phone. */
-  .desktop { display: none; }
-
   /* Editorial columns stack. */
-  .grid-2 { grid-template-columns: minmax(0, 1fr); }
-  .media--portrait { max-width: 280px; }
-
   /* ---- the world map goes vertical ----
      Three columns cannot hold three company names on a phone, and a
      downward path is the older idiom anyway: a quest chain. The nodes
      stay on the line; the words hang off each node. */
-  .worlds { grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
-
-  .worlds::before {
-    left: 13px;
-    right: auto;
-    top: 15px;
-    bottom: 15px;
-    width: 4px;
-    height: auto;
-    background: repeating-linear-gradient(180deg, var(--panel-dim) 0 10px, transparent 10px 20px);
-  }
-
   /* ---- the shelf wraps ----
      Six 96px objects cannot share one board on a phone. */
-  .den__board {
-    flex-wrap: wrap;
-    gap: var(--s4);
-    justify-content: space-around;
-  }
-
-  .obj__art { margin: 48px var(--s3) 0; }
-
   /* ---- controls go away entirely ----
      On a phone the landing shot is the whole experience, not a thing to
      reconfigure. The city picker and the rain toggle both leave: one
@@ -1528,12 +1055,10 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   /* The taskbar keeps tasks and the clock; the brand is decoration. */
 
 
-
   /* ---- the title bar, simplified ----
      The icon is decoration and maximise means nothing when the window
      is already effectively the screen. Two buttons remain, both grown
      to thumb size, and the title truncates before anything overflows. */
-
 
 
   /* Boot: the name wants room to breathe on a small screen. */
@@ -1549,7 +1074,7 @@ html[data-city='dubai']:not([data-mode='day']) .col {
 @media (orientation: portrait) {
   #scene,
   #weather {
-    object-position: 72% 72%;
+    object-position: 72% 0%;
   }
 }
 
@@ -1565,1064 +1090,11 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    scene.js holds its first frame; these hold theirs.
    ================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  .wordmark,
-  .press,
-  .menu li:first-child .cursor,
-  .menu a:hover .cursor,
-  .menu a:focus-visible .cursor {
+  .wordmark {
     animation: none !important;
   }
 }
 
-/* ==================================================================
-   THE GAME LAYER
-
-   The L2 pages stopped being documents. A retro game never shows you a
-   document — it shows you a place, objects in it, and something that
-   talks. So: a shelf of belongings instead of cards, a world map
-   instead of a CV list, stages instead of case studies, a join screen
-   instead of a contact form — and a cat in the corner of every page
-   narrating whatever you point at.
-   ================================================================== */
-
-/* ---- the image slot convention ----
-   Every dashed rectangle in the site is a drop target: put an <img>
-   inside it and the styling does the rest. The corner tag says so. */
-.slot { position: relative; }
-
-.slot > i {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  padding: 2px 5px;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  font-style: normal;
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-  background: var(--panel);
-}
-
-.slot > img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  image-rendering: pixelated;
-}
-
-/* ---- character sheet ---- */
-.bio__name {
-  margin: 0 0 var(--s2);
-  font-family: var(--font-display);
-  font-size: var(--d3);
-  line-height: 1.3;
-  color: var(--cream);
-}
-
-/* ---- the shelf ----
-   Two boards with objects standing on them. Each object is a pixel
-   thing built from blocks, it lifts when pointed at, and the cat
-   describes it. One per board fidgets on its own, because a shelf
-   where nothing ever moves is a photograph of a shelf. */
-.den { display: grid; gap: var(--s6); }
-
-.den__board {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  gap: clamp(var(--s5), 4vw, 64px);
-  padding: 0 var(--s5) var(--s4);
-  border-bottom: 10px solid var(--panel-dim);
-  box-shadow: 0 12px 0 -2px var(--cast);
-}
-
-.obj {
-  display: grid;
-  justify-items: center;
-  gap: var(--s3);
-  padding: var(--s2) var(--s2) 0;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  appearance: none;
-}
-
-.obj:focus-visible { outline: 2px solid var(--panel-edge); outline-offset: 2px; }
-
-.obj__art {
-  position: relative;
-  display: block;
-  width: 48px;
-  height: 48px;
-  margin: 48px 24px 0;
-  transform: scale(2);
-  transform-origin: 50% 100%;
-}
-
-/* pointing at an object lifts it off the board — a snap, not a tween */
-.obj:hover .obj__art,
-.obj:focus-visible .obj__art { transform: scale(2) translateY(-2px); }
-
-.obj__k {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-
-.obj:hover .obj__k,
-.obj:focus-visible .obj__k { color: var(--panel-edge); }
-
-.obj__art::before,
-.obj__art::after { content: ''; position: absolute; }
-
-/* a standing book: spine, pages, title band */
-.obj__art--book::before {
-  left: 12px; bottom: 0; width: 22px; height: 46px;
-  background: var(--panel-accent);
-  border: 2px solid var(--ink);
-  box-shadow: inset 0 -8px 0 var(--ink), inset 0 4px 0 rgba(255, 255, 255, 0.35);
-}
-.obj__art--book::after {
-  left: 16px; bottom: 18px; width: 14px; height: 10px;
-  background: var(--gold);
-  border: 2px solid var(--ink);
-}
-
-/* a game cartridge: shell, grip, label window */
-.obj__art--cart::before {
-  left: 4px; bottom: 4px; width: 40px; height: 34px;
-  background: var(--chrome-dark);
-  border: 2px solid var(--ink);
-  box-shadow: inset 0 -6px 0 var(--ink);
-}
-.obj__art--cart::after {
-  left: 12px; bottom: 16px; width: 24px; height: 16px;
-  background: var(--panel-edge);
-  border: 2px solid var(--ink);
-}
-
-/* a VHS tape: slab, two spool windows, label stripe */
-.obj__art--tape::before {
-  left: 2px; bottom: 6px; width: 44px; height: 28px;
-  background: var(--ink);
-  border: 2px solid var(--panel-quiet);
-  box-shadow: inset 0 6px 0 var(--panel-accent);
-}
-.obj__art--tape::after {
-  left: 10px; bottom: 12px; width: 8px; height: 8px;
-  background: var(--cream);
-  border: 2px solid var(--panel-quiet);
-  box-shadow: 20px 0 0 -2px var(--cream), 18px -2px 0 0 var(--panel-quiet);
-}
-
-/* a record half out of its sleeve */
-.obj__art--disc::before {
-  left: 2px; bottom: 0; width: 38px; height: 38px;
-  background: var(--wm-fringe-l);
-  border: 2px solid var(--ink);
-  box-shadow: inset -6px 6px 0 rgba(0, 0, 0, 0.35);
-}
-.obj__art--disc::after {
-  right: 0; top: 0; width: 20px; height: 20px;
-  background: var(--ink);
-  border: 2px solid var(--chrome-dark);
-  box-shadow: inset 6px 6px 0 -2px var(--gold);
-}
-
-/* a toolbox, handle up */
-.obj__art--tool::before {
-  left: 2px; bottom: 2px; width: 44px; height: 26px;
-  background: var(--gold);
-  border: 2px solid var(--ink);
-  box-shadow: inset 0 10px 0 -8px var(--ink);
-}
-.obj__art--tool::after {
-  left: 16px; bottom: 24px; width: 16px; height: 10px;
-  background: transparent;
-  border: 3px solid var(--panel-quiet);
-  border-bottom: 0;
-}
-
-/* the cat's yarn ball, strand trailing off the board */
-.obj__art--yarn::before {
-  left: 10px; bottom: 4px; width: 26px; height: 26px;
-  background: var(--panel-accent);
-  border: 2px solid var(--ink);
-  box-shadow:
-    inset 6px 0 0 -2px rgba(255, 255, 255, 0.4),
-    inset 0 -8px 0 -4px rgba(0, 0, 0, 0.35);
-}
-.obj__art--yarn::after {
-  left: 32px; bottom: 0; width: 14px; height: 3px;
-  background: var(--panel-accent);
-}
-
-.den__board:first-child .obj:nth-child(2) .obj__art { animation: fidget 7s steps(2, end) infinite; }
-.den__board:last-child .obj:nth-child(3) .obj__art { animation: fidget 9s steps(2, end) infinite 3s; }
-
-@keyframes fidget {
-  0%, 92% { transform: scale(2) translateY(0); }
-  93%, 100% { transform: scale(2) translateY(-1px); }
-}
-
-.obj:hover .obj__art { animation: none; }
-
-/* ---- quest log ---- */
-.quests {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
-  gap: var(--s2) var(--s6);
-}
-
-.quest {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s3);
-  padding: var(--s2) 0;
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  color: var(--panel-text);
-  cursor: default;
-}
-
-.quest:focus-visible,
-.world:focus-visible { outline: 2px solid var(--panel-edge); outline-offset: 4px; }
-
-.quest b { color: var(--panel-accent); font-weight: inherit; }
-.quest:hover b { color: var(--panel-edge); }
-
-.quest__st {
-  margin-left: auto;
-  padding: 3px 8px;
-  border: 2px solid var(--panel-dim);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-
-.quest__st--done { color: var(--leaf); border-color: var(--leaf); }
-.quest__st--new {
-  color: var(--gold);
-  border-color: var(--gold);
-  animation: blink 1.1s steps(1, end) infinite;
-}
-
-/* ---- the world map ---- */
-.worlds {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--s5);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* the dotted path the run follows, behind the nodes */
-.worlds::before {
-  content: '';
-  position: absolute;
-  left: 7%;
-  right: 7%;
-  top: 13px;
-  height: 4px;
-  background: repeating-linear-gradient(90deg, var(--panel-dim) 0 10px, transparent 10px 20px);
-}
-
-.world { position: relative; cursor: default; }
-
-.world__node {
-  position: relative;
-  display: block;
-  width: 30px;
-  height: 30px;
-  margin-bottom: var(--s3);
-  background: var(--panel-bar);
-  border: 3px solid var(--panel-dim);
-  box-shadow: var(--s1) var(--s1) 0 var(--cast);
-}
-
-.world:hover .world__node { border-color: var(--panel-edge); }
-
-.world--here .world__node {
-  background: var(--panel-accent);
-  border-color: var(--panel-edge);
-}
-
-.world__tag {
-  display: block;
-  margin-bottom: var(--s2);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-quiet);
-}
-
-.world__tag b { color: var(--panel-accent); font-weight: inherit; }
-
-.world__co {
-  margin: 0 0 var(--s2);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  line-height: 1.5;
-  color: var(--cream);
-}
-
-.world__meta {
-  margin: 0 0 var(--s2);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--gold);
-}
-
-.world__meta span { color: var(--panel-quiet); }
-
-.world__desc {
-  margin: 0;
-  max-width: 40ch;
-  font-size: var(--b2);
-  line-height: 1.6;
-  color: var(--panel-text);
-}
-
-/* ---- the dialogue box ----
-   The rooftop cat, indoors. Types an intro when the window opens and
-   re-types whenever anything with data-say is pointed at. Typing is
-   the one animation that is stepped by its very nature. */
-.talk {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--s4);
-  align-items: end;
-  margin-top: var(--s7);
-  padding-top: var(--s2);
-  /* the document scrolls in behind it, so it needs its own ground */
-  background: var(--screen);
-}
-
-.talk__cat {
-  position: relative;
-  width: 44px;
-  height: 46px;
-}
-
-/* sitting cat: a bordered body and a bordered head, solid ears, a
-   tail curled round the front */
-.talk__cat::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 32px;
-  height: 24px;
-  background: var(--panel);
-  border: 2px solid var(--panel-quiet);
-  box-shadow: 26px 18px 0 -8px var(--panel-quiet);
-}
-
-.talk__cat::after {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 4px;
-  width: 24px;
-  height: 18px;
-  background: var(--panel);
-  border: 2px solid var(--panel-quiet);
-  box-shadow:
-    -2px -6px 0 -7px var(--panel-quiet),
-    10px -6px 0 -7px var(--panel-quiet);
-}
-
-.talk__cat i {
-  position: absolute;
-  z-index: 1;
-  left: 15px;
-  top: 11px;
-  width: 3px;
-  height: 3px;
-  background: var(--panel-edge);
-  box-shadow: 8px 0 0 var(--panel-edge);
-  animation: catblink 5s steps(1, end) infinite;
-}
-
-@keyframes catblink {
-  0%, 94% { opacity: 1; }
-  95%, 100% { opacity: 0; }
-}
-
-.talk__box {
-  position: relative;
-  padding: var(--s4) var(--s5);
-  background: var(--panel);
-  border: 3px solid var(--panel-edge);
-  box-shadow: var(--s1) var(--s1) 0 var(--cast);
-}
-
-.talk__name {
-  position: absolute;
-  top: -12px;
-  left: var(--s4);
-  padding: 2px 8px;
-  background: var(--panel-accent);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--ink);
-}
-
-.talk__text {
-  margin: 0;
-  min-height: 2.6em;
-  font-size: var(--b3);
-  line-height: 1.6;
-  color: var(--panel-text);
-}
-
-.talk__text::after {
-  content: '_';
-  color: var(--panel-accent);
-  animation: blink 0.6s steps(1, end) infinite;
-}
-
-/* ---- the join screen ---- */
-.join__lead {
-  font-family: var(--font-body);
-  margin: calc(var(--s5) * -1) 0 var(--s5);
-  font-size: var(--b3);
-  color: var(--panel-text);
-}
-
-.doc__count { color: var(--panel-accent); font-weight: inherit; }
-
-/* stills in a stage detail are numbered like screenshots */
-.strip { counter-reset: shot; }
-
-.strip span { position: relative; }
-
-.strip span::after {
-  counter-increment: shot;
-  content: 'SCREEN ' counter(shot);
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-/* ==================================================================
-   EDITORIAL
-
-   The freedom layer. ABOUT and WORK stopped being game screens — the
-   retro chrome stays on the window, but inside it this is an ordinary
-   editorial document: headings, paragraphs, images, galleries, in any
-   order and any quantity. Nothing here needs the theme's permission.
-   ================================================================== */
-.prose {
-  max-width: 68ch;
-  font-size: var(--b3);
-  line-height: 1.5;
-  letter-spacing: 0;
-  color: var(--panel-text);
-}
-
-.prose > * + * { margin-top: var(--s3); }
-
-.prose h3 {
-  margin-top: var(--s5);
-  margin-bottom: var(--s2);
-  font-family: var(--font-body);
-  /* never smaller than the body it heads — weight and caps do the
-     signalling, size just has to not contradict them */
-  font-size: var(--b3);
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--panel-edge);
-}
-
-.prose b { color: var(--cream); font-weight: 700; }
-.prose a { color: var(--panel-edge); }
-.prose ul,
-.prose ol { padding-left: 1.4em; }
-
-.prose ol li::marker {
-  font-family: var(--font-display);
-  color: var(--panel-accent);
-}
-.prose li + li { margin-top: var(--s2); }
-
-.prose blockquote {
-  margin: var(--s5) 0;
-  padding-left: var(--s4);
-  border-left: 4px solid var(--panel-accent);
-  color: var(--cream);
-}
-
-/* The opening line, set large — in the BODY face, because the pixel
-   face at this size would shout. */
-.lede {
-  /* The opening line is the one place the reading face goes big. It is
-     a sentence, not a heading - it stays in Satoshi. */
-  font-size: var(--b4);
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  color: var(--cream);
-}
-
-/* ---- images ----
-   .media is any content image frame; drop an <img> in and it fills.
-   Content photography renders NORMALLY — the scene is pixel art, the
-   work is not, and pixelating someone's real screenshots would be
-   the theme overreaching. */
-.media {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  max-height: 520px;
-  background: var(--panel);
-  border: 3px solid var(--panel-dim);
-}
-
-.media--cover {
-  aspect-ratio: 21 / 9;
-  /* on a very wide document an uncapped cover is a wall — the title
-     must stay in the same viewport as its image */
-  max-height: 420px;
-}
-.media--portrait { aspect-ratio: 4 / 5; }
-
-.media > img { image-rendering: auto; }
-
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: var(--s3);
-  margin-top: var(--s3);
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
-  gap: var(--s5);
-  align-items: start;
-  margin: var(--s5) 0;
-}
-
-/* ---- a work piece ---- */
-.piece {
-  margin-top: var(--s6);
-  padding-top: var(--s5);
-  border-top: 2px solid var(--panel-dim);
-}
-
-.piece__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s2) var(--s4);
-  margin: var(--s4) 0 var(--s3);
-}
-
-.piece__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--d3);
-  color: var(--cream);
-}
-
-.piece__meta {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--b1);
-  font-weight: 500;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--panel-quiet);
-}
-
-.piece > .gallery { max-width: 100%; }
-
-/* ---- experience, one line each ---- */
-.xp {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-width: 72ch;
-}
-
-.xp li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s2) var(--s3);
-  padding: var(--s3) 0;
-  border-bottom: 2px solid var(--panel-bar);
-  font-size: var(--b2);
-  color: var(--panel-text);
-}
-
-.xp b {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  font-weight: 400;
-  letter-spacing: 1px;
-  color: var(--cream);
-}
-
-.xp span {
-  margin-left: auto;
-  font-family: var(--font-body);
-  font-size: var(--b1);
-  font-weight: 500;
-  letter-spacing: 1px;
-  color: var(--gold);
-}
-/* ==================================================================
-   THE DECK
-
-   WORK and ABOUT stopped being documents. Each window now holds a
-   SELECT SCREEN - a rack of cards, every one carrying its own
-   generated 8-bit poster - and picking a card swaps the whole view
-   for that card's stage. It is the oldest interface in games, and it
-   works because a rack of covers is something you want to look at
-   before you have read a word.
-   ================================================================== */
-.deck__head {
-  margin-bottom: var(--s5);
-}
-
-.deck__eyebrow {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-quiet);
-}
-
-.deck__title {
-  margin: var(--s2) 0 0;
-  font-family: var(--font-display);
-  font-size: var(--d4);
-  line-height: 1.15;
-  color: var(--cream);
-  text-shadow: var(--wmo) var(--wmo) 0 var(--panel-accent);
-}
-
-.deck__hint,
-.deck__sub {
-  margin: var(--s3) 0 0;
-  font-size: var(--b1);
-  color: var(--panel-quiet);
-}
-
-.deck__hint span { color: var(--gold); }
-
-.deck__h {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  margin: var(--s7) 0 var(--s4);
-  padding-bottom: var(--s3);
-  border-bottom: 2px solid var(--panel-dim);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 3px;
-  color: var(--panel-edge);
-}
-
-.deck__h + .deck__sub { margin-top: calc(var(--s4) * -1 + var(--s2)); }
-
-/* ---- the rack ---- */
-.cards {
-  display: grid;
-  /* Two up, always.
-
-     This was `minmax(min(100%, 560px), 1fr)`, tuned for a window that
-     could be 2360px wide — inside a 900px column it resolves to a
-     single track and every cartridge came out the height of the
-     viewport. Two fixed columns is the right answer for six things:
-     it is a rack you can take in at a glance, and the poster stays
-     the size of an object you are choosing between rather than the
-     size of the choice itself. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--s4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.cards--shelf {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-}
-
-/* A card is a button, not a link: it changes what this screen shows
-   rather than going anywhere, and the element should say so. */
-.card {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding: 0;
-  border: 3px solid var(--panel-dim);
-  background: var(--panel-bar);
-  color: inherit;
-  text-align: center;
-  cursor: pointer;
-  /* the same hard offset the windows use - no blur, no easing */
-  box-shadow: var(--cast);
-}
-
-.card:hover,
-.card:focus-visible {
-  border-color: var(--panel-accent);
-  outline: none;
-  /* lifts by exactly one pixel-grid step, in steps, like everything */
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
-}
-
-.card:active { transform: translate(0, 0); }
-
-.card__art {
-  display: block;
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  background: #0a0418;
-  border-bottom: 3px solid var(--panel-dim);
-}
-
-.card__art canvas,
-.card__art img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* the posters are pixel art and must upscale hard */
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-/* a real photograph dropped into a slot renders normally, and hides
-   the generated poster underneath it */
-.card__art img { image-rendering: auto; }
-.card__art img + canvas,
-.card__art canvas + img { display: none; }
-
-/* The hero / figure / cover slots put the frame classes ON the <img>
-   itself (not on a wrapper with a child img), so the descendant rules
-   above never reach them. Crop those images to fill their 16/9 box
-   instead of stretching, and render them as photographs, not pixel art. */
-img.card__art,
-img.card__art--wide {
-  object-fit: cover;
-  image-rendering: auto;
-}
-img.card__art--wide { max-height: 360px; }
-
-.card__art canvas { aspect-ratio: 16 / 9; }
-.card--tall .card__art canvas { aspect-ratio: 3 / 4; }
-
-/* With the generated posters removed, the FRAME carries the shape, so an
-   empty slot still reads as a placeholder box waiting for a real image
-   rather than collapsing to nothing. A dropped-in <img> fills it. */
-.card__art { aspect-ratio: 16 / 9; }
-.card--tall .card__art,
-.card__art--big { aspect-ratio: 3 / 4; }
-
-/* the scanline veil, so a poster reads as something on a screen */
-.card__art::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.22) 0 1px,
-    transparent 1px 3px
-  );
-  pointer-events: none;
-}
-
-.card:hover .card__art::after,
-.card:focus-visible .card__art::after { opacity: 0.4; }
-
-.card__info {
-  display: block;
-  padding: var(--s3) var(--s4) var(--s4);
-}
-
-.card__no {
-  display: block;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--gold);
-}
-
-.card__name {
-  display: block;
-  margin-top: var(--s2);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  line-height: 1.35;
-  color: var(--cream);
-}
-
-.card__meta {
-  display: block;
-  margin-top: var(--s2);
-  font-size: var(--b1);
-  font-weight: 500;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--panel-quiet);
-}
-
-/* ENTER only shows itself when the card is live - a rack of four
-   identical calls to action is a rack that is shouting */
-.card__enter {
-  display: block;
-  margin-top: auto;
-  padding: var(--s2) var(--s4) var(--s3);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-bar);
-}
-
-.card:hover .card__enter,
-.card:focus-visible .card__enter { color: var(--panel-accent); }
-
-/* ---- a stage ---- */
-.level {
-  animation: levelin 0.18s steps(3, end) 1;
-}
-
-@keyframes levelin {
-  from { transform: translateX(12px); }
-  to { transform: translateX(0); }
-}
-
-.level__back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s2);
-  margin-bottom: var(--s5);
-  padding: var(--s2) var(--s4);
-  border: 3px solid var(--panel-dim);
-  background: var(--panel-bar);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-text);
-  cursor: pointer;
-}
-
-.level__back:hover,
-.level__back:focus-visible {
-  border-color: var(--panel-accent);
-  color: var(--cream);
-  outline: none;
-}
-
-.level__no {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 3px;
-  color: var(--gold);
-}
-
-.level__title {
-  margin: var(--s2) 0 0;
-  font-family: var(--font-display);
-  font-size: var(--d4);
-  line-height: 1.15;
-  color: var(--cream);
-}
-
-.level__meta {
-  margin: var(--s3) 0 var(--s5);
-  font-size: var(--b1);
-  font-weight: 500;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--panel-quiet);
-}
-
-.level__split {
-  display: grid;
-  grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
-  gap: var(--s5);
-  align-items: start;
-}
-
-.card__art--big {
-  border: 3px solid var(--panel-dim);
-  box-shadow: var(--cast);
-}
-
-.card__art--big canvas { aspect-ratio: 3 / 4; }
-
-.level__nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s3);
-  margin-top: var(--s7);
-  padding-top: var(--s4);
-  border-top: 2px solid var(--panel-dim);
-}
-
-.level__nav a {
-  padding: var(--s3) var(--s4);
-  border: 3px solid var(--panel-dim);
-  background: var(--panel-bar);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-text);
-  cursor: pointer;
-}
-
-.level__nav a:last-child { margin-left: auto; }
-
-.level__nav a:hover,
-.level__nav a:focus-visible {
-  border-color: var(--panel-accent);
-  color: var(--cream);
-  outline: none;
-}
-
-/* ==================================================================
-   THE CHARACTER SHEET
-
-   ABOUT was a bio and bios are all the same. This is a stat block:
-   a portrait, four numbers, an inventory, and a shelf of what is
-   actually in rotation. Specific things beat adjectives.
-   ================================================================== */
-.sheet {
-  display: grid;
-  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
-  gap: var(--s5);
-  align-items: start;
-}
-
-.sheet__pic {
-  display: block;
-  aspect-ratio: 3 / 4;
-  border: 3px solid var(--panel-dim);
-  box-shadow: var(--cast);
-}
-
-.sheet__name {
-  margin: var(--s2) 0 0;
-  font-family: var(--font-display);
-  font-size: var(--d4);
-  line-height: 1.15;
-  color: var(--cream);
-  text-shadow: var(--wmo) var(--wmo) 0 var(--panel-accent);
-}
-
-.sheet__class {
-  margin: var(--s3) 0 var(--s4);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--gold);
-}
-
-/* ---- stat bars ---- */
-.stats {
-  /* A stat block reads as a block. Stretched the full width of a wide
-     window these stop being stats and start being loading bars. */
-  max-width: 480px;
-  margin: var(--s5) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.stats li {
-  display: grid;
-  grid-template-columns: 6.5em minmax(0, 1fr) 2.5em;
-  align-items: center;
-  gap: var(--s3);
-  margin-top: var(--s3);
-}
-
-.stats__k {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-text);
-}
-
-/* The bar is drawn in cells, not as a smooth strip: a stat bar that
-   can land halfway through a pixel is a stat bar from the wrong
-   decade. */
-.bar {
-  display: block;
-  height: 14px;
-  padding: 2px;
-  border: 2px solid var(--panel-dim);
-  background: var(--panel);
-}
-
-.bar i {
-  display: block;
-  height: 100%;
-  background-color: var(--panel-accent);
-  background-image: repeating-linear-gradient(
-    to right,
-    var(--panel-accent) 0 6px,
-    transparent 6px 8px
-  );
-}
-
-.stats b {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  color: var(--gold);
-  text-align: center;
-}
-
-@media (max-width: 760px) {
-  .cards { grid-template-columns: minmax(0, 1fr); }
-  .cards--shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sheet,
-  .level__split { grid-template-columns: minmax(0, 1fr); }
-  .sheet__pic { max-width: 200px; }
-  .deck__title,
-  .level__title { font-size: var(--d3); }
-  .level__nav a:last-child { margin-left: 0; }
-}
-/* A stage opens on the poster its card wore, at full width. */
-.card__art--wide {
-  display: block;
-  margin-bottom: var(--s5);
-  border: 3px solid var(--panel-dim);
-  box-shadow: var(--cast);
-}
-
-.card__art--wide canvas,
-.card__art--wide img {
-  aspect-ratio: 16 / 9;
-  max-height: 360px;
-  object-fit: cover;
-}
-/* a real photograph in a wide slot renders smoothly, not pixel-upscaled */
-.card__art--wide img { width: 100%; image-rendering: auto; }
 /* ==================================================================
    THE WINDOW, PROPERLY
 
@@ -2646,227 +1118,15 @@ img.card__art--wide { max-height: 360px; }
 
 /* Every field is its own sunken box - the detail that makes a status
    bar read as a status bar and not a line of small text. */
-.field {
-  padding: 5px 10px;
-  box-shadow:
-    inset 1px 1px 0 var(--bevel-shade),
-    inset -1px -1px 0 var(--bevel-lit);
-}
-
-.field--grow { flex: 1 1 auto; }
-
-.card,
-.level__back,
-.level__nav a,
-.chip {
-  box-shadow:
-    inset 1px 1px 0 var(--bevel-lit),
-    inset -1px -1px 0 var(--bevel-shade),
-    var(--cast);
-}
-
 @media (max-width: 760px) {
   /* a phone has no room for menus it cannot use */
 
 
 }
 /* A cartridge is landscape and wants air around it: the rack reads as
-   objects sitting on a shelf rather than tiles butted together. */
-.card__art canvas[data-poster='cart'] {
-  aspect-ratio: 152 / 112;
-  object-fit: contain;
-  padding: var(--s4);
-  background: transparent;
-}
-
-.card:has(canvas[data-poster='cart']) .card__art {
-  background: var(--panel);
-}
-
-.card:has(canvas[data-poster='cart']) .card__art::after { opacity: 0.3; }
-/* ==================================================================
-   NO TUBE
-
-   There was a CRT overlay across the whole viewport: the glass
-   darkening toward the rim, blacker still in the four corners, and a
-   diagonal sheen lying over all of it.
-
-   It was doing the one thing this project forbids everywhere else.
-   The vignette was two large blurred box-shadows — `inset 0 0 90px
-   30px` and `inset 0 0 200px 60px` — plus a radial gradient taking
-   the corners to 55% black. Those were the only blurs in the entire
-   file, and they were laid over the corners of the city, which is
-   where the skyline and the rooftop actually are. A soft gradient
-   dimming art that has no soft gradients anywhere in it.
-
-   The bow in scene.js that this was the other half of is off now too,
-   and for the same reason. The display is the picture.
-   ================================================================== */
-/* ==================================================================
-   PERSONALITY, NOT COMPETENCE
-
-   The stat bars are gone. A bar chart of your own craft and taste is
-   a claim about how good you are, and nobody was ever won over by
-   somebody else's self-assessment. What follows is the human version:
-   facts, opinions, and things that are true on a Sunday.
-   ================================================================== */
-
-/* ---- quick facts ----
-   A two-column ledger. Label small and quiet, answer loud - so the
-   eye runs down the answers and picks up the labels only where it
-   stops. */
-.facts {
-  display: grid;
-  /* Two columns, capped. Left to auto-fit on a 1700px window this
-     spread into six thin strips and stopped reading as a ledger. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 980px;
-  gap: var(--s3) var(--s6);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.facts li {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s3);
-  padding: var(--s3) 0;
-  border-bottom: 2px solid var(--panel-bar);
-}
-
-.facts span {
-  flex: none;
-  width: 9em;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-
-.facts b {
-  font-size: var(--b2);
-  font-weight: 500;
-  color: var(--cream);
-}
-
-/* ---- hills to die on ----
-   Numbered, because an opinion with a number in front of it reads as
-   a position rather than as a passing remark. */
-.takes {
-  counter-reset: take;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-width: 68ch;
-}
-
-.takes li {
-  counter-increment: take;
-  position: relative;
-  padding: var(--s3) 0 var(--s3) 3.2em;
-  border-bottom: 2px solid var(--panel-bar);
-  font-size: var(--b2);
-  color: var(--panel-text);
-}
-
-.takes li::before {
-  content: counter(take, decimal-leading-zero);
-  position: absolute;
-  left: 0;
-  top: var(--s3);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  color: var(--panel-accent);
-}
-
-/* ==================================================================
-   CONTACT
-
-   Five channels stacked in a column read as a form to be worked
-   through. Spread across a grid they read as a set of doors, all
-   equally open - which is the actual message.
-   ================================================================== */
-.wires {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: var(--s4);
-  margin: 0 0 var(--s7);
-  padding: 0;
-  list-style: none;
-}
-
-/* email is the one that actually gets answered, so it gets the room */
-.wire--wide { grid-column: 1 / -1; }
-
-.wire a {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-  height: 100%;
-  padding: var(--s4);
-  border: 3px solid var(--panel-dim);
-  background: var(--panel-bar);
-  box-shadow:
-    inset 1px 1px 0 var(--bevel-lit),
-    inset -1px -1px 0 var(--bevel-shade),
-    var(--cast);
-  text-decoration: none;
-  color: inherit;
-}
-
-.wire a:hover,
-.wire a:focus-visible {
-  border-color: var(--panel-accent);
-  outline: none;
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
-}
-
-.wire a:active { transform: translate(0, 0); }
-
-.wire__k {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--gold);
-}
-
-.wire__v {
-  font-size: var(--b3);
-  font-weight: 500;
-  color: var(--cream);
-  overflow-wrap: anywhere;
-}
-
-.wire--wide .wire__v { font-size: var(--b4); }
-
-.wire__go {
-  margin-top: auto;
-  padding-top: var(--s3);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-quiet);
-}
-
-.wire a:hover .wire__go,
-.wire a:focus-visible .wire__go { color: var(--panel-accent); }
-
-@media (max-width: 760px) {
-  .facts { grid-template-columns: minmax(0, 1fr); }
-  .facts { grid-template-columns: minmax(0, 1fr); }
-  .facts span { width: 7.5em; }
-  .takes li { padding-left: 2.6em; }
-}
 /* The two-up was sized for a portrait beside text. Where BOTH sides
    are text it should split evenly - otherwise the left column runs at
-   four words a line and reads like a newspaper gutter. */
-.grid-2:has(> .prose + .prose) {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--s6);
-}
-/* ==================================================================
+   four words a line and reads like a newspaper gutter. *//* ==================================================================
    PAGES
 
    The desktop is gone. What replaced it is one column of content at a
@@ -2917,16 +1177,6 @@ img.card__art--wide { max-height: 360px; }
   align-items: center;
   justify-content: center;
 }
-
-/* ==================================================================
-   L2 PAGES — EACH OPENS AS ITS OWN FULL PAGE
-
-   A project or an article opens as a separate page, one at a time,
-   filling the frame over the half-lit, still-moving city (scene.js
-   setStage). No rail, no split — the page is the whole view, and a
-   single back-to-home control sits top-left. Everything else is the
-   base .page / .col--doc layout, so nothing needs re-stating here.
-   ================================================================== */
 
 /* ==================================================================
    THE TACTILE CTA + THE L2 TOP NAV
@@ -3022,9 +1272,7 @@ img.card__art--wide { max-height: 360px; }
    reading face doing small, upper, letter-spaced chrome work. */
 .cs__eyebrow { font-family: var(--font-read); font-size: 14px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--panel-quiet); margin: 0 0 var(--s4); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
 .cs__title { font-family: var(--font-read); font-size: clamp(30px, 3.6vw, 42px); font-weight: 700; letter-spacing: -0.015em; color: var(--cream); margin: 0 0 var(--s5); line-height: 1.14; }
-.cs__lede { font-family: var(--font-read); font-size: clamp(20px, 2.2vw, 23px); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 40ch; }
-.cs__hero { display: block; width: 100%; margin: 0 0 var(--s6); }
-.cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5) var(--s5); margin: 0 0 var(--s6); padding: var(--s5) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
+.cs__lede { font-family: var(--font-read); font-size: clamp(20px, 2.2vw, 23px); font-weight: 500; line-height: 1.5; color: var(--panel-text); margin: 0 0 var(--s6); max-width: 40ch; }.cs__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5) var(--s5); margin: 0 0 var(--s6); padding: var(--s5) 0; border-top: 2px solid var(--panel-dim); border-bottom: 2px solid var(--panel-dim); }
 .cs__meta dt { font-family: var(--font-read); font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--panel-quiet); margin: 0 0 var(--s2); }
 .cs__meta dd { font-family: var(--font-read); margin: 0; font-size: 17px; color: var(--panel-text); }
 .cs__h { font-family: var(--font-read); font-size: clamp(22px, 2vw, 26px); font-weight: 700; color: var(--cream); margin: var(--s7) 0 var(--s4); }
@@ -3034,19 +1282,7 @@ img.card__art--wide { max-height: 360px; }
 .cs .prose p { font-size: 19px; line-height: 1.72; color: var(--cream); margin: 0 0 var(--s5); max-width: 62ch; }
 .cs .prose p:last-child { margin-bottom: 0; }
 
-/* ---- the NDA badge, note and redacted screens ---- */
-.cs__nda {
-  font-family: var(--font-read);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink);
-  background: var(--panel-accent);
-  padding: 3px 7px;
-  box-shadow: 2px 2px 0 var(--panel-cast-2);
-}
-.cs__note {
+/* ---- the NDA badge, note and redacted screens ---- */.cs__note {
   font-family: var(--font-read);
   font-size: 17px;
   line-height: 1.6;
@@ -3070,63 +1306,8 @@ img.card__art--wide { max-height: 360px; }
 }
 
 /* four screens, back to back, each redacted behind a coarse dither and
-   a lock — the shape of the work without the pixels */
-.cs__shots { display: grid; grid-template-columns: 1fr; gap: var(--s2); margin: 0 0 var(--s5); }
-.cs__shot {
-  position: relative;
-  margin: 0;
-  aspect-ratio: 16 / 9;
-  border: 2px solid var(--panel-dim);
-  background-color: var(--panel);
-  background-image: repeating-linear-gradient(45deg, var(--panel) 0 7px, var(--panel-bar) 7px 14px);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-/* a real image dropped into a screen slot fills it; the tag and caption
+   a lock — the shape of the work without the pixels *//* a real image dropped into a screen slot fills it; the tag and caption
    sit over it, so the frame still reads as a labelled screenshot */
-.cs__shot img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  image-rendering: auto;
-}
-.cs__shot:has(img) { background-image: none; }
-.cs__shot__tag,
-.cs__shot figcaption {
-  z-index: 1;
-}
-.cs__shot:has(img) .cs__shot__tag,
-.cs__shot:has(img) figcaption {
-  background: rgba(6, 4, 12, 0.72);
-}
-.cs__shot__tag {
-  position: absolute; top: 0; left: 0;
-  padding: 3px 7px;
-  font-family: var(--font-read);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--panel-quiet);
-}
-.cs__shot__lock {
-  width: 24px; height: 27px;
-  background: var(--panel-quiet);
-  -webkit-mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%23000'%3E%3Crect x='4' y='2' width='2' height='2'/%3E%3Crect x='10' y='2' width='2' height='2'/%3E%3Crect x='5' y='1' width='6' height='2'/%3E%3Crect x='4' y='3' width='2' height='4'/%3E%3Crect x='10' y='3' width='2' height='4'/%3E%3Crect x='2' y='7' width='12' height='9'/%3E%3C/g%3E%3C/svg%3E");
-  mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='18' shape-rendering='crispEdges'%3E%3Cg fill='%23000'%3E%3Crect x='4' y='2' width='2' height='2'/%3E%3Crect x='10' y='2' width='2' height='2'/%3E%3Crect x='5' y='1' width='6' height='2'/%3E%3Crect x='4' y='3' width='2' height='4'/%3E%3Crect x='10' y='3' width='2' height='4'/%3E%3Crect x='2' y='7' width='12' height='9'/%3E%3C/g%3E%3C/svg%3E");
-}
-.cs__shot figcaption {
-  position: absolute; bottom: 0; right: 0;
-  padding: 3px 7px;
-  font-family: var(--font-read);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--panel-quiet);
-}
-
 /* both end-of-study actions are tactile buttons: proud on a hard
    offset, and they drop onto their shadow on press */
 .cs__cta { margin: var(--s7) 0 0; }
@@ -3192,19 +1373,6 @@ img.card__art--wide { max-height: 360px; }
   margin: 0 0 var(--s5);
   max-width: 44ch;
 }
-
-.read__byline {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  font-family: var(--font-body);
-  font-size: var(--b1);
-  letter-spacing: 0.5px;
-  color: var(--panel-quiet);
-}
-.read__by { color: var(--panel-text); font-weight: 500; }
-.read__dot { width: 4px; height: 4px; flex: none; background: var(--panel-dim); }
-
 .read__rule {
   height: 2px;
   background: var(--panel-dim);
@@ -3263,44 +1431,12 @@ img.card__art--wide { max-height: 360px; }
    figure in an article is the same object at the same width as the
    measure: art, then a caption that says the thing the art cannot.
    Nothing here is a file — it is a canvas the poster generator paints
-   at load, like every other picture on this site. */
-.read__fig {
-  margin: var(--s6) 0;
-  max-width: 62ch;
-}
-.read__fig .card__art--wide { margin-bottom: var(--s4); }
-.read__figcap {
-  font-family: var(--font-body);
-  font-size: var(--b1);
-  line-height: 1.6;
-  color: var(--panel-quiet);
-  max-width: 58ch;
-}
-/* the figure number, set like the label it is */
-.read__figcap b {
-  color: var(--panel-text);
-  font-weight: 500;
-  letter-spacing: 1px;
-  margin-right: var(--s2);
-}
-
+   at load, like every other picture on this site. *//* the figure number, set like the label it is */
 /* ---- the hero ----
    Optional, and it sits under the intro rather than over the headline, so
    the piece stays text-first. Full measure, a caption beneath. A real image
    drops straight in; the placeholder is the same canvas art as everything
    else, a slot waiting for its picture. */
-.read__hero {
-  margin: 0 0 var(--s6);
-  max-width: 62ch;
-}
-.read__hero .card__art--wide,
-.read__hero__img { display: block; width: 100%; margin-bottom: var(--s4); }
-.read__hero__img {
-  height: auto;
-  image-rendering: pixelated;
-  border: 2px solid var(--panel-dim);
-}
-
 /* a drop cap opens the body — one big letter in the reading face, in the
    city's own edge colour, to say 'the reading starts here' */
 .read__lead::first-letter {
@@ -3312,14 +1448,6 @@ img.card__art--wide { max-height: 360px; }
   padding: 5px 10px 0 0;
   color: var(--panel-edge);
 }
-
-.read__end {
-  margin: var(--s6) 0 0;
-  font-size: 16px;
-  letter-spacing: 4px;
-  color: var(--panel-dim);
-}
-
 /* hands the reader the next piece — a tactile block like the rest of the
    L2 furniture */
 /* Foot navigation: a quiet way back to the index, then Previous / Next
@@ -3356,9 +1484,7 @@ img.card__art--wide { max-height: 360px; }
   box-shadow: 4px 4px 0 var(--panel-cast-1);
   text-decoration: none;
   min-width: 0;
-}
-.read__nav__prev { align-items: flex-start; text-align: left; }
-/* a lone Next (the first article has no Previous) sits on the right */
+}/* a lone Next (the first article has no Previous) sits on the right */
 .read__nav__next { align-items: flex-end; text-align: right; grid-column: 2; }
 .read__nav__link:hover { border-color: var(--panel-edge); }
 .read__nav__link:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--panel-cast-1); }
@@ -3377,24 +1503,6 @@ img.card__art--wide { max-height: 360px; }
 }
 
 /* ---- the home writing preview ---- */
-.writing-home__all {
-  display: inline-block;
-  margin-top: var(--s4);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 1px;
-  color: var(--panel-edge);
-  text-decoration: none;
-}
-.writing-home__all:hover { color: var(--panel-accent); }
-
-/* ==================================================================
-   THE WRITING INDEX — its own L2 page
-
-   Where all the writing lives, grouped by year, so it stays scannable
-   at five pieces or fifty. Each row is a title and a compact kind/length
-   tag; the whole thing is one quiet column, the same as an article.
-   ================================================================== */
 /* ==================================================================
    THE READING SURFACE
 
@@ -3436,7 +1544,6 @@ html[data-l2='stage'] .controls { display: none; }
    border-image, its cast and the extruded drop-shadow filter all step off
    and this quiet card takes their place. */
 html[data-l2='read'] .col.col--doc.read,
-html[data-l2='read'] .col.col--doc.windex,
 html[data-l2='stage'] .col.col--doc.cs {
   width: min(94vw, 860px);
   margin-inline: auto;
@@ -3468,26 +1575,19 @@ html[data-l2='stage'] .col.col--doc.cs {
 html[data-l2='read'] .read__eyebrow,
 html[data-l2='read'] .read__title,
 html[data-l2='read'] .read__standfirst,
-html[data-l2='read'] .read__byline,
 html[data-l2='read'] .read__body,
 html[data-l2='read'] .read__body p,
 html[data-l2='read'] .read__body h3,
 html[data-l2='read'] .read__body li,
 html[data-l2='read'] .read__body blockquote,
-html[data-l2='read'] .read__figcap,
-html[data-l2='read'] .read__hero__cap,
 html[data-l2='read'] .read__nav__back,
 html[data-l2='read'] .read__nav__dir,
-html[data-l2='read'] .read__nav__ttl,
-html[data-l2='read'] .windex__yh,
-html[data-l2='read'] .windex__title,
-html[data-l2='read'] .windex__meta {
+html[data-l2='read'] .read__nav__ttl {
   font-family: var(--font-read);
 }
 
 /* the label row: small, upper, spaced — the reading face doing chrome work */
-html[data-l2='read'] .read__eyebrow,
-html[data-l2='read'] .windex__yh {
+html[data-l2='read'] .read__eyebrow {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -3527,58 +1627,13 @@ html[data-l2='read'] .read__body blockquote {
   font-size: 21px;
   line-height: 1.5;
 }
-/* the quiet metadata row: byline, captions, index meta — one small size */
-html[data-l2='read'] .read__byline,
-html[data-l2='read'] .read__figcap,
-html[data-l2='read'] .read__figcap b,
-html[data-l2='read'] .read__hero__cap,
-html[data-l2='read'] .windex__meta {
-  font-size: 15px;
-  letter-spacing: 0;
-}
-/* foot navigation, in the same face and scale */
+/* the quiet metadata row: byline, captions, index meta — one small size *//* foot navigation, in the same face and scale */
 html[data-l2='read'] .read__nav__back { font-size: 15px; letter-spacing: 0.02em; text-transform: none; }
 html[data-l2='read'] .read__nav__dir { font-size: 13px; letter-spacing: 0.02em; text-transform: none; }
 html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
-html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
-
-.windex { text-align: left; }
-.windex__year { margin: var(--s6) 0 0; }
-.windex__yh {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 3px;
-  color: var(--panel-quiet);
-  margin: 0 0 var(--s2);
-}
-.windex__list { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--panel-dim); }
-.windex__list a {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s4);
-  padding: var(--s4) var(--s2);
-  border-bottom: 2px solid var(--panel-dim);
-  text-decoration: none;
-  color: var(--cream);
-}
-.windex__list a:hover,
-.windex__list a:focus-visible { background: var(--panel-bar); color: var(--panel-edge); outline: none; }
-.windex__title { font-family: var(--font-read); font-size: var(--b4); font-weight: 500; line-height: 1.3; }
-.windex__meta {
-  flex: none;
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-
 @media (max-width: 760px) {
   .read__nav__seq { grid-template-columns: 1fr; }
-  .read__nav__next { grid-column: 1; align-items: flex-start; text-align: left; }
-  .windex__list a { flex-direction: column; gap: var(--s1); }
-  .windex__title { font-size: var(--b3); }
-}
+  .read__nav__next { grid-column: 1; align-items: flex-start; text-align: left; }}
 
 @media (max-width: 760px) {
   .read__body p, .read__body li { font-size: 20px; }
@@ -3620,74 +1675,19 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
   justify-content: space-between;
   gap: var(--s4);
 }
-
-.back {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-edge);
-  text-decoration: none;
-  padding: var(--s2) var(--s3);
-  border: 2px solid transparent;
-}
-
-.back:hover,
-.back:focus-visible {
-  border-color: var(--panel-edge);
-  background: var(--panel);
-  outline: none;
-}
-
-.back b { color: var(--panel-accent); }
-
-.page__name {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-quiet);
-  margin: 0;
-}
-
 /* ---- the intro ----
    The part that was missing. The old title screen had a wordmark, a
    role line and four menu rows, which tells a visitor your name and
    nothing else — and a portfolio's landing page has exactly one job
    before the work, which is to say who is talking. */
-.intro {
-  margin: var(--s5) 0 var(--s6);
-  font-size: var(--t2);
-  line-height: 1.5;
-  color: var(--panel-text);
-}
-
-.intro p { margin: 0 0 var(--s4); }
-.intro p:last-child { margin-bottom: 0; }
-.intro b { color: var(--cream); font-weight: 400; }
-
 /* A one-line gloss under each menu row. Four or five words — enough
    to say what is behind the door without turning the menu into prose.
 
    It hangs off the label rather than the row, so it lines up with the
    word and not with the numeral sitting out in the margin. */
-.menu__note {
-  display: block;
-  margin-top: 4px;
-  font-family: var(--font-body);
-  font-size: var(--t1);
-  letter-spacing: 0;
-  line-height: 1.5;
-  text-transform: none;
-  color: var(--panel-quiet);
-}
-
-.menu li { margin-bottom: var(--s4); }
-.menu li:last-child { margin-bottom: 0; }
-
 /* The heart cursor is positioned against the row; with a second line
    in it the row got taller and the heart drifted to the middle of the
    gap. Pin it to the first line. */
-.menu .cursor { top: 0.1em; }
-
 /* ==================================================================
    THE WIPE
 
@@ -3707,16 +1707,6 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
   background: var(--ink);
   clip-path: inset(0 100% 0 0);
 }
-
-.wipe.is-closing {
-  animation: wipe-in 260ms steps(4, end) forwards;
-  pointer-events: auto;
-}
-
-.wipe.is-opening {
-  animation: wipe-out 260ms steps(4, end) forwards;
-}
-
 @keyframes wipe-in {
   from { clip-path: inset(0 100% 0 0); }
   to   { clip-path: inset(0 0 0 0); }
@@ -3743,161 +1733,6 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 }
 
 /* ---- card art, inside a column ----
-   The posters are generated at a fixed internal resolution and
-   stretched by CSS; with no aspect ratio on the box they took whatever
-   height the grid gave them, which inside a 900px column was most of
-   the screen. Pin each kind to the shape its buffer is actually drawn
-   at, so nothing is distorted and nothing runs away. */
-.card__art { aspect-ratio: 152 / 112; }
-.cards--shelf .card__art { aspect-ratio: 96 / 132; }
-.card__art--wide { aspect-ratio: 176 / 99; }
-.card__art--big { aspect-ratio: 96 / 132; }
-
-.card__art canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-}
-
-/* Four across on the shelf, two on the rack — the shelf items are
-   portrait and much smaller objects. */
-.cards--shelf { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
-@media (max-width: 760px) {
-  .cards,
-  .cards--shelf { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* ==================================================================
-   THE FOLDER
-
-   A manila folder with one sheet already standing proud of it. It is
-   the section marker for the work, and it is doing a job a heading
-   cannot: saying "there are things in here" with an object rather
-   than a word.
-
-   Point at the rack and the sheet lifts and tilts, the way a document
-   does when a thumb goes under it. That tilt is the one rotation in
-   this project — everything else is on the pixel grid — and it earns
-   the exception by being the whole gesture.
-   ================================================================== */
-.folder {
-  position: relative;
-  width: 76px;
-  height: 58px;
-  margin: 0 0 var(--s4);
-}
-
-.folder span {
-  position: absolute;
-  display: block;
-}
-
-/* the back wall of the folder, and the tab standing on top of it */
-.folder__back {
-  left: 0;
-  bottom: 0;
-  width: 76px;
-  height: 46px;
-  background: var(--gold);
-  box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.folder__tab {
-  left: 0;
-  bottom: 46px;
-  width: 34px;
-  height: 8px;
-  background: var(--gold);
-  box-shadow: inset -3px 0 0 rgba(0, 0, 0, 0.35);
-}
-
-/* the sheet, sitting in the folder and sticking out of the top */
-.folder__doc {
-  left: 14px;
-  bottom: 14px;
-  width: 48px;
-  height: 40px;
-  background: var(--cream);
-  box-shadow:
-    inset 0 6px 0 var(--panel-quiet),
-    inset 0 14px 0 -6px var(--cream),
-    inset 0 20px 0 -14px var(--panel-quiet);
-  transform-origin: 50% 100%;
-  /* Stepped, not eased. Three frames is enough to read as a movement
-     and few enough that it never looks like it is being animated. */
-  transition: transform 160ms steps(3, end);
-}
-
-/* the front flap, drawn over the sheet so the sheet is inside it */
-.folder__front {
-  left: 0;
-  bottom: 0;
-  width: 76px;
-  height: 32px;
-  background: #f0b820;
-  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.28),
-              inset -3px -3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.cards:hover ~ .folder .folder__doc,
-.folder:hover .folder__doc {
-  transform: translateY(-10px) rotate(-6deg);
-}
-
-/* Hovering anywhere in the rack lifts it too — the folder is the
-   label for those cards, so they should answer to the same pointer. */
-.col:hover .folder__doc { transform: translateY(-6px) rotate(-4deg); }
-.folder:hover .folder__doc { transform: translateY(-12px) rotate(-7deg); }
-
-@media (prefers-reduced-motion: reduce) {
-  .folder__doc { transition: none; }
-}
-
-/* ==================================================================
-   WRITING
-   ================================================================== */
-.sect {
-  margin: var(--s6) 0 var(--s4);
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 2px;
-  color: var(--panel-quiet);
-}
-
-.reads {
-  margin: 0 0 var(--s5);
-  padding: 0;
-  list-style: none;
-  border-top: 2px solid var(--panel-dim);
-}
-
-.reads a {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s4);
-  padding: var(--s4) var(--s2);
-  border-bottom: 2px solid var(--panel-dim);
-  color: var(--cream);
-  text-decoration: none;
-  font-size: var(--t2);
-  line-height: 1.35;
-}
-
-.reads a:hover,
-.reads a:focus-visible {
-  background: var(--panel-bar);
-  color: var(--panel-edge);
-  outline: none;
-}
-
-.reads__meta {
-  flex: none;
-  font-size: var(--t1);
-  color: var(--panel-quiet);
-}
 
 /* ==================================================================
    MORE AIR
@@ -3928,11 +1763,7 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
    `--wmo * 6` below the ink; the line box already covers 0.13em of
    that as the font's own descender slack; the rest is added back
    here. Change --wmo and the gap stays ten pixels. */
-.page--home .wordmark { margin-bottom: calc(10px + var(--wmo) * 6 - 0.13em); }
-.page--home .intro { margin: var(--s6) 0; }
-.page--home .cards { margin-bottom: var(--s6); }
-.page--home .wires { margin-top: var(--s5); }
-.page--home .copyright { margin-top: var(--s6); }
+.page--home .wordmark { margin-bottom: calc(10px + var(--wmo) * 6 - 0.13em); }.page--home .copyright { margin-top: var(--s6); }
 
 /* Project and article pages get the same air. */
 .col--doc { padding: clamp(28px, 4vw, 64px) clamp(24px, 3.5vw, 56px); }
@@ -3960,83 +1791,18 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 /* No flex centring at any height. The home page is long enough to
    scroll on every viewport now, and a flex container centring content
    taller than itself pushes the top above the scroll origin where it
-   can never be reached. Top-aligned, always. */
-
-/* ---- contact rows, in a column ----
+   can never be reached. Top-aligned, always. *//* ---- contact rows, in a column ----
    These were sized for a window two thousand pixels wide: a 28px
    address and a row you could land a plane on. In a 620px measure
    they have to be list rows. */
-.wires {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
-  margin: var(--s5) 0 0;
-  padding: 0;
-  list-style: none;
-  border-top: 2px solid var(--panel-dim);
-}
-
-.wire,
-.wire--wide { grid-column: auto; }
-
-.wire a {
-  display: grid;
-  grid-template-columns: 5.5em minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: var(--s3);
-  padding: var(--s3) var(--s2);
-  border-bottom: 2px solid var(--panel-dim);
-  text-decoration: none;
-}
-
-.wire__k {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-quiet);
-}
-
-.wire__v {
-  font-family: var(--font-body);
-  font-size: var(--t2);
-  color: var(--cream);
-  overflow-wrap: anywhere;
-}
-
-.wire__go {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  color: var(--panel-edge);
-  opacity: 0;
-}
-
-.wire a:hover,
-.wire a:focus-visible { background: var(--panel-bar); outline: none; }
-.wire a:hover .wire__go,
-.wire a:focus-visible .wire__go { opacity: 1; }
-
 /* ---- card labels ----
    Two-up in a 620px column makes each card about 260px, and the
    display face at its old size broke every two-word project name onto
    two lines. */
-.card__name {
-  font-size: clamp(11px, 0.85vw, 15px);
-  line-height: 1.5;
-}
-.card__meta { font-size: var(--t1); }
-.card__info { padding: var(--s3); }
-
 /* The prev/next controls are links now, not buttons — they change the
    route, and a thing that changes the route has to be an anchor or the
    middle-click, the back button and "open in new tab" all stop
    working. Same look, one less lie. */
-.level__nav a {
-  display: inline-block;
-  text-decoration: none;
-}
-
-.level__nav a b { color: var(--panel-accent); }
-
 /* ==================================================================
    WIDER
 
@@ -4048,102 +1814,6 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 .col { width: min(94vw, 820px); }
 .col--doc { width: min(94vw, 820px); }
 .page__head { width: min(94vw, 820px); }
-
-/* ==================================================================
-   FOLDER CARDS
-
-   The projects were cartridges — generated pixel posters, one per
-   card. They were nice objects and they were the wrong ones: four
-   different pieces of invented cover art, none of which is the work,
-   competing with each other and saying nothing about what is inside.
-
-   A folder says the only true thing available before you click: there
-   is a document in here. Four of them, four colours, numbered. The
-   sheet lifts and tilts when you point at the card — the same gesture
-   the section marker makes, so the marker reads as an instruction for
-   how the cards behave.
-   ================================================================== */
-.card--folder {
-  display: block;
-  padding: 0;
-  text-decoration: none;
-  border: 3px solid var(--panel-dim);
-  background: var(--panel-bar);
-}
-
-.card--folder:hover,
-.card--folder:focus-visible {
-  border-color: var(--panel-edge);
-  outline: none;
-}
-
-.fold {
-  position: relative;
-  display: block;
-  height: 132px;
-  background: var(--panel);
-  border-bottom: 3px solid var(--panel-dim);
-  overflow: hidden;
-}
-
-.fold span,
-.fold__label {
-  position: absolute;
-  display: block;
-}
-
-/* the sheet, sitting in the folder and standing proud of it */
-.fold__doc {
-  left: 50%;
-  bottom: 44px;
-  width: 60px;
-  height: 52px;
-  margin-left: -30px;
-  background: var(--cream);
-  box-shadow:
-    inset 0 8px 0 -4px var(--panel-quiet),
-    inset 0 18px 0 -14px var(--panel-quiet),
-    inset 0 28px 0 -24px var(--panel-quiet);
-  transform-origin: 50% 100%;
-  transition: transform 160ms steps(3, end);
-}
-
-/* the front flap, over the sheet */
-.fold__front {
-  left: 50%;
-  bottom: 22px;
-  width: 108px;
-  height: 44px;
-  margin-left: -54px;
-  background: var(--fold-a, #f0b820);
-  box-shadow:
-    inset 0 3px 0 rgba(255, 255, 255, 0.3),
-    inset -3px -3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.fold__label {
-  left: 0;
-  right: 0;
-  bottom: 32px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  color: rgba(0, 0, 0, 0.55);
-}
-
-.card--folder:hover .fold__doc,
-.card--folder:focus-visible .fold__doc {
-  transform: translateY(-14px) rotate(-7deg);
-}
-
-.folder-1 { --fold-a: #f0b820; }
-.folder-2 { --fold-a: #4ec4dc; }
-.folder-3 { --fold-a: #7fd08a; }
-.folder-4 { --fold-a: #ff8fb0; }
-
-@media (prefers-reduced-motion: reduce) {
-  .fold__doc { transition: none; }
-}
 
 /* ==================================================================
    THE CONTACT ROW
@@ -4204,128 +1874,9 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
    Leading down with the sizes. 1.9 was set for a face two steps
    larger; at 16px it opens a gap between lines wide enough that a
    paragraph stops reading as a block and starts reading as a list of
-   sentences. 1.5 is the mono's own comfortable measure. */
-.intro { font-size: var(--b3); line-height: 1.62; }
-.prose { font-size: var(--b3); line-height: 1.62; }
-.reads a { font-size: var(--b3); line-height: 1.5; }
-.reads__meta { font-size: var(--b1); }
-.card__name { font-size: var(--d2); }
-.card__meta { font-size: var(--b1); }
-
+   sentences. 1.5 is the mono's own comfortable measure. */.prose { font-size: var(--b3); line-height: 1.62; }
 @media (max-width: 760px) {
   .links { gap: var(--s4); justify-content: space-between; }
-}
-
-/* ==================================================================
-   THE WORK GRID
-
-   Four squares. Nothing in them.
-
-   They were generated cartridge posters, then labelled folders, and
-   both were the same mistake in different clothes: inventing artwork
-   to stand in for artwork. A placeholder that tries to look finished
-   is worse than an empty frame, because it has to be un-designed
-   before the real thing can go in. An empty square is honest about
-   what it is and it is the correct shape for whatever replaces it —
-   drop an <img> in and it crops to fit.
-   ================================================================== */
-/* The work cards are tactile buttons, the same as every other pressable
-   thing on the page: they sit proud on a hard offset shadow, they RISE
-   toward the light on hover, and they press DOWN onto their shadow when
-   clicked. The bevel (the two inset highlights) stays through all three
-   states so the object reads as one solid key the whole time; only the
-   drop shadow and the position change. The move is stepped, not eased —
-   three chunky frames — because nothing else in this scene tweens. */
-/* These press like the other keys on the page, but they are EXTRUDED,
-   not just offset: the shadow is a solid side face drawn down-and-right
-   on the diagonal, so the card is a 3D block standing on that skewed
-   axis rather than a flat panel with a shadow under it. The face rides up
-   and down that same 45-degree axis — the translate always equals the
-   side depth, so the base of the side stays pinned to the board at every
-   level and the block only ever gets taller or shorter, never detached.
-
-   The side face is the city's own structural tone (--panel-dim, solid),
-   so it reads as a lit side against the near-black panel where an ink
-   side would vanish, with an ink keyline round it for a crisp edge — the
-   same solid-side-plus-keyline trick --home-btn uses. */
-.tile {
-  display: block;
-  aspect-ratio: 1 / 1;
-  background: var(--panel-bar);
-  border: 3px solid var(--panel-dim);
-  transform: translate(-2px, -2px);
-  box-shadow:
-    inset 2px 2px 0 var(--panel-lift),
-    inset -2px -2px 0 var(--panel-sink),
-    2px 2px 0 0 var(--panel-dim),
-    2px 2px 0 2px var(--ink);
-  transition: transform 90ms steps(3, end), box-shadow 90ms steps(3, end);
-}
-
-/* Hover / keyboard focus: the block STANDS UP — the face climbs the
-   diagonal and the side face grows under it, so it reads as an extruded
-   key rising off the board, not a panel sliding sideways. */
-.tile:hover,
-.tile:focus-visible {
-  border-color: var(--panel-edge);
-  outline: none;
-  transform: translate(-7px, -7px);
-  box-shadow:
-    inset 2px 2px 0 var(--panel-lift),
-    inset -2px -2px 0 var(--panel-sink),
-    7px 7px 0 0 var(--panel-dim),
-    7px 7px 0 2px var(--ink);
-}
-
-/* Press: the face drops the whole way down the axis and the side face
-   collapses to nothing — the key pushed flat onto the board, the instant
-   before the wipe carries you into the project. */
-.tile:active {
-  transform: translate(0, 0);
-  box-shadow:
-    inset 2px 2px 0 var(--panel-lift),
-    inset -2px -2px 0 var(--panel-sink),
-    0 0 0 0 var(--panel-dim),
-    0 0 0 0 var(--ink);
-}
-
-/* Reduced motion keeps the tactile states — they answer a real hover and
-   a real press — but drops the tween, so they snap instead of stepping. */
-@media (prefers-reduced-motion: reduce) {
-  .tile { transition: none; }
-}
-
-.tile > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  image-rendering: pixelated;
-}
-
-/* The project cover is painted into the frame at 176x110 and upscaled
-   nearest-neighbour, exactly like every other piece of art here. The
-   frame keeps its own 16:10, so the cover is drawn at the ratio it is
-   shown at and nothing gets cropped. */
-.tile > canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-/* The case study opens on the same cover its card wore. .card__art--wide
-   sizes itself 176:99 for the work poster it used to hold, and the cover
-   is 176:110 — so the frame has to be told the new ratio too, or it
-   crops the number off the top and leaves a dead band underneath. */
-.cs__hero { aspect-ratio: 176 / 110; }
-
-.cs__hero canvas {
-  aspect-ratio: 176 / 110;
-  max-height: none;
-  object-fit: contain;
 }
 
 /* ==================================================================
@@ -4335,10 +1886,7 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
    BETWEEN paragraphs — so the whole column read as one continuous
    run of text with some pictures in it. A section needs to start, and
    a start needs silence in front of it.
-   ================================================================== */
-.page--home .intro { margin: var(--s6) 0; }
-.page--home .cards { margin: var(--s6) 0; gap: var(--s5); }
-/* ---- a heading belongs to what it heads ----
+   ================================================================== *//* ---- a heading belongs to what it heads ----
    The gap under ABOUT was the same 48px as the gap between two
    unrelated blocks — .sect closed with --s5 and the .intro under it
    opened with --s7, the two collapsed to the larger, and the label
@@ -4353,9 +1901,7 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 /* Whatever follows a section label — a paragraph, the writing list —
    opens with the same short gap, so the collapse resolves to 19px
    instead of snapping back to --s7. */
-.page--home .sect + * { margin-top: calc(var(--s7) * 0.4); }
-.page--home .reads { margin-bottom: var(--s6); }
-.page--home .links { margin-top: var(--s7); padding-top: var(--s6); }
+.page--home .sect + * { margin-top: calc(var(--s7) * 0.4); }.page--home .links { margin-top: var(--s7); padding-top: var(--s6); }
 .page--home .copyright { margin-top: var(--s6); }
 /* More room under the role line. The masthead is tight above it — ten
    pixels between the name and this — so the block reads as one unit,
@@ -4368,65 +1914,6 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 /* ---- the icon row, centred ---- */
 .links { justify-content: center; }
 .links li { flex: none; }
-
-/* ==================================================================
-   THE HOME BUTTON
-
-   An L2 page had a small text link marked BACK in the top-left
-   corner, which is where a browser already puts one. This is the
-   only control on the page, so it gets to be an object: a wide,
-   centred, physically beveled key that goes IN when you press it.
-
-   The bevel is four flat colours, no blur — a lit top-left edge, a
-   shadowed bottom-right one, a keyline and a cast block. Pressing
-   swaps the two edges and moves the whole thing into its own shadow,
-   which is the entire mechanic of every button that has ever felt
-   good to push.
-   ================================================================== */
-.page__head {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--s6);
-}
-
-.home-btn {
-  display: inline-block;
-  padding: var(--s4) var(--s7);
-  font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 3px;
-  color: var(--ink);
-  text-decoration: none;
-  background: var(--panel-edge);
-  border: 3px solid var(--ink);
-  box-shadow:
-    inset 3px 3px 0 rgba(255, 255, 255, 0.55),
-    inset -3px -3px 0 rgba(0, 0, 0, 0.35),
-    0 6px 0 0 #14707d,
-    0 6px 0 3px var(--ink);
-}
-
-.home-btn:hover,
-.home-btn:focus-visible {
-  background: #7dfcff;
-  outline: none;
-}
-
-/* Down into its own shadow. The travel and the shadow depth are the
-   same number, so at the bottom of the press the key is sitting flat
-   on the board. */
-.home-btn:active {
-  transform: translateY(6px);
-  box-shadow:
-    inset 3px 3px 0 rgba(0, 0, 0, 0.3),
-    inset -3px -3px 0 rgba(255, 255, 255, 0.3),
-    0 0 0 0 #14707d,
-    0 0 0 3px var(--ink);
-}
-
-@media (max-width: 760px) {
-  .home-btn { padding: var(--s4) var(--s5); }
-}
 
 /* ==================================================================
    WIDER STILL, AND A SMALLER NAME
@@ -4443,53 +1930,12 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 .page--home .wordmark { --wm: 36px; --wm-a: 22px; --wmo: 2px; }
 
 /* ==================================================================
-   THE READOUT
-
-   Six true things about a person, as a machine would list them. It is
-   the one place on this page where the display face and the reading
-   face meet in the same block, which is exactly the join a terminal
-   printout has.
-   ================================================================== */
-.readout {
-  margin: var(--s5) 0;
-  padding: var(--s5) var(--s5);
-  background: var(--screen);
-  border: 2px solid var(--panel-dim);
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6);
-}
-
-.readout p {
-  display: grid;
-  grid-template-columns: 13em minmax(0, 1fr);
-  gap: var(--s4);
-  margin: 0 0 var(--s3);
-  font-family: var(--font-body);
-  font-size: var(--b2);
-  line-height: 1.45;
-  color: var(--cream);
-}
-
-.readout p:last-child { margin-bottom: 0; }
-
-.readout span {
-  font-family: var(--font-display);
-  font-size: var(--d1);
-  letter-spacing: 1px;
-  color: var(--panel-edge);
-  align-self: center;
-}
-
-@media (max-width: 760px) {
-  .readout p { grid-template-columns: minmax(0, 1fr); gap: 0; }
-}
 
 /* ---- landscape, not square ----
    Work is screens, and screens are wider than they are tall. A square
    frame around a landscape screenshot means letterboxing every image
    that goes into it, forever. 16:10 takes a browser window, a phone
    held sideways or a flat piece of art without argument. */
-.tile { aspect-ratio: 16 / 10; }
-
 /* The folder marker is gone. It was doing the job the four frames
    already do — saying "work goes here" — and doing it twice is once
    too many. */
@@ -4527,12 +1973,8 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 
 /* The readout sits inside the column, so it has to go darker again or
    it disappears into it. */
-.readout { background: #02010a; border-color: rgba(107, 79, 168, 0.55); }
-
 /* The work frames likewise — they are holes in the column, not
    panels on it. */
-.tile { background: #02010a; }
-
 /* ==================================================================
    A PIXELATED EDGE
 
@@ -4898,8 +2340,6 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
   font-size: var(--b1);
   letter-spacing: 0.4px;
 }
-.page--home .reads__meta { letter-spacing: 0.2px; }
-
 /* No garland — New York, or day, where the whole city theme is off.
    Close the reserve up rather than leave a hole under the copyright. */
 .page--home .col--bare { padding-bottom: var(--s6); }
@@ -5009,4 +2449,1084 @@ html[data-l2='read'] .windex__title { font-size: 19px; font-weight: 600; }
 }
 @media (max-width: 760px) {
   .page--home .col { padding-bottom: 108px; }
+}
+
+/* ==================================================================
+   ONE PANEL
+
+   Everything below is the current home page and the current case
+   study. It is last in the cascade on purpose: the file above it is
+   several years of a title screen, and this is the layer that turns
+   that title screen into a portfolio.
+
+   The shell is unchanged from the title screen it grew out of — a
+   neon-framed HUD column standing on the skyline, with a band of
+   living city down either side, and every deeper page opening as a
+   card over that same city, dimmed. What changed is what is inside
+   it: four work rows that say what each project was, a point of view,
+   and case studies built out of decisions and schematics.
+
+   Playful shell. Serious work. Nothing in the shell is allowed to
+   make the work harder to read.
+   ================================================================== */
+:root {
+  --ground: #0a0812;
+  --ground-2: #100c1c;
+  --ground-line: rgba(234, 240, 255, 0.11);
+  --ground-line-2: rgba(234, 240, 255, 0.06);
+  --read: #ece9f6;
+  --read-2: #b3aac9;
+  --read-3: #8b8299;
+  --mag: #ff3ea5;
+  --teal: #3ef0ff;
+  --measure: 640px;
+}
+
+/* ---- skip link ----
+   The masthead is a title card over a canvas; a keyboard user should be
+   able to get past both in one press. */
+.skip {
+  position: fixed;
+  left: 12px;
+  top: -100px;
+  z-index: 100;
+  padding: 10px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--teal);
+  border: 2px solid var(--ink);
+  text-decoration: none;
+}
+.skip:focus { top: 12px; }
+
+/* ==================================================================
+   HOME — the masthead
+
+   The panel keeps the centred title-screen block it always had: the
+   wordmark, the role line, and two sentences saying what kind of
+   designer is talking. Everything below the first joint ranges left,
+   because a work index is scanned rather than read and a scanned list
+   does not centre.
+   ================================================================== */
+
+.masthead {
+  text-align: center;
+  padding-bottom: var(--s5);
+}
+
+.masthead .role {
+  margin: 0 0 26px;
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  letter-spacing: 0.12em;
+  color: var(--teal);
+  /* Segments, each unbreakable, separated by a drawn dot rather than a
+     character — so a narrow panel wraps between the parts and never
+     through the middle of one. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+}
+.masthead .role span { white-space: nowrap; }
+.masthead .role span + span::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-right: 12px;
+  vertical-align: 3px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.masthead .lede {
+  max-width: 26ch;
+  margin: 0 auto var(--s4);
+  font-family: var(--font-read);
+  font-size: clamp(20px, 2.2vw, 27px);
+  font-weight: 500;
+  line-height: 1.36;
+  letter-spacing: -0.01em;
+  color: var(--read);
+  text-wrap: balance;
+}
+
+.masthead .sub {
+  max-width: 54ch;
+  margin: 0 auto;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--panel-text);
+  text-wrap: pretty;
+}
+
+/* ==================================================================
+   HOME — the sections inside the panel
+   ================================================================== */
+
+/* The panel is centred for the masthead; everything under it is a
+   document and ranges left. */
+.page--home .band { text-align: left; }
+
+.band {
+  padding: 88px 0 0;
+}
+.band--end { padding-bottom: 24px; }
+
+/* ---- section marker ----
+   A number and a name. The pixel face is allowed here because this is
+   furniture, not prose — a label four words long that nobody has to
+   read a paragraph of. */
+.sect {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 22px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+.sect::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--ground-line);
+}
+.sect__k { color: var(--mag); }
+
+.band__lede {
+  max-width: 62ch;
+  margin: 0 0 40px;
+  font-family: var(--font-read);
+  font-size: 19px;
+  line-height: 1.62;
+  color: var(--read-2);
+  text-wrap: pretty;
+}
+
+/* ==================================================================
+   THE WORK — an index, not a gallery
+
+   Four cover images would be four decorative pictures standing where
+   four sentences should be. What a reader needs from this list is
+   what each project WAS, and that is a line of text. The number, the
+   title, the subject and the domains — readable in the two seconds
+   somebody gives a portfolio before deciding whether to open one.
+   ================================================================== */
+
+.wks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--ground-line);
+}
+.wk { border-bottom: 2px solid var(--ground-line); }
+
+.wk__a {
+  display: grid;
+  grid-template-columns: 88px 1fr 40px;
+  align-items: start;
+  gap: 0 8px;
+  padding: 30px 12px 32px;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+}
+.wk__a::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ground-2);
+  opacity: 0;
+}
+.wk__a > * { position: relative; }
+
+.wk__n {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.35;
+  color: var(--panel-quiet);
+  padding-top: 4px;
+}
+
+.wk__title {
+  display: block;
+  font-family: var(--font-read);
+  font-size: clamp(24px, 2.5vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.16;
+  color: var(--read);
+}
+.wk__subject {
+  display: block;
+  max-width: 52ch;
+  text-wrap: pretty;
+  margin-top: 10px;
+  font-family: var(--font-read);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--read-2);
+}
+.wk__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-top: 18px;
+}
+.wk__tag {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--read-3);
+  border: 1px solid var(--ground-line);
+  padding: 4px 8px;
+}
+.wk__go {
+  align-self: center;
+  justify-self: end;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--panel-quiet);
+}
+
+.wk__a:hover::before,
+.wk__a:focus-visible::before { opacity: 1; }
+.wk__a:hover .wk__n,
+.wk__a:focus-visible .wk__n { color: var(--mag); }
+.wk__a:hover .wk__go,
+.wk__a:focus-visible .wk__go { color: var(--mag); transform: translateX(4px); }
+.wk__a:hover .wk__title,
+.wk__a:focus-visible .wk__title { color: #fff; }
+.wk__a:focus-visible { outline: 3px solid var(--teal); outline-offset: -3px; }
+
+/* ==================================================================
+   HOW I WORK
+
+   Four statements. A skills list says which software somebody owns;
+   this says what they will argue for at four o'clock on a Thursday,
+   which is the thing actually being hired.
+   ================================================================== */
+
+.pov {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  background: var(--ground-line-2);
+  border: 2px solid var(--ground-line-2);
+}
+.pov li {
+  background: var(--ground);
+  padding: 28px 26px 30px;
+}
+.pov h3 {
+  margin: 0 0 10px;
+  font-family: var(--font-read);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--read);
+}
+.pov h3::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  vertical-align: 2px;
+  background: var(--mag);
+}
+.pov p {
+  margin: 0;
+  font-family: var(--font-read);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--read-2);
+}
+
+/* ---- contact ---- */
+.cta--big {
+  font-size: 17px;
+  padding: 16px 26px;
+  letter-spacing: 0.02em;
+  word-break: break-word;
+}
+.home-cta { margin: 32px 0 0; }
+
+.page--home .copyright {
+  margin: 64px 0 0;
+  padding-top: 26px;
+  border-top: 2px solid var(--ground-line-2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--read-3);
+  text-align: left;
+}
+
+/* The shelf is inherited from the section above; it just needs to stop
+   assuming it is inside a 620px neon panel. */
+.page--home .col .shelf { margin: 8px 0 0; }
+
+/* ==================================================================
+   THE CASE STUDY
+
+   The shell is a night city and the work is not. Crossing into a case
+   study, the pixel face steps off everything except the eyebrow, the
+   scene stops behind a scrim, and the page becomes a document: one
+   reading face, one measure, and figures allowed to break out of it.
+
+   This is the distinction the whole portfolio turns on. A retro
+   costume on top of a systems diagram makes the diagram look like a
+   joke, and the diagram is the part that gets somebody hired.
+   ================================================================== */
+
+html[data-l2='case'] .reading-surface { display: block; }
+html[data-l2='case'] .controls { display: none; }
+
+/* Same card the articles and the about page open in — the modal over the
+   dimmed city, at the width it has always been. The case study earns its
+   room from the measure inside it rather than from a wider card. */
+html[data-l2='case'] .col.col--doc.cs {
+  width: min(94vw, 860px);
+  margin-inline: auto;
+  min-height: 0;
+  background: #16131f;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-image: none;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 30px 90px rgba(0, 0, 0, 0.7),
+    0 6px 24px rgba(0, 0, 0, 0.5);
+  filter: none;
+  padding: clamp(26px, 3.6vw, 48px) clamp(22px, 3.4vw, 44px) clamp(36px, 5vw, 64px);
+}
+
+/* ---- the measure ----
+   Text runs to a reading measure; a figure breaks out to the full
+   width of the card. That is the whole layout, and it is the reason
+   the diagrams can breathe without the prose turning into a wall. */
+.cs {
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(0, 1fr)
+    [text-start] min(100%, var(--measure)) [text-end]
+    minmax(0, 1fr) [full-end];
+  font-family: var(--font-read);
+  color: var(--read);
+}
+.cs > * { grid-column: text; }
+.cs > .cs__fig { grid-column: full; }
+/* a heading that belongs to a full-bleed figure rather than to a section */
+.cs__h--fig { margin-top: 52px; }
+
+.cs .l2nav { margin-bottom: 28px; }
+
+/* ---- head ---- */
+.cs__head { margin-bottom: 8px; }
+
+.cs__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--panel-quiet);
+}
+.cs__n { color: var(--mag); }
+.cs__sep {
+  width: 4px;
+  height: 4px;
+  background: var(--ground-line);
+}
+
+.cs__title {
+  margin: 0 0 16px;
+  font-size: clamp(34px, 5vw, 54px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+  color: #fff;
+  text-wrap: balance;
+}
+.cs__title:focus-visible { outline: 3px solid var(--teal); outline-offset: 6px; }
+
+.cs__subject {
+  margin: 0 0 22px;
+  font-size: clamp(19px, 2vw, 23px);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--read);
+  text-wrap: pretty;
+}
+.cs__lede {
+  margin: 0 0 34px;
+  font-size: 18px;
+  line-height: 1.62;
+  color: var(--read-2);
+  text-wrap: pretty;
+}
+
+.cs__meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px 24px;
+  margin: 0 0 30px;
+  padding: 24px 0;
+  border-top: 1px solid var(--ground-line);
+  border-bottom: 1px solid var(--ground-line);
+}
+.cs__meta dt {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--read-3);
+  margin-bottom: 7px;
+}
+.cs__meta dd {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--read);
+}
+
+/* ---- the NDA note ----
+   Stated once, quietly, and then got out of the way. A portfolio where
+   every project shouts UNDER NDA reads as a portfolio with nothing to
+   show; one that explains the constraint in a sentence and then spends
+   two thousand words on the reasoning reads as a portfolio with plenty. */
+.cs__note {
+  position: relative;
+  margin: 0 0 12px;
+  padding: 16px 18px 16px 44px;
+  border-left: 2px solid var(--panel-quiet);
+  background: rgba(255, 255, 255, 0.028);
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--read-3);
+}
+.cs__note__ico {
+  position: absolute;
+  left: 17px;
+  top: 19px;
+  width: 11px;
+  height: 9px;
+  background: var(--panel-quiet);
+  box-shadow:
+    0 -4px 0 -2px var(--panel-quiet),
+    -3px -3px 0 -2px var(--panel-quiet),
+    3px -3px 0 -2px var(--panel-quiet);
+}
+
+/* ---- sections ---- */
+.cs__sec { margin: 52px 0 0; }
+
+.cs__h {
+  margin: 0 0 16px;
+  font-size: clamp(22px, 2.2vw, 27px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+  color: #fff;
+  text-wrap: balance;
+}
+/* A question, set as a question — it is a heading that expects an
+   answer underneath it, so it leans rather than shouts. */
+.cs__h--q {
+  color: var(--teal);
+  font-weight: 500;
+}
+
+.cs .prose p {
+  margin: 0 0 18px;
+  font-size: 18px;
+  line-height: 1.68;
+  color: var(--read-2);
+  text-wrap: pretty;
+}
+.cs .prose p:last-child { margin-bottom: 0; }
+.cs .prose em { color: var(--read); font-style: italic; }
+
+/* ==================================================================
+   FIGURES — schematics, not screenshots
+   ================================================================== */
+
+.cs__fig {
+  margin: 40px 0 44px;
+}
+/* On a narrow screen a 760-unit-wide schematic scaled to 340px puts its
+   labels at five pixels. It scrolls inside its own box instead — the
+   page never scrolls sideways, the diagram never becomes illegible. */
+.cs__fig__scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 26px 24px;
+  background: rgba(255, 255, 255, 0.022);
+  border: 1px solid var(--ground-line-2);
+}
+.dg {
+  display: block;
+  width: 100%;
+  min-width: 620px;
+  height: auto;
+}
+.cs__split {
+  display: flex;
+  gap: 34px;
+  min-width: 620px;
+}
+.cs__split .dg { min-width: 0; flex: 1; }
+
+.cs__fig figcaption {
+  margin: 16px 2px 0;
+  max-width: 74ch;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--read-3);
+}
+.cs__fig figcaption b { color: var(--read-2); font-weight: 500; }
+
+/* the diagram vocabulary */
+.dg__box {
+  fill: rgba(255, 255, 255, 0.045);
+  stroke: rgba(234, 240, 255, 0.3);
+  stroke-width: 1;
+}
+.dg__box.is-ghost {
+  fill: none;
+  stroke: rgba(234, 240, 255, 0.14);
+  stroke-dasharray: 3 3;
+}
+.dg__box.is-mag { fill: rgba(255, 62, 165, 0.14); stroke: var(--mag); }
+.dg__box.is-teal { fill: rgba(62, 240, 255, 0.1); stroke: var(--teal); }
+
+.dg__t {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  fill: rgba(236, 233, 246, 0.82);
+}
+.dg__t.is-mag { fill: #ffa8d6; }
+.dg__t.is-teal { fill: #a5f4ff; }
+.dg__tag {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  fill: rgba(236, 233, 246, 0.4);
+}
+.dg__cap {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  fill: rgba(236, 233, 246, 0.45);
+}
+.dg__ln {
+  stroke: rgba(234, 240, 255, 0.34);
+  stroke-width: 1.5;
+  fill: none;
+}
+.dg__ln.is-dash { stroke-dasharray: 4 4; }
+.dg__head { stroke-width: 1.5; }
+.dg__rule { stroke: rgba(234, 240, 255, 0.12); stroke-width: 1; }
+
+/* ==================================================================
+   THE DECISION BLOCK
+
+   The thing a design director is reading for and the thing almost no
+   portfolio shows: what else was on the table, and why it lost. A
+   solution with no rejected alternatives beside it is indistinguishable
+   from the first idea somebody had.
+   ================================================================== */
+
+.dec {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: dec;
+}
+.dec__o {
+  display: flex;
+  gap: 16px;
+  padding: 20px 22px;
+  margin-bottom: 2px;
+  background: rgba(255, 255, 255, 0.022);
+  border-left: 2px solid var(--ground-line);
+}
+.dec__o.is-taken {
+  background: rgba(255, 62, 165, 0.07);
+  border-left-color: var(--mag);
+}
+/* An empty box for the roads not taken, a filled one for the road
+   taken. It is a checklist, and a checklist is honest about the fact
+   that these were all real options at the time. */
+.dec__mark {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 6px;
+  border: 2px solid var(--read-3);
+}
+.dec__o.is-taken .dec__mark {
+  border-color: var(--mag);
+  background: var(--mag);
+  box-shadow: inset 0 0 0 2px #16131f;
+}
+.dec__l {
+  margin: 0 0 7px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--read);
+}
+.dec__o:not(.is-taken) .dec__l { color: var(--read-2); }
+.dec__badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 7px;
+  vertical-align: 2px;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  background: var(--mag);
+}
+.dec__body p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--read-2);
+}
+.dec__o:not(.is-taken) .dec__body p { color: var(--read-3); }
+
+.dec__call {
+  margin: 22px 0 0;
+  padding: 20px 22px;
+  border: 1px solid var(--ground-line);
+  font-size: 17.5px;
+  line-height: 1.6;
+  color: var(--read);
+}
+.dec__call__k {
+  display: block;
+  margin-bottom: 9px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--teal);
+}
+
+/* ==================================================================
+   THE TRADE-OFF
+
+   Two columns, because a trade-off has two sides and putting them in
+   one paragraph lets the writer quietly weight it.
+   ================================================================== */
+
+.to {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 0 30px;
+  align-items: start;
+}
+.to__vs { background: var(--ground-line); align-self: stretch; }
+.to__side h4 {
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--read-3);
+}
+.to__side--b h4 { color: var(--teal); }
+.to__side p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--read-2);
+}
+.to__side--b p { color: var(--read); }
+.to__note {
+  margin: 26px 0 0;
+  padding-left: 18px;
+  border-left: 2px solid var(--ground-line);
+  font-size: 16.5px;
+  line-height: 1.64;
+  color: var(--read-3);
+}
+
+/* ---- principles ---- */
+.prin {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.prin li {
+  display: flex;
+  gap: 20px;
+  padding: 22px 0;
+  border-top: 1px solid var(--ground-line-2);
+}
+.prin li:last-child { border-bottom: 1px solid var(--ground-line-2); }
+.prin__n {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--mag);
+}
+.prin h4 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--read);
+}
+.prin p {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.62;
+  color: var(--read-2);
+}
+
+/* ---- seams ---- */
+.seams {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.seams li {
+  padding: 20px 0 20px 22px;
+  border-left: 2px solid var(--mag);
+  margin-bottom: 2px;
+  background: rgba(255, 255, 255, 0.022);
+}
+.seams h4 {
+  margin: 0 0 7px;
+  font-size: 17.5px;
+  font-weight: 700;
+  color: var(--read);
+}
+.seams p {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--read-2);
+}
+
+/* ---- outcome ---- */
+.out {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.out li {
+  position: relative;
+  padding: 0 0 16px 26px;
+  font-size: 17.5px;
+  line-height: 1.6;
+  color: var(--read);
+}
+.out li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 9px;
+  height: 9px;
+  background: var(--teal);
+}
+.out__note {
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  color: var(--read-3);
+}
+
+/* ---- foot ---- */
+.cs__foot { margin-top: 60px; }
+.cs__cta { margin: 0 0 44px; }
+
+.cs__next {
+  display: block;
+  padding: 26px 24px;
+  border: 1px solid var(--ground-line);
+  text-decoration: none;
+}
+.cs__next__k {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--teal);
+}
+.cs__next__t {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.cs__next__s {
+  display: block;
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--read-2);
+}
+.cs__next:hover { background: rgba(255, 255, 255, 0.035); border-color: var(--mag); }
+.cs__next:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+
+/* ==================================================================
+   RESPONSIVE
+
+   Mobile is not the desktop page squeezed. The hero loses its scrim
+   weight and its cue, the work index becomes one column with the
+   number inline, the trade-off and the principle rows stack, and the
+   figures keep their own horizontal scroll so nothing shrinks into
+   illegibility.
+   ================================================================== */
+
+@media (max-width: 900px) {
+  .cs__meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pov { grid-template-columns: minmax(0, 1fr); }
+  .to {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+  }
+  .to__vs { display: none; }
+  .to__side--b {
+    padding-top: 24px;
+    border-top: 1px solid var(--ground-line);
+  }
+  .cs__split { flex-direction: column; gap: 26px; min-width: 0; }
+  .cs__split .dg { min-width: 320px; }
+}
+
+@media (max-width: 760px) {
+  .masthead .lede { font-size: 22px; max-width: 22ch; }
+  .masthead .sub { font-size: 13.5px; }
+  .band { padding-top: 64px; }
+
+  .wk__a {
+    grid-template-columns: minmax(0, 1fr) 28px;
+    padding: 24px 4px 26px;
+  }
+  .wk__n {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0 0 8px;
+    font-size: 13px;
+  }
+  .wk__body { grid-column: 1 / -1; grid-row: 2; }
+  .wk__go { grid-column: 2; grid-row: 1; align-self: start; }
+  .wk__title { font-size: 24px; }
+  .wk__subject { font-size: 16px; }
+
+  .pov li { padding: 22px 20px 24px; }
+
+  html[data-l2='case'] .col.col--doc.cs {
+    width: 100%;
+    padding: 20px 18px 48px;
+    border-left: none;
+    border-right: none;
+  }
+  .cs__sec { margin-top: 40px; }
+  .cs .prose p { font-size: 17px; }
+  .cs__fig__scroll { padding: 18px 16px; }
+  .cs__fig { margin: 30px 0 34px; }
+  .dec__o { padding: 18px 16px; }
+  .prin li { gap: 14px; }
+  .cs__next__t { font-size: 21px; }
+}
+
+/* ==================================================================
+   MOTION PREFERENCES
+
+   Everything that moves on its own stops. The iris between pages is
+   already skipped in script.js when this is set; these are the loops.
+   ================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .wk__a:hover .wk__go,
+  .wk__a:focus-visible .wk__go { transform: none; }
+}
+
+/* ---- the shelf ----
+   The pixel face at 13px was the loudest thing in the About band, competing
+   with the section marker above it. The label steps back to the mono face;
+   the row colour survives in the bullet, where it does the same job more
+   quietly. */
+.page--home .col .shelf {
+  border-top-color: var(--ground-line);
+}
+.page--home .col .shelf li {
+  border-bottom-color: var(--ground-line);
+  padding: 18px 4px;
+}
+.page--home .col .shelf span {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  color: var(--read-3);
+}
+.page--home .col .shelf b {
+  font-family: var(--font-read);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--read);
+}
+.page--home .col .shelf i {
+  font-family: var(--font-read);
+  font-size: 15px;
+  color: var(--read-3);
+}
+.page--home .col .shelf li:hover { background: var(--ground-2); }
+
+.cs__eyebrow { flex-wrap: wrap; }
+
+@media (max-width: 560px) {
+  .masthead .role { font-size: 11px; gap: 5px 10px; }
+  .masthead .role span + span::before { margin-right: 10px; }
+  .masthead .lede { font-size: 21px; max-width: 20ch; }
+  .masthead .sub { font-size: 13px; max-width: 40ch; }
+}
+
+@media (max-width: 560px) {
+  /* A drawn separator that wraps onto the next line leads it, which reads
+     as a bullet nobody asked for. Below this width the gap does the
+     separating on its own. */
+  .masthead .role span + span::before { display: none; }
+  .masthead .role { gap: 4px 15px; }
+  .cs__sep { display: none; }
+  .cs__eyebrow { gap: 8px 12px; }
+}
+
+/* The city controls leave with the city. No fade — this page does not
+   tween anything — but they stay in the tab order only while they are
+   on screen, so a keyboard user is not sent to a control they cannot see. */
+.controls[data-away] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---- short viewports ----
+   A laptop in a browser with three toolbars open. The panel scrolls, so
+   nothing has to fit — the masthead just stops taking a whole screen to
+   say four things. */
+@media (max-height: 660px) and (min-width: 761px) {
+  .masthead { padding-bottom: var(--s4); }
+  .masthead .wordmark { margin-bottom: var(--s4); }
+  .masthead .role { margin-bottom: 18px; }
+  .masthead .lede { font-size: clamp(19px, 2vw, 24px); }
+}
+
+/* ==================================================================
+   THE PANEL'S THREE VOICES
+
+   The panel sets its default in the reading face (see "everything comes
+   over to Satoshi" above), which is right for the sentences. It is wrong
+   for the furniture: a section marker, the numeral on a work row, a
+   domain tag and the colophon are the machine talking, not me, and they
+   belong to the pixel and mono faces the rest of the shell is built in.
+
+   That rule carries (0,2,1), so these have to be scoped to match it —
+   which is also why they are here at the end rather than up with the
+   components they belong to.
+   ================================================================== */
+
+.page--home .col .sect {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+.page--home .col .sect__k { color: var(--mag); }
+
+.page--home .col .role {
+  font-family: var(--font-display);
+  font-size: var(--d1);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--teal);
+  line-height: 1.5;
+}
+.page--home .col .sub {
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.page--home .col .wk__n {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 400;
+}
+.page--home .col .wk__tag {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.page--home .col .shelf span {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--read-3);
+}
+.page--home .col .copyright {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* ---- the rhythm inside the panel ----
+   The section joint already carries the space above it (`.page--home
+   .sect` sets a --s7 top margin), so the band must not add its own on
+   top or every section opens with a hundred and thirty empty pixels. */
+.page--home .band { padding-top: 0; }
+.page--home .band--end { padding-bottom: 0; }
+.page--home .masthead { padding-bottom: 0; }
+
+/* A line of Satoshi at 27px in an 860px panel: wide enough to be a
+   sentence, narrow enough to stay a masthead. */
+.page--home .col .lede { max-width: 32ch; }
+.page--home .col .sub { max-width: 58ch; }
+
+@media (max-width: 760px) {
+  .page--home .col .lede { max-width: 24ch; }
+}
+
+/* ---- air around the wordmark ----
+   The panel's neon frame is a nine-slice border-image with a lit inset
+   edge just inside it — two bright lines, close together, running round
+   the column. That is right for a HUD, and it was wrong at the top of
+   this page: the wordmark was the first thing in the column, 56px under
+   the frame's top edge, so the frame's corners bracketed the logo and
+   the whole thing read as a line drawn AROUND the name rather than as a
+   panel that happens to start with it.
+
+   The frame stays. The logo gets room, so the two stop being one shape. */
+.page--home .col { padding-top: clamp(56px, 6.5vw, 112px); }
+.page--home .masthead { padding-bottom: clamp(8px, 1.5vw, 24px); }
+.page--home .masthead .wordmark { margin-bottom: clamp(18px, 2vw, 30px); }
+
+@media (max-width: 760px) {
+  .page--home .col { padding-top: 56px; }
 }

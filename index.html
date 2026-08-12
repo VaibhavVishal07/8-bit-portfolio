@@ -3,8 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Vaibhav Vishal — Portfolio</title>
-<meta name="description" content="An 8-bit game title screen, as a personal portfolio landing page." />
+<title>Vaibhav Vishal — Product Designer</title>
+<meta name="description" content="Product designer, six years, consumer scale. Content discovery, streaming, subscriptions and the journeys that tie them together — written up as reasoning, not screenshots." />
+<meta name="theme-color" content="#05070f" />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Vaibhav Vishal — Product Designer" />
+<meta property="og:description" content="Six years of consumer product design. Discovery, streaming, subscriptions, merchandising — across TV, mobile and web." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,9 +18,8 @@
   href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;700&display=swap"
   rel="stylesheet"
 />
-<!-- Satoshi (Fontshare) — the reading face for long case-study prose,
-     where a monospace column gets tiring; the interface stays pixel and
-     mono. -->
+<!-- Satoshi (Fontshare) — the reading face for the case studies, where a
+     monospace column gets tiring. The shell stays pixel and mono. -->
 <link
   href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap"
   rel="stylesheet"
@@ -25,28 +29,29 @@
 </head>
 <body>
 
-<!-- Loading. It was a POST sequence with a painted attract screen, its
-     own weather, a cat chasing a mouse along the bar and a rotating
-     tip. The name and a bar say the same thing in under a second. -->
-<div class="boot" id="boot">
-  <!-- A dusk over Japan while it loads: a red rising sun with slow rays,
-       Mount Fuji on the horizon, and sakura drifting down past the name.
-       Purely decorative, drawn with CSS; the petals are spawned in JS. -->
-  <div class="boot__scene" aria-hidden="true">
+<!-- Loading. Short on purpose: it exists to cover the first paint of a
+     960x540 canvas being generated, not to be an attract mode. It bails
+     the moment the scene is up, is skipped entirely under
+     prefers-reduced-motion, and is skipped on a deep link — arriving at a
+     case study from a shared URL should not mean watching a title card
+     for somebody else's home page. -->
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="boot__scene">
     <div class="boot__rays"></div>
     <div class="boot__sun"></div>
     <div class="boot__fuji"></div>
     <div class="boot__petals" id="bootPetals"></div>
   </div>
   <div class="boot__inner">
-    <h1 class="boot__wm">
+    <p class="boot__wm">
       <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
       <span class="wordmark__line wordmark__line--b">VISHAL</span>
-    </h1>
-    <p class="boot__label" data-jp="ようこそ">NOW LOADING</p>
+    </p>
     <div class="boot__barwrap"><span class="boot__bar" id="bootBar"></span></div>
   </div>
 </div>
+
+<a class="skip" href="#work">Skip to the work</a>
 
 <!-- The whole background is one 960x540 pixel canvas, drawn in
      scene.js and upscaled nearest-neighbour to fill the viewport. -->
@@ -56,20 +61,14 @@
      pass in front of it and can land on its top edge. -->
 <canvas id="weather" aria-hidden="true"></canvas>
 
-<!-- A solid, still reading surface. It covers the city on article, index
-     and about pages (html[data-l2='read']) so long-form reading has a
-     calm dark ground with nothing moving behind it. Home and case studies
-     keep the living scene. -->
+<!-- A solid, still reading surface behind the case studies and the about
+     page. Long-form reading gets a calm dark ground with nothing moving
+     behind it; home keeps the living scene. -->
 <div class="reading-surface" aria-hidden="true"></div>
 
 <!-- Two controls: which city you are standing over, and whether it is
-     raining on it. The day palette and the snow are still in scene.js
-     behind __scene.setTheme / setSnow — there is just no longer a
-     control putting them one click away from the landing shot.
-
-     The city list is NOT written out here. It is built at runtime from
-     __scene.cities(), so the skylines are declared in exactly one
-     place and adding a sixth is a change to scene.js alone. -->
+     raining on it. The city list is built at runtime from
+     __scene.cities(), so the skylines are declared in exactly one place. -->
 <div class="controls">
   <div class="picker" id="cityPicker">
     <button class="btn" id="cityToggle" type="button"
@@ -88,108 +87,110 @@
 </div>
 
 <!-- ==================================================================
-     PAGES, NOT WINDOWS
+     ONE PANEL, AND CARDS OVER IT
 
-     This was a desktop: floating windows with title bars, minimise and
-     maximise, a taskbar along the foot and icons down the side. Every
-     section arrived as a modal stacked over the city, and the first
-     thing a visitor had to do was work out the window manager rather
-     than read anything.
+     The shell is the one this grew out of: a neon-framed HUD column
+     standing on the skyline with a band of living city down either side,
+     and every deeper page — the case studies, the about — opening as a
+     card over that same city, dimmed behind a scrim.
 
-     It is one column now. The home page says who is talking, shows
-     the work, and gives you a way to get in touch — in that order,
-     without a single piece of chrome. Everything deeper is a real
-     page on its own route, so the back button and a shared link both
-     work.
-
-     WORK and ABOUT are gone as destinations. They were two clicks
-     standing in front of content that fits perfectly well on the page
-     you have already loaded, and a portfolio whose landing page does
-     not contain any work is a portfolio with a front door and no
-     hallway.
+     What changed is what is inside it. The four work slots used to be
+     empty frames; they are an index now, each row saying what the project
+     was before you open it. And the case studies stopped being one
+     template repeated four times.
      ================================================================== -->
 <main class="app">
 
-  <!-- L2 pages carry their own navigation inline, at the top of the column
-       (see the .l2nav bar on each) — a back link on the first fold rather
-       than a single floating button, so where "back" goes is always named. -->
-
   <section class="page page--home is-on" data-page="home">
+
+    <!-- ==================================================================
+         ONE PANEL
+
+         The HUD panel, back where it was: a neon-framed column standing on
+         the skyline with a band of city down either side. The masthead is
+         centred in it and everything under the first joint ranges left,
+         because a work index is a list to be scanned and a scanned list
+         does not centre.
+         ================================================================== -->
     <div class="col">
 
-      <!-- The lines are separate elements because each is set at its
-           own size: small on top, large on the bottom, so the block
-           reads as a trapezoid leaning away from the viewer. -->
-      <h1 class="wordmark">
-        <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
-        <span class="wordmark__line wordmark__line--b">VISHAL</span>
-      </h1>
+      <header class="masthead">
+        <h1 class="wordmark">
+          <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
+          <span class="wordmark__line wordmark__line--b">VISHAL</span>
+        </h1>
 
-      <p class="role">PRODUCT DESIGNER &middot; PORTFOLIO 2026</p>
+        <!-- Three segments rather than one string, so a narrow screen breaks
+             between them instead of through the middle of "6 YEARS". -->
+        <p class="role"><span>PRODUCT DESIGNER</span><span>6 YEARS</span><span>INDIA</span></p>
 
-      <div class="intro">
-        <p>A product designer from <b>India</b> with <b>6+ years</b> of
-           experience in B2C design. I focus on building from 0 to 1,
-           making data-driven decisions, and crafting intuitive UIs.</p>
-      </div>
+        <p class="lede">I design consumer products at the scale where small
+          decisions get expensive — content discovery, streaming, subscriptions,
+          and the journeys that tie them together.</p>
 
-      <!-- ---- selected work ----
-           The four frames keep the size they always had. What goes in
-           them is drawn, not photographed: posters.js takes the number,
-           the title and one idea from each project and paints a cover
-           at 176x110, which upscales hard and stays sharp at any tile
-           width. Each one has something small hidden in it. -->
-      <h2 class="sect">SELECTED WORK</h2>
+        <p class="sub">Most of my recent work is in entertainment: what people
+          watch, what they pay for, and how they decide — across TV, mobile and web.</p>
+      </header>
 
-      <!-- Empty placeholder frames: the tactile tile is the whole card.
-           The generated poster art has been removed so real cover
-           designs can be dropped straight into each frame later. -->
-      <ul class="cards">
-        <li><a class="tile" href="#w1" aria-label="01 — Lights, Camera, Banners: driving user engagement through dynamic banner design"></a></li>
-        <li><a class="tile" href="#w2" aria-label="02 — The Sound of Style: a sleek, smarter music player built for seamless listening"></a></li>
-        <li><a class="tile" href="#w3" aria-label="03 — Everything, All At Once: unifying OTT subscription and viewing experience"></a></li>
-        <li><a class="tile" href="#w4" aria-label="04 — How to Decide?: easing user's decision making to purchase a service"></a></li>
+    <!-- ---- work ---- -->
+    <section class="band" id="work">
+      <h2 class="sect"><span class="sect__k">01</span>Selected work</h2>
+      <p class="band__lede">Four projects, four different problems, so four
+        different write-ups. All of it is client work under NDA — which means
+        each one is built out of reasoning and structure rather than
+        screenshots. That turns out to be the more useful half anyway.</p>
+
+      <!-- Filled by work.js from the WORK array, so a card and its case
+           study can never drift apart. -->
+      <ul class="wks" id="workList"></ul>
+    </section>
+
+    <!-- ---- the point of view ----
+         Four statements, not a skills list. A skills list says what
+         software somebody owns; this says what they will argue for at
+         four o'clock on a Thursday, which is the thing you are actually
+         hiring. -->
+    <section class="band">
+      <h2 class="sect"><span class="sect__k">02</span>How I work</h2>
+      <ul class="pov">
+        <li>
+          <h3>Systems, not screens</h3>
+          <p>The useful output is usually a set of rules that keeps working
+            after I have left the project — not a set of comps that stops
+            being true at the first edge case.</p>
+        </li>
+        <li>
+          <h3>Let the data settle it</h3>
+          <p>I would rather run the argument than win it. A hypothesis I am
+            willing to lose, instrumented properly, beats the loudest opinion
+            in the room — including mine.</p>
+        </li>
+        <li>
+          <h3>Nought to one, mostly</h3>
+          <p>Six years largely at the first-version end: the first users, and
+            the argument about what the thing is actually for. That argument
+            is the design work.</p>
+        </li>
+        <li>
+          <h3>Trade-offs, out loud</h3>
+          <p>Every case study here has a section on what it gave up. A design
+            decision with no cost attached to it was not a decision — it was
+            a preference.</p>
+        </li>
       </ul>
+    </section>
 
-      <div class="intro">
-        <p>Six years of it has been building from nothing: the first
-           version, the first users, and the argument about what the
-           thing is actually for.</p>
-      </div>
+    <!-- ---- about ---- -->
+    <section class="band">
+      <h2 class="sect"><span class="sect__k">03</span>About</h2>
+      <p class="band__lede">Six-plus years of consumer product design, most of
+        it on entertainment and content products: discovery, streaming,
+        subscriptions, merchandising, and the growth work that runs across all
+        of them. Big ecosystems, high-scale journeys, a lot of experimentation.</p>
 
-      <!-- ---- articles ----
-           Writing sits ABOVE the about section now: it is the thing
-           worth reading, so it should not be buried under a bio. A list,
-           not a grid — writing is a title and a date, and giving it a
-           card and a thumbnail would be dressing a paragraph up as a
-           product. -->
-      <h2 class="sect">WRITING</h2>
-      <!-- Filled by writing.js from the ARTICLES array: the few most
-           recent pieces, then a link into the full Writing index. The
-           whole list lives on its own page (#writing), so home stays
-           short however many articles there are. -->
-      <div class="writing-home" id="writingHome"></div>
-
-      <!-- ---- more about me ----
-           The reference puts a code block here listing where he is and
-           what he does with his weekends, and it is the best thing on
-           that page: a readout is a way to say six true things without
-           writing six sentences about yourself, which almost nobody can
-           do without sounding like a cover letter.
-
-           Same idea, in this machine's voice. -->
-      <h2 class="sect">ABOUT</h2>
-      <div class="intro">
-        <p>Six-plus years of B2C product design, most of it spent at the
-           <b>0 to 1</b> end: the first version, the first users, and
-           letting the data settle the arguments rather than the
-           loudest opinion in the room.</p>
-      </div>
-
-      <!-- ---- the shelf ----
-           Four lines about what is actually on the desk this month.
-           A readout of what somebody is into, which is the thing that
-           tells you who you would be working with. -->
+      <!-- Four lines about what is actually on the desk this month. A
+           readout of what somebody is into tells you who you would be
+           working with, and it does it without a paragraph of cover letter. -->
       <ul class="shelf">
         <li data-cover="book" data-seed="7"><span>READING</span><b>BEHAVE</b><i>Robert Sapolsky</i></li>
         <li data-cover="game" data-seed="12"><span>PLAYING</span><b>BALATRO</b><i>LocalThunk</i></li>
@@ -197,250 +198,135 @@
         <li data-cover="cart" data-seed="31"><span>BUILT</span><b>CUSTOM KEYBOARD</b><i>Keycaps &amp; switches</i></li>
       </ul>
 
-      <div class="intro">
-        <p>Outside the main quests I read fiction, and mostly graphic
-           novels. I used to grind tactical shooters and moved on —
-           these days the competitive urge goes into weight training
-           instead, logged in detail, in a gym at home.</p>
-      </div>
+      <p class="home-cta"><a class="cta cta--ghost" href="#about">The longer version
+        <span aria-hidden="true">&rarr;</span></a></p>
+    </section>
 
-      <div class="intro">
-        <p>To reset I pour paint, which is calm in a way a screen never
-           is, and I tinker with hardware — an 8TB mini server that
-           exists for no reason beyond wanting to build it.</p>
-      </div>
+    <!-- ---- contact ----
+         One address, stated plainly, instead of a row of icons implying
+         four channels I do not equally watch. "Send a raven" would be
+         worse than "email me" and a mailto: is worse than nothing if the
+         handle behind it is fictional. -->
+    <section class="band band--end">
+      <h2 class="sect"><span class="sect__k">04</span>Get in touch</h2>
+      <p class="band__lede">If any of the above is the kind of problem your team
+        is sitting on, I would like to hear about it. Email is the fastest way
+        to a real conversation — and I am happy to walk through the actual
+        screens behind any of these projects.</p>
 
-      <!-- The fuller story — how I work, the road here — sits on its own
-           reading page, one tactile tap away. -->
-      <p class="home-cta"><a class="cta cta--primary" href="#about">Know more about me <span aria-hidden="true">→</span></a></p>
+      <p class="home-cta">
+        <a class="cta cta--primary cta--big" href="mailto:vaibhavvishalece@gmail.com?subject=Hello%20Vaibhav">
+          vaibhavvishalece@gmail.com</a>
+      </p>
 
-      <!-- ---- contact ----
-           Four icons in a row. It was four full-width rows with a
-           label, a value and a hover affordance in each — a table of
-           contact details at the foot of a page whose whole point is
-           that it is quiet. Nobody needs to be TOLD that an envelope
-           is email. -->
+      <!-- Add the real profile URLs here and these come back. They are out
+           rather than pointing at /handle: a dead social link on a portfolio
+           is worse than no social link.
       <ul class="links">
-        <li><a href="mailto:vaibhavvishalece@gmail.com" title="vaibhavvishalece@gmail.com">
-          <canvas class="links__art" data-icon="mail" aria-hidden="true"></canvas>
-          <span class="links__name">EMAIL</span></a></li>
-        <li><a href="https://linkedin.com/in/handle" title="linkedin.com/in/handle">
+        <li><a href="https://www.linkedin.com/in/YOUR-HANDLE">
           <canvas class="links__art" data-icon="linkedin" aria-hidden="true"></canvas>
           <span class="links__name">LINKEDIN</span></a></li>
-        <li><a href="resume.pdf" download title="one page, PDF">
-          <canvas class="links__art" data-icon="resume" aria-hidden="true"></canvas>
-          <span class="links__name">RESUME</span></a></li>
-        <li><a href="https://dribbble.com/handle" title="dribbble.com/handle">
+        <li><a href="https://dribbble.com/YOUR-HANDLE">
           <canvas class="links__art" data-icon="dribbble" aria-hidden="true"></canvas>
           <span class="links__name">DRIBBBLE</span></a></li>
       </ul>
+      -->
 
       <p class="copyright">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span>
-        &middot; drawn in code, no images</p>
+        &middot; the city behind this page is drawn in code — no images, no
+        libraries, about eight and a half thousand lines of it. Tap the sky.</p>
+    </section>
     </div>
   </section>
 
-  <!-- ==== ABOUT (L2) ====
-       The longer read behind the home "Know more about me" button. Same
-       frameless reading surface as the articles (data-kind="read"). The
-       body is placeholder for now — swap the paragraphs for the real story. -->
+  <!-- ==== ABOUT (L2) ==== -->
   <section class="page" data-page="about" data-kind="read" hidden>
     <article class="col col--doc read about">
-      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
+      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">&larr;</span> Home</a></nav>
       <p class="read__eyebrow">ABOUT <span class="read__sep">&middot;</span> VAIBHAV VISHAL</p>
-      <h2 class="read__title">More about me</h2>
-      <p class="read__standfirst">Placeholder standfirst — a couple of lines that set up who I am
-        and how I work before the longer story begins. Replace this with the real thing.</p>
-      <div class="read__byline"><span class="read__by">Vaibhav Vishal</span>
-        <span class="read__dot" aria-hidden="true"></span><span>Product Designer</span></div>
+      <h1 class="read__title">The longer version</h1>
+      <p class="read__standfirst">Six years designing things a lot of people use at
+        once, mostly in entertainment. Here is what that has actually involved, how
+        I work, and what I do when I am not doing it.</p>
       <div class="read__rule" aria-hidden="true"></div>
+
       <div class="prose read__body">
-        <p class="read__lead">Placeholder opening paragraph. This is where the fuller story
-          starts — the through-line of the work, what I keep coming back to, and the kind of
-          problem I do my best thinking on. It runs a few lines so the measure and the leading
-          are visible before the real words replace it.</p>
-        <p>A second placeholder paragraph carries the background: where I have worked, the
-          shape of the teams, and the sort of product I have spent the most time on. Concrete
-          when the real copy lands; for now it is only holding the space.</p>
+        <p class="read__lead">I am a product designer, based in India, six-plus years
+          in. Almost all of it consumer — products where the population using them is
+          large enough that a decision you make on a Tuesday shows up in a chart on
+          Friday, and where the interesting problems are rarely the ones you can see
+          on a single screen.</p>
+
+        <p>Most of my recent work has been in entertainment and content products:
+          content discovery, streaming, subscriptions, merchandising, and the
+          experiences that carry all of that onto a television and back onto a phone.
+          Those are ecosystems rather than apps. The catalogue, the entitlement, the
+          bill, the home screen and the player all have to agree with each other, and
+          the design problem is usually that they do not.</p>
+
+        <h3>What I actually do</h3>
+        <p>Less of it is drawing than people expect. A good share of my week is spent
+          on the shape of the thing — what a surface is for, what it is allowed to
+          promise, what has to be true underneath before an interface can say it
+          plainly. The rest is the craft: interaction, motion, hierarchy, the
+          typography of a screen somebody looks at for half a second while doing
+          something else.</p>
+
+        <p>I have spent a lot of time on growth and experimentation, which mostly
+          teaches you humility. You watch a change you were sure about do nothing, and
+          a change you argued against move a number, and after enough of those you
+          stop treating your own taste as evidence. It stays useful — it is what
+          generates the hypotheses — but it stops being the thing that settles them.</p>
 
         <h3>How I work</h3>
-        <p>Placeholder copy on the way I approach a problem — how I frame it, who I pull in,
-          and what I insist on before calling anything done. A paragraph a reader could repeat
-          back as a fair account of what it is like to build something with me.</p>
-        <p>A short placeholder list of the things that stay true across projects:</p>
         <ul>
-          <li>Start from the user's first five seconds, not the feature list.</li>
-          <li>Let the data settle the argument the room cannot.</li>
-          <li>Ship the smallest honest version, then learn in public.</li>
+          <li><b>Frame before you draw.</b> The first version of almost every brief I
+            get is a solution wearing a problem's clothes. Working out what the actual
+            question is buys more than any number of explorations.</li>
+          <li><b>Design against the messy account, not the demo one.</b> The tidy user
+            with one subscription and no history is the user nobody has. Systems get
+            tangled because they were designed for the screenshot.</li>
+          <li><b>Say what it costs.</b> Every decision worth making gives something up.
+            If I cannot name what a proposal loses, I do not understand it well enough
+            to defend it yet.</li>
+          <li><b>Ship the smallest honest version.</b> Then learn in public, with
+            instrumentation in place before launch rather than bolted on after
+            somebody asks how it went.</li>
         </ul>
 
+        <p>I work best close to engineering. Most of the projects I am proud of came
+          out of a conversation where somebody said "we could do that, but not the way
+          you have drawn it" and the third idea was better than either of the first two.</p>
+
         <h3>Away from the screen</h3>
-        <p>Placeholder paragraph for the human bits — what I read, what I build for no reason,
-          and how I spend the hours that are not work. This is the part that says who you would
-          actually be working with, so the real version is worth writing well.</p>
-        <p>Closing placeholder line, handing the reader somewhere to go next — a link to the
-          work, or a way to get in touch — before it stops.</p>
+        <p>I read fiction, mostly graphic novels. I used to grind tactical shooters and
+          moved on — these days the competitive urge goes into weight training instead,
+          logged in detail, in a gym at home. To reset I pour paint, which is calm in a
+          way a screen never is.</p>
+
+        <p>And I tinker with hardware. There is an 8TB mini server in this flat that
+          exists for no reason beyond wanting to build it, and a keyboard I put together
+          switch by switch. This website is the same instinct: the city behind it is
+          eight and a half thousand lines of code that draws every pixel of a skyline
+          from scratch, at twelve frames a second, because that is how the machines I
+          grew up with would have done it.</p>
       </div>
 
       <nav class="read__nav">
-        <a class="read__nav__back" href="#home"><span aria-hidden="true">←</span> Back home</a>
+        <a class="read__nav__back" href="#home"><span aria-hidden="true">&larr;</span> Back home</a>
+        <div class="read__nav__seq">
+          <a class="read__nav__link read__nav__next" href="#w1">
+            <span class="read__nav__dir">The work &rarr;</span>
+            <span class="read__nav__ttl">Lights, Camera, Banners</span></a>
+        </div>
       </nav>
     </article>
   </section>
 
-  <!-- ==== CASE STUDIES ====
-       All client work is under NDA, so no real screens are shown. Each
-       study leads with an NDA note and fills its four screen slots with
-       representative placeholder images, turning the constraint into an
-       invitation: the story is here, the real screens are a call away. -->
-  <section class="page" data-page="w1" hidden>
-    <article class="col col--doc cs">
-      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
-      <p class="cs__eyebrow">PROJECT 01 &middot; PRODUCT DESIGN &middot; 2025 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">LIGHTS, CAMERA, BANNERS</h2>
-      <p class="cs__lede">Driving user engagement through dynamic banner design.</p>
-      <img class="card__art card__art--wide cs__hero" src="https://picsum.photos/seed/cover-w1/1200/675" alt="" loading="eager">
-      <dl class="cs__meta">
-        <div><dt>Role</dt><dd>Lead Product Designer</dd></div>
-        <div><dt>Timeline</dt><dd>2025 · 4 months</dd></div>
-        <div><dt>Team</dt><dd>2 designers · 4 engineers</dd></div>
-        <div><dt>Platform</dt><dd>Web · iOS</dd></div>
-      </dl>
-      <p class="cs__note"><span class="cs__note__ico" aria-hidden="true"></span>This work is under NDA, so the screens below are representative placeholders rather than the real product. The write-up is real — and I'm happy to walk through the actual screens in a call.</p>
-      <h3 class="cs__h">Overview</h3>
-      <div class="prose"><p>The promotional banners on the home screen were the single biggest lever on what people watched and clicked — and the slowest thing in the app to change. Merchandising ran on a handful of hand-built templates, so every campaign looked the same to everyone and took days to ship.</p></div>
-      <h3 class="cs__h">The problem</h3>
-      <div class="prose"><p>Banners were static, one-size-fits-all, and locked behind engineering. Each new campaign meant someone stitching a fresh layout by hand, so the team defaulted to safe, generic art — and the most valuable real estate in the product was quietly under-earning.</p></div>
-      <h3 class="cs__h">What I did</h3>
-      <div class="prose"><p>I broke the banner into composable blocks — art, headline, tag, and call-to-action as separate layers a merchandiser could recombine — and wrote the rules that keep any combination on-brand and legible at every size. Then I prototyped the motion and the personalization, so a banner could react to what someone had already watched, and worked with engineering to make going live a config change instead of a build.</p></div>
-      <h3 class="cs__h">Screens</h3>
-      <div class="cs__shots" role="img" aria-label="Four representative placeholder screens">
-        <figure class="cs__shot"><span class="cs__shot__tag">01</span><img src="https://picsum.photos/seed/screen-w1-1/800/450" alt="" loading="lazy"><figcaption>Home hero</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">02</span><img src="https://picsum.photos/seed/screen-w1-2/800/450" alt="" loading="lazy"><figcaption>Block builder</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">03</span><img src="https://picsum.photos/seed/screen-w1-3/800/450" alt="" loading="lazy"><figcaption>Live preview</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">04</span><img src="https://picsum.photos/seed/screen-w1-4/800/450" alt="" loading="lazy"><figcaption>Campaign list</figcaption></figure>
-      </div>
-      <h3 class="cs__h">Outcome</h3>
-      <div class="prose"><p>Campaigns that took days now ship in an afternoon, and the home screen finally speaks to the person looking at it rather than to everyone at once. Tap-through on the hero slot climbed through the first two launches, and the merchandising team went from filing tickets to running their own experiments. (Exact figures under NDA — happy to walk through them.)</p></div>
-      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=Lights%2C%20Camera%2C%20Banners%20walkthrough">Request a walkthrough &rarr;</a></p>
-      <a class="cs__next" href="#w2">Next → THE SOUND OF STYLE</a>
-    </article>
-  </section>
-
-  <section class="page" data-page="w2" hidden>
-    <article class="col col--doc cs">
-      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
-      <p class="cs__eyebrow">PROJECT 02 &middot; DESIGN SYSTEMS &middot; 2024 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">THE SOUND OF STYLE</h2>
-      <p class="cs__lede">A sleek, smarter music player built for seamless listening.</p>
-      <img class="card__art card__art--wide cs__hero" src="https://picsum.photos/seed/cover-w2/1200/675" alt="" loading="eager">
-      <dl class="cs__meta">
-        <div><dt>Role</dt><dd>Design Systems Lead</dd></div>
-        <div><dt>Timeline</dt><dd>2024 · 6 months</dd></div>
-        <div><dt>Team</dt><dd>Design + Platform</dd></div>
-        <div><dt>Platform</dt><dd>Web</dd></div>
-      </dl>
-      <p class="cs__note"><span class="cs__note__ico" aria-hidden="true"></span>This work is under NDA, so the screens below are representative placeholders rather than the real product. The write-up is real — and I'm happy to walk through the actual screens in a call.</p>
-      <h3 class="cs__h">Overview</h3>
-      <div class="prose"><p>A music app with a deep catalogue and a player that got in the way of it. Listening should feel effortless — hands-free, glanceable, alive to what you are doing — and instead it asked for a tap at every turn.</p></div>
-      <h3 class="cs__h">The problem</h3>
-      <div class="prose"><p>The now-playing screen was a wall of equal-weight controls, and the moments that mattered — starting something, handing off to the car, finding your way back to a queue — were buried under the ones that didn't. People used a fraction of what was there and felt the rest as clutter.</p></div>
-      <h3 class="cs__h">What I did</h3>
-      <div class="prose"><p>I rebuilt the player around a clear hierarchy of intent: the art and the one gesture you reach for most, front and centre; everything else a swipe away, not a tap in your face. I designed the transitions between full-screen, mini, and lock-screen so the player felt like one object moving, not three, and tuned the type and touch targets for a screen you glance at, not read.</p></div>
-      <h3 class="cs__h">Screens</h3>
-      <div class="cs__shots" role="img" aria-label="Four representative placeholder screens">
-        <figure class="cs__shot"><span class="cs__shot__tag">01</span><img src="https://picsum.photos/seed/screen-w2-1/800/450" alt="" loading="lazy"><figcaption>Now playing</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">02</span><img src="https://picsum.photos/seed/screen-w2-2/800/450" alt="" loading="lazy"><figcaption>Mini player</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">03</span><img src="https://picsum.photos/seed/screen-w2-3/800/450" alt="" loading="lazy"><figcaption>Queue</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">04</span><img src="https://picsum.photos/seed/screen-w2-4/800/450" alt="" loading="lazy"><figcaption>Lock screen</figcaption></figure>
-      </div>
-      <h3 class="cs__h">Outcome</h3>
-      <div class="prose"><p>The player got quieter and the listening got longer. Sessions ran further without a tap, the support notes about "where did my queue go" dried up, and the pattern became the template the rest of the app was rebuilt against. (Exact figures under NDA — happy to walk through them.)</p></div>
-      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=The%20Sound%20of%20Style%20walkthrough">Request a walkthrough &rarr;</a></p>
-      <a class="cs__next" href="#w3">Next → EVERYTHING, ALL AT ONCE</a>
-    </article>
-  </section>
-
-  <section class="page" data-page="w3" hidden>
-    <article class="col col--doc cs">
-      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
-      <p class="cs__eyebrow">PROJECT 03 &middot; MOBILE &middot; 2023 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">EVERYTHING, ALL AT ONCE</h2>
-      <p class="cs__lede">Unifying OTT subscription and viewing experience.</p>
-      <img class="card__art card__art--wide cs__hero" src="https://picsum.photos/seed/cover-w3/1200/675" alt="" loading="eager">
-      <dl class="cs__meta">
-        <div><dt>Role</dt><dd>Product Designer</dd></div>
-        <div><dt>Timeline</dt><dd>2023 · 3 months</dd></div>
-        <div><dt>Team</dt><dd>Solo design</dd></div>
-        <div><dt>Platform</dt><dd>iOS · Android</dd></div>
-      </dl>
-      <p class="cs__note"><span class="cs__note__ico" aria-hidden="true"></span>This work is under NDA, so the screens below are representative placeholders rather than the real product. The write-up is real — and I'm happy to walk through the actual screens in a call.</p>
-      <h3 class="cs__h">Overview</h3>
-      <div class="prose"><p>One account, several subscriptions, and no single place that made sense of them. People were paying for tiers they had forgotten, watching across apps that did not talk to each other, and hitting a paywall with no idea which plan they were even on.</p></div>
-      <h3 class="cs__h">The problem</h3>
-      <div class="prose"><p>Subscription and viewing had grown up as separate products bolted together. The seams showed everywhere — a show you could open but not play, an upgrade that took you out of the app, a bill that never matched what you thought you had. Trust leaked out at every seam.</p></div>
-      <h3 class="cs__h">What I did</h3>
-      <div class="prose"><p>I mapped the whole tangle — every plan, entitlement, and dead end — and designed one spine that carried a viewer from "I want to watch this" to "I'm watching it" without ever leaving the story they were in. Upgrades happened inline, in context, with the price and the plan stated plainly; the home screen finally knew what you could actually play. I pressure-tested it against the messiest real accounts, not the tidy demo one.</p></div>
-      <h3 class="cs__h">Screens</h3>
-      <div class="cs__shots" role="img" aria-label="Four representative placeholder screens">
-        <figure class="cs__shot"><span class="cs__shot__tag">01</span><img src="https://picsum.photos/seed/screen-w3-1/800/450" alt="" loading="lazy"><figcaption>Unified home</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">02</span><img src="https://picsum.photos/seed/screen-w3-2/800/450" alt="" loading="lazy"><figcaption>Inline upgrade</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">03</span><img src="https://picsum.photos/seed/screen-w3-3/800/450" alt="" loading="lazy"><figcaption>Plan clarity</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">04</span><img src="https://picsum.photos/seed/screen-w3-4/800/450" alt="" loading="lazy"><figcaption>Manage</figcaption></figure>
-      </div>
-      <h3 class="cs__h">Outcome</h3>
-      <div class="prose"><p>The paywall stopped being a wall. Upgrades moved into the moment of wanting something instead of a settings screen nobody visited, fewer people bounced at the point of purchase, and "what am I even paying for" stopped being the top support question. (Exact figures under NDA — happy to walk through them.)</p></div>
-      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=Everything%2C%20All%20At%20Once%20walkthrough">Request a walkthrough &rarr;</a></p>
-      <a class="cs__next" href="#w4">Next → HOW TO DECIDE?</a>
-    </article>
-  </section>
-
-  <section class="page" data-page="w4" hidden>
-    <article class="col col--doc cs">
-      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">←</span> Home</a></nav>
-      <p class="cs__eyebrow">PROJECT 04 &middot; BRAND &middot; 2022 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">HOW TO DECIDE?</h2>
-      <p class="cs__lede">Easing user&rsquo;s decision making to purchase a service.</p>
-      <img class="card__art card__art--wide cs__hero" src="https://picsum.photos/seed/cover-w4/1200/675" alt="" loading="eager">
-      <dl class="cs__meta">
-        <div><dt>Role</dt><dd>Designer</dd></div>
-        <div><dt>Timeline</dt><dd>2022 · 2 months</dd></div>
-        <div><dt>Team</dt><dd>With founders</dd></div>
-        <div><dt>Platform</dt><dd>Brand · Web</dd></div>
-      </dl>
-      <p class="cs__note"><span class="cs__note__ico" aria-hidden="true"></span>This work is under NDA, so the screens below are representative placeholders rather than the real product. The write-up is real — and I'm happy to walk through the actual screens in a call.</p>
-      <h3 class="cs__h">Overview</h3>
-      <div class="prose"><p>A service people wanted but stalled on buying. The offer was good; the decision was hard. Too many plans, too many caveats, and a comparison page that asked you to hold a spreadsheet in your head at the exact moment you were trying to say yes.</p></div>
-      <h3 class="cs__h">The problem</h3>
-      <div class="prose"><p>Choice was being treated as a feature. Every option, edge case, and add-on was laid out with equal weight, so the person most ready to buy was the one made to work hardest — and a lot of them simply left to "think about it," which usually meant never.</p></div>
-      <h3 class="cs__h">What I did</h3>
-      <div class="prose"><p>I reframed the flow around the decision, not the catalogue: ask the two or three things that actually change the answer, then recommend one plan and explain why, with the others one tap away for the people who want them. I designed the comparison so it read as a set of trade-offs rather than a grid, and wrote the microcopy to remove doubt at each step instead of adding disclaimers.</p></div>
-      <h3 class="cs__h">Screens</h3>
-      <div class="cs__shots" role="img" aria-label="Four representative placeholder screens">
-        <figure class="cs__shot"><span class="cs__shot__tag">01</span><img src="https://picsum.photos/seed/screen-w4-1/800/450" alt="" loading="lazy"><figcaption>The question</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">02</span><img src="https://picsum.photos/seed/screen-w4-2/800/450" alt="" loading="lazy"><figcaption>Recommendation</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">03</span><img src="https://picsum.photos/seed/screen-w4-3/800/450" alt="" loading="lazy"><figcaption>Compare</figcaption></figure>
-        <figure class="cs__shot"><span class="cs__shot__tag">04</span><img src="https://picsum.photos/seed/screen-w4-4/800/450" alt="" loading="lazy"><figcaption>Confirm</figcaption></figure>
-      </div>
-      <h3 class="cs__h">Outcome</h3>
-      <div class="prose"><p>Deciding got easier and buying followed. More people reached a plan and fewer abandoned at the compare step, "which one is right for me" stopped being a support thread, and a recommend-one-then-explain pattern carried over to the rest of the funnel. (Exact figures under NDA — happy to walk through them.)</p></div>
-      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=How%20to%20Decide%20walkthrough">Request a walkthrough &rarr;</a></p>
-      <a class="cs__next" href="#home">← Back home</a>
-    </article>
-  </section>
-
+  <!-- The four case studies are appended here by work.js. -->
 
 </main>
 
-<!-- ---- the wipe ----
-     What sits between two pages. It closes over the frame, the pages
-     swap behind it, and it opens again — so a navigation is one
-     movement rather than a cut, and nothing is ever seen half-changed.
-
-     The desktop icons and the taskbar used to live here. Both are
-     gone: with pages instead of windows there is nothing to minimise
-     to and nothing to launch, and they were the two things standing
-     between a visitor and the only four links that matter. -->
 <!-- The cover that follows the cursor over a shelf row. One element,
      reused for all four — the art is generated by posters.js unless a
      row carries data-cover-src, in which case that image is used. -->
@@ -448,259 +334,9 @@
 
 <div class="wipe" aria-hidden="true"></div>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <!-- ------------------------------------------------------------
-         DESKTOP ICONS
-
-         Four sprites, all on the same 16x16 grid, all built the same
-         way: a one-pixel ink outline round the silhouette, a lit plane
-         top-left, a shaded one bottom-right, and one accent colour out
-         of the page palette each. They used to be CSS slabs with
-         pseudo-element decoration bolted on -- a folder, a document, an
-         envelope and a bare rectangle, at four different sizes, with
-         nothing in common but a drop shadow.
-
-         Each one now says what it opens:
-
-           HOME     the CRT running the title screen
-           WORK     a cartridge, because WORK.EXE is a rack of them
-           ABOUT    player one, because ABOUT.EXE says PLAYER 1 / READY
-           CONTACT  an envelope, sealed
-         ------------------------------------------------------------ -->
-
-    <g id="ico-home">
-      <rect x=" 0" y=" 0" width="16" height=" 1" fill="#05070f" />
-      <rect x=" 0" y=" 1" width=" 1" height=" 9" fill="#05070f" />
-      <rect x=" 1" y=" 1" width="13" height=" 1" fill="#4a2f8f" />
-      <rect x="14" y=" 1" width=" 1" height=" 8" fill="#2a1a5c" />
-      <rect x="15" y=" 1" width=" 1" height=" 9" fill="#05070f" />
-      <rect x=" 1" y=" 2" width=" 1" height=" 7" fill="#4a2f8f" />
-      <rect x=" 2" y=" 2" width="12" height=" 1" fill="#05070f" />
-      <rect x=" 2" y=" 3" width=" 1" height=" 5" fill="#05070f" />
-      <rect x=" 3" y=" 3" width="10" height=" 1" fill="#0a1030" />
-      <rect x="13" y=" 3" width=" 1" height=" 5" fill="#05070f" />
-      <rect x=" 3" y=" 4" width=" 1" height=" 1" fill="#0a1030" />
-      <rect x=" 4" y=" 4" width=" 8" height=" 1" fill="#3ef0ff" />
-      <rect x="12" y=" 4" width=" 1" height=" 1" fill="#0a1030" />
-      <rect x=" 3" y=" 5" width="10" height=" 1" fill="#0a1030" />
-      <rect x=" 3" y=" 6" width=" 2" height=" 1" fill="#0a1030" />
-      <rect x=" 5" y=" 6" width=" 6" height=" 1" fill="#ff3ea5" />
-      <rect x="11" y=" 6" width=" 2" height=" 1" fill="#0a1030" />
-      <rect x=" 3" y=" 7" width="10" height=" 1" fill="#0a1030" />
-      <rect x=" 2" y=" 8" width="12" height=" 1" fill="#05070f" />
-      <rect x=" 1" y=" 9" width="14" height=" 1" fill="#2a1a5c" />
-      <rect x=" 0" y="10" width="16" height=" 1" fill="#05070f" />
-      <rect x=" 6" y="11" width=" 4" height=" 1" fill="#05070f" />
-      <rect x=" 6" y="12" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 7" y="12" width=" 2" height=" 1" fill="#2a1a5c" />
-      <rect x=" 9" y="12" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 2" y="13" width="12" height=" 1" fill="#05070f" />
-      <rect x=" 2" y="14" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 3" y="14" width="10" height=" 1" fill="#4a2f8f" />
-      <rect x="13" y="14" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 2" y="15" width="12" height=" 1" fill="#05070f" />
-    </g>
-
-    <g id="ico-work">
-      <rect x=" 2" y=" 0" width="12" height=" 1" fill="#05070f" />
-      <rect x=" 2" y=" 1" width=" 1" height=" 9" fill="#05070f" />
-      <rect x=" 3" y=" 1" width="10" height=" 1" fill="#f8c838" />
-      <rect x="13" y=" 1" width=" 1" height=" 9" fill="#05070f" />
-      <rect x=" 3" y=" 2" width=" 1" height=" 6" fill="#f8c838" />
-      <rect x=" 4" y=" 2" width=" 8" height=" 1" fill="#05070f" />
-      <rect x="12" y=" 2" width=" 1" height=" 6" fill="#f8c838" />
-      <rect x=" 4" y=" 3" width=" 1" height=" 4" fill="#05070f" />
-      <rect x=" 5" y=" 3" width=" 6" height=" 1" fill="#eaf0ff" />
-      <rect x="11" y=" 3" width=" 1" height=" 4" fill="#05070f" />
-      <rect x=" 5" y=" 4" width=" 1" height=" 2" fill="#eaf0ff" />
-      <rect x=" 6" y=" 4" width=" 4" height=" 2" fill="#170a34" />
-      <rect x="10" y=" 4" width=" 1" height=" 2" fill="#eaf0ff" />
-      <rect x=" 5" y=" 6" width=" 6" height=" 1" fill="#eaf0ff" />
-      <rect x=" 4" y=" 7" width=" 8" height=" 1" fill="#05070f" />
-      <rect x=" 3" y=" 8" width="10" height=" 2" fill="#f8c838" />
-      <rect x=" 2" y="10" width="12" height=" 1" fill="#05070f" />
-      <rect x=" 2" y="11" width=" 1" height=" 3" fill="#05070f" />
-      <rect x=" 3" y="11" width="10" height=" 1" fill="#c99a20" />
-      <rect x="13" y="11" width=" 1" height=" 3" fill="#05070f" />
-      <rect x=" 3" y="12" width=" 1" height=" 2" fill="#c99a20" />
-      <rect x=" 4" y="12" width=" 1" height=" 2" fill="#05070f" />
-      <rect x=" 5" y="12" width=" 1" height=" 2" fill="#c99a20" />
-      <rect x=" 6" y="12" width=" 1" height=" 2" fill="#05070f" />
-      <rect x=" 7" y="12" width=" 1" height=" 2" fill="#c99a20" />
-      <rect x=" 8" y="12" width=" 1" height=" 2" fill="#05070f" />
-      <rect x=" 9" y="12" width=" 1" height=" 2" fill="#c99a20" />
-      <rect x="10" y="12" width=" 1" height=" 2" fill="#05070f" />
-      <rect x="11" y="12" width=" 2" height=" 2" fill="#c99a20" />
-      <rect x=" 2" y="14" width="12" height=" 1" fill="#05070f" />
-    </g>
-
-    <g id="ico-about">
-      <rect x=" 3" y=" 0" width="10" height=" 1" fill="#05070f" />
-      <rect x=" 3" y=" 1" width=" 1" height=" 8" fill="#05070f" />
-      <rect x=" 4" y=" 1" width=" 8" height=" 1" fill="#8a1fb8" />
-      <rect x="12" y=" 1" width=" 1" height=" 8" fill="#05070f" />
-      <rect x=" 4" y=" 2" width=" 1" height=" 1" fill="#8a1fb8" />
-      <rect x=" 5" y=" 2" width=" 7" height=" 1" fill="#5c1280" />
-      <rect x=" 4" y=" 3" width=" 1" height=" 1" fill="#5c1280" />
-      <rect x=" 5" y=" 3" width=" 6" height=" 1" fill="#f2c39a" />
-      <rect x="11" y=" 3" width=" 1" height=" 1" fill="#5c1280" />
-      <rect x=" 4" y=" 4" width=" 7" height=" 1" fill="#f2c39a" />
-      <rect x="11" y=" 4" width=" 1" height=" 5" fill="#d49a70" />
-      <rect x=" 4" y=" 5" width=" 2" height=" 1" fill="#f2c39a" />
-      <rect x=" 6" y=" 5" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 7" y=" 5" width=" 2" height=" 1" fill="#f2c39a" />
-      <rect x=" 9" y=" 5" width=" 1" height=" 1" fill="#05070f" />
-      <rect x="10" y=" 5" width=" 1" height=" 1" fill="#f2c39a" />
-      <rect x=" 4" y=" 6" width=" 7" height=" 1" fill="#f2c39a" />
-      <rect x=" 4" y=" 7" width=" 3" height=" 1" fill="#f2c39a" />
-      <rect x=" 7" y=" 7" width=" 2" height=" 1" fill="#05070f" />
-      <rect x=" 9" y=" 7" width=" 2" height=" 1" fill="#f2c39a" />
-      <rect x=" 4" y=" 8" width=" 7" height=" 1" fill="#f2c39a" />
-      <rect x=" 3" y=" 9" width="10" height=" 1" fill="#05070f" />
-      <rect x=" 5" y="10" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 6" y="10" width=" 4" height=" 1" fill="#f2c39a" />
-      <rect x="10" y="10" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 1" y="11" width="14" height=" 1" fill="#05070f" />
-      <rect x=" 1" y="12" width=" 1" height=" 3" fill="#05070f" />
-      <rect x=" 2" y="12" width=" 4" height=" 1" fill="#3ef0ff" />
-      <rect x=" 6" y="12" width=" 4" height=" 1" fill="#f2c39a" />
-      <rect x="10" y="12" width=" 3" height=" 1" fill="#3ef0ff" />
-      <rect x="13" y="12" width=" 1" height=" 3" fill="#1aa8bf" />
-      <rect x="14" y="12" width=" 1" height=" 3" fill="#05070f" />
-      <rect x=" 2" y="13" width=" 5" height=" 1" fill="#3ef0ff" />
-      <rect x=" 7" y="13" width=" 2" height=" 1" fill="#05070f" />
-      <rect x=" 9" y="13" width=" 4" height=" 1" fill="#3ef0ff" />
-      <rect x=" 2" y="14" width="11" height=" 1" fill="#3ef0ff" />
-      <rect x=" 1" y="15" width="14" height=" 1" fill="#05070f" />
-    </g>
-
-    <g id="ico-contact">
-      <rect x=" 1" y=" 2" width="14" height=" 1" fill="#05070f" />
-      <rect x=" 1" y=" 3" width=" 2" height=" 1" fill="#05070f" />
-      <rect x=" 3" y=" 3" width="10" height=" 1" fill="#eaf0ff" />
-      <rect x="13" y=" 3" width=" 2" height=" 1" fill="#05070f" />
-      <rect x=" 1" y=" 4" width=" 1" height=" 9" fill="#05070f" />
-      <rect x=" 2" y=" 4" width=" 1" height=" 1" fill="#c9d4f5" />
-      <rect x=" 3" y=" 4" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 4" y=" 4" width=" 8" height=" 1" fill="#eaf0ff" />
-      <rect x="12" y=" 4" width=" 1" height=" 1" fill="#05070f" />
-      <rect x="13" y=" 4" width=" 1" height=" 1" fill="#c9d4f5" />
-      <rect x="14" y=" 4" width=" 1" height=" 9" fill="#05070f" />
-      <rect x=" 2" y=" 5" width=" 2" height=" 1" fill="#c9d4f5" />
-      <rect x=" 4" y=" 5" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 5" y=" 5" width=" 6" height=" 1" fill="#eaf0ff" />
-      <rect x="11" y=" 5" width=" 1" height=" 1" fill="#05070f" />
-      <rect x="12" y=" 5" width=" 2" height=" 1" fill="#c9d4f5" />
-      <rect x=" 2" y=" 6" width=" 3" height=" 1" fill="#c9d4f5" />
-      <rect x=" 5" y=" 6" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 6" y=" 6" width=" 4" height=" 1" fill="#eaf0ff" />
-      <rect x="10" y=" 6" width=" 1" height=" 1" fill="#05070f" />
-      <rect x="11" y=" 6" width=" 3" height=" 1" fill="#c9d4f5" />
-      <rect x=" 2" y=" 7" width=" 4" height=" 1" fill="#c9d4f5" />
-      <rect x=" 6" y=" 7" width=" 1" height=" 1" fill="#05070f" />
-      <rect x=" 7" y=" 7" width=" 2" height=" 1" fill="#eaf0ff" />
-      <rect x=" 9" y=" 7" width=" 1" height=" 1" fill="#05070f" />
-      <rect x="10" y=" 7" width=" 4" height=" 1" fill="#c9d4f5" />
-      <rect x=" 2" y=" 8" width=" 5" height=" 3" fill="#c9d4f5" />
-      <rect x=" 7" y=" 8" width=" 2" height=" 1" fill="#05070f" />
-      <rect x=" 9" y=" 8" width=" 5" height=" 3" fill="#c9d4f5" />
-      <rect x=" 7" y=" 9" width=" 2" height=" 2" fill="#ff3ea5" />
-      <rect x=" 2" y="11" width="12" height=" 2" fill="#c9d4f5" />
-      <rect x=" 1" y="13" width="14" height=" 1" fill="#05070f" />
-    </g>
-
-    <!-- The mark on the taskbar. Three triangles on a 16x14 grid, each
-         one lit along its left rake and shadowed along its right, so it
-         reads as three solid objects rather than as a logo outline. It
-         is the same reference standing on a roof out in the city; this
-         is just where you put your hand on it. -->
-    <g id="tri-mark">
-      <rect x="7" y="0" width="2" height="1" fill="#fff4b0" />
-      <rect x="6" y="1" width="1" height="1" fill="#fff4b0" />
-      <rect x="7" y="1" width="2" height="1" fill="#f8d038" />
-      <rect x="9" y="1" width="1" height="1" fill="#b8901f" />
-      <rect x="5" y="2" width="1" height="1" fill="#fff4b0" />
-      <rect x="6" y="2" width="3" height="1" fill="#f8d038" />
-      <rect x="9" y="2" width="2" height="1" fill="#b8901f" />
-      <rect x="4" y="3" width="1" height="1" fill="#fff4b0" />
-      <rect x="5" y="3" width="5" height="1" fill="#f8d038" />
-      <rect x="10" y="3" width="2" height="1" fill="#b8901f" />
-      <rect x="3" y="4" width="1" height="1" fill="#fff4b0" />
-      <rect x="4" y="4" width="7" height="1" fill="#f8d038" />
-      <rect x="11" y="4" width="2" height="1" fill="#b8901f" />
-      <rect x="3" y="5" width="10" height="1" fill="#8a6a12" />
-
-      <rect x="3" y="7" width="2" height="1" fill="#fff4b0" />
-      <rect x="11" y="7" width="2" height="1" fill="#fff4b0" />
-      <rect x="2" y="8" width="1" height="1" fill="#fff4b0" />
-      <rect x="3" y="8" width="2" height="1" fill="#f8d038" />
-      <rect x="5" y="8" width="1" height="1" fill="#b8901f" />
-      <rect x="10" y="8" width="1" height="1" fill="#fff4b0" />
-      <rect x="11" y="8" width="2" height="1" fill="#f8d038" />
-      <rect x="13" y="8" width="1" height="1" fill="#b8901f" />
-      <rect x="1" y="9" width="1" height="1" fill="#fff4b0" />
-      <rect x="2" y="9" width="3" height="1" fill="#f8d038" />
-      <rect x="5" y="9" width="2" height="1" fill="#b8901f" />
-      <rect x="9" y="9" width="1" height="1" fill="#fff4b0" />
-      <rect x="10" y="9" width="3" height="1" fill="#f8d038" />
-      <rect x="13" y="9" width="2" height="1" fill="#b8901f" />
-      <rect x="0" y="10" width="1" height="1" fill="#fff4b0" />
-      <rect x="1" y="10" width="5" height="1" fill="#f8d038" />
-      <rect x="6" y="10" width="1" height="1" fill="#b8901f" />
-      <rect x="8" y="10" width="1" height="1" fill="#fff4b0" />
-      <rect x="9" y="10" width="5" height="1" fill="#f8d038" />
-      <rect x="14" y="10" width="1" height="1" fill="#b8901f" />
-      <rect x="0" y="11" width="7" height="1" fill="#8a6a12" />
-      <rect x="8" y="11" width="7" height="1" fill="#8a6a12" />
-    </g>
-
-    <!-- 12x11 heart, used as the menu cursor -->
-    <g id="heart-shape">
-      <rect x="2" y="0"  width="3"  height="1" fill="#7a1520" />
-      <rect x="7" y="0"  width="3"  height="1" fill="#7a1520" />
-      <rect x="1" y="1"  width="1"  height="1" fill="#7a1520" />
-      <rect x="2" y="1"  width="3"  height="1" fill="#ff9a9a" />
-      <rect x="5" y="1"  width="2"  height="1" fill="#7a1520" />
-      <rect x="7" y="1"  width="3"  height="1" fill="#e83b3b" />
-      <rect x="10" y="1" width="1"  height="1" fill="#7a1520" />
-      <rect x="0" y="2"  width="1"  height="1" fill="#7a1520" />
-      <rect x="1" y="2"  width="3"  height="1" fill="#ff9a9a" />
-      <rect x="4" y="2"  width="7"  height="1" fill="#e83b3b" />
-      <rect x="11" y="2" width="1"  height="1" fill="#7a1520" />
-      <rect x="0" y="3"  width="1"  height="1" fill="#7a1520" />
-      <rect x="1" y="3"  width="2"  height="1" fill="#ff9a9a" />
-      <rect x="3" y="3"  width="8"  height="1" fill="#e83b3b" />
-      <rect x="11" y="3" width="1"  height="1" fill="#7a1520" />
-      <rect x="0" y="4"  width="1"  height="1" fill="#7a1520" />
-      <rect x="1" y="4"  width="9"  height="1" fill="#e83b3b" />
-      <rect x="10" y="4" width="1"  height="1" fill="#b02020" />
-      <rect x="11" y="4" width="1"  height="1" fill="#7a1520" />
-      <rect x="1" y="5"  width="1"  height="1" fill="#7a1520" />
-      <rect x="2" y="5"  width="7"  height="1" fill="#e83b3b" />
-      <rect x="9" y="5"  width="1"  height="1" fill="#b02020" />
-      <rect x="10" y="5" width="1"  height="1" fill="#7a1520" />
-      <rect x="2" y="6"  width="1"  height="1" fill="#7a1520" />
-      <rect x="3" y="6"  width="5"  height="1" fill="#e83b3b" />
-      <rect x="8" y="6"  width="1"  height="1" fill="#b02020" />
-      <rect x="9" y="6"  width="1"  height="1" fill="#7a1520" />
-      <rect x="3" y="7"  width="1"  height="1" fill="#7a1520" />
-      <rect x="4" y="7"  width="3"  height="1" fill="#e83b3b" />
-      <rect x="7" y="7"  width="1"  height="1" fill="#b02020" />
-      <rect x="8" y="7"  width="1"  height="1" fill="#7a1520" />
-      <rect x="4" y="8"  width="1"  height="1" fill="#7a1520" />
-      <rect x="5" y="8"  width="2"  height="1" fill="#e83b3b" />
-      <rect x="7" y="8"  width="1"  height="1" fill="#7a1520" />
-      <rect x="5" y="9"  width="1"  height="1" fill="#7a1520" />
-      <rect x="6" y="9"  width="1"  height="1" fill="#b02020" />
-      <rect x="6" y="10" width="1"  height="1" fill="#7a1520" />
-    </g>
-  </defs>
-</svg>
-
 <script src="scene.js"></script>
 <script src="posters.js"></script>
-<script src="writing.js"></script>
+<script src="work.js"></script>
 <script src="script.js"></script>
 <script src="flowers.js"></script>
 </body>

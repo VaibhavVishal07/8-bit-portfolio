@@ -205,19 +205,51 @@
      into one is what made the snow land already-settled. */
   const SETTLE_MS = 26000
 
-  /* The canvases are `object-fit: cover` with `object-position: 50% 72%`
-     — anchored low, so the crop on a wide viewport comes out of the sky
-     rather than off the rooftop. Anything that maps between page
-     coordinates and canvas coordinates has to undo exactly that, so the
-     numbers live here once and everything else reads them. */
-  const FIT_X = 0.5
-  const FIT_Y = 0.72
+  /* The canvas is `object-fit: cover` inside a box the stylesheet owns —
+     full width, a fifth taller than the viewport, anchored at the top so
+     the dark rooftop foreground is cropped off the bottom. Anything that
+     maps between page coordinates and canvas coordinates has to undo
+     exactly that.
+
+     It used to be undone from two constants copied out of the CSS, which
+     is a fact stated in two places and therefore a fact that goes wrong:
+     the portrait rule already moved the horizontal anchor to 72% and this
+     was still saying 50%, so every firework on a phone landed off to one
+     side. It reads the element instead — its real box, and its real
+     computed object-position — so the stylesheet stays the only place any
+     of this is decided.
+
+     Cached, because a `getComputedStyle` per frame is a style recalc per
+     frame, and the answer only changes when the viewport does. */
+  let fitCache = null
+
+  function fit() {
+    if (fitCache) return fitCache
+    const r = cv.getBoundingClientRect()
+    const op = getComputedStyle(cv).objectPosition.split(/\s+/)
+    // authored as percentages; a browser that hands back pixels is read
+    // against the box it was resolved in, which comes to the same place
+    const frac = (v, box, img) => {
+      if (v.endsWith('%')) return parseFloat(v) / 100
+      const px = parseFloat(v) || 0
+      return box === img ? 0 : px / (box - img)
+    }
+    fitCache = { r, op, frac }
+    return fitCache
+  }
+
+  window.addEventListener('resize', () => { fitCache = null })
 
   function viewMap() {
-    const vw = window.innerWidth
-    const vh = window.innerHeight
-    const scale = Math.max(vw / W, vh / H)
-    return { scale, ox: (vw - W * scale) * FIT_X, oy: (vh - H * scale) * FIT_Y }
+    const { r, op, frac } = fit()
+    const scale = Math.max(r.width / W, r.height / H)
+    const iw = W * scale
+    const ih = H * scale
+    return {
+      scale,
+      ox: r.left + (r.width - iw) * frac(op[0], r.width, iw),
+      oy: r.top + (r.height - ih) * frac(op[1] || op[0], r.height, ih),
+    }
   }
 
   /* Where the HUD panel sits, in canvas pixels. There is more than one

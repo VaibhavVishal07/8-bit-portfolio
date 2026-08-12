@@ -1,5 +1,6 @@
 /* ==================================================================
-   UI behaviour: the day/night toggle, and arcade keyboard menu.
+   UI behaviour: the boot card, the city controls, the router and
+   the transitions between pages.
    ================================================================== */
 
 (function () {
@@ -35,8 +36,15 @@
        screen is a thing you sit through, and on a handset the landing
        shot IS the experience — it should be there the instant the page
        is. The two mobile tests catch a phone in portrait and one turned
-       sideways (wider than the phone breakpoint, still a phone). */
+       sideways (wider than the phone breakpoint, still a phone).
+       And skipped outright on a DEEP LINK. Somebody arriving at a case
+       study from a shared URL asked for that page, not for the title card
+       in front of somebody else's home page — making them sit through a
+       loading screen for a document they linked to directly is the same
+       mistake as a splash screen on a settings deep link. */
+    const deepLink = location.hash && location.hash !== '#home' && location.hash !== '#'
     const skip =
+      deepLink ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
       window.matchMedia('(max-width: 760px)').matches ||
       window.matchMedia('(hover: none) and (pointer: coarse)').matches
@@ -69,352 +77,42 @@
         }
       }
 
-      const TOTAL = 780
-      const STEPS = 12
-      let i = 0
+      /* Driven off elapsed time through requestAnimationFrame, not off a
+         chain of setTimeouts. A background tab throttles timers to one a
+         second, so the old chain turned a half-second card into an eight-
+         second one — and a link opened in a background tab would still be
+         showing the loading screen when you switched to it. rAF does not
+         run in the background at all, so the first frame after the tab
+         comes forward already has the full duration behind it and the card
+         is gone before anything is painted. */
+      const TOTAL = 520
+      const STEPS = 8
+      // anchored at load, not at the first frame, so time spent in a
+      // background tab counts against the card rather than restarting it
+      const t0 = performance.now()
 
-      const tick = () => {
-        i++
-        if (bootBar) bootBar.style.width = Math.round((i / STEPS) * 100) + '%'
-        if (i < STEPS) {
-          setTimeout(tick, TOTAL / STEPS)
-          return
-        }
-        setTimeout(() => {
-          boot.hidden = true
-        }, 140)
+      const tick = (now) => {
+        const p = Math.min(1, (now - t0) / TOTAL)
+        // whole cells, because a smoothly interpolating bar would be the
+        // only thing on this page that slides
+        const step = Math.round(p * STEPS) / STEPS
+        if (bootBar) bootBar.style.width = Math.round(step * 100) + '%'
+        if (p < 1) { requestAnimationFrame(tick); return }
+        bail()
       }
-      tick()
+      requestAnimationFrame(tick)
 
       // any key or click gets you past it
-      const bail = () => {
+      let gone = false
+      function bail() {
+        if (gone) return
+        gone = true
         boot.hidden = true
       }
       boot.addEventListener('click', bail)
       window.addEventListener('keydown', bail, { once: true })
     }
   }
-
-  /* ==================================================================
-     DESKTOP ICONS
-
-     These were four 16x16 sprites hand-written as SVG rects, one
-     element per run of pixels, in the defs block at the foot of the
-     markup. That is a fine way to ship a sprite and a terrible way to
-     AUTHOR one: adding detail meant adding a hundred more <rect>s and
-     counting coordinates by hand, so in practice they never got any.
-     Four flat objects that mostly read as "a coloured blob with a
-     label under it".
-
-     They are written as strings now — one character per pixel, '.' is
-     a hole — and painted onto a canvas at load. Same output, except
-     the art is legible in the source and can be edited by typing, so
-     each one got the room to actually say what it opens.
-
-     All four share a vocabulary, which is the part that makes them
-     read as a set rather than as four unrelated pictures: a one-pixel
-     ink outline round the silhouette, a lit plane along the top-left,
-     a shaded one along the bottom-right, and exactly one accent colour
-     from the page palette each.
-     ================================================================== */
-  const ICON_PAL = {
-    k: '#05070f', // ink
-    w: '#eaf0ff', // paper / lit face
-    s: '#9aa6c8', // paper shade
-    d: '#3b3350', // deep shade
-    y: '#f8c838', // cartridge yellow
-    o: '#c99a20', // cartridge shade
-    c: '#3ef0ff', // cyan accent
-    m: '#ff3ea5', // magenta accent
-    g: '#2fe39a', // green accent
-    f: '#f2c39a', // skin
-    h: '#8a1fb8', // hair / violet
-    r: '#e8484f', // red seal
-    b: '#2a1a5c', // screen dark
-  }
-
-  const ICONS = {
-    /* A cartridge, three-quarter on: shell, paper label with a strip
-       of unreadable title type, and the ridged grip along the foot. */
-    work: [
-      '........................',
-      '......kkkkkkkkkkkk......',
-      '.....kyyyyyyyyyyyyk.....',
-      '....kkyyyyyyyyyyyykk....',
-      '....kyyyyyyyyyyyyyyk....',
-      '....kyykkkkkkkkkkyyk....',
-      '....kyykwwwwwwwwdkyk....',
-      '....kyykwbbbbbbwdkyk....',
-      '....kyykwbccccbwdkyk....',
-      '....kyykwbcmmcbwdkyk....',
-      '....kyykwbccccbwdkyk....',
-      '....kyykwbbbbbbwdkyk....',
-      '....kyykwwwwwwwwdkyk....',
-      '....kyykwsswsswsdkyk....',
-      '....kyykddddddddddkyk...',
-      '....kyykkkkkkkkkkkyyk...',
-      '....kyyyyyyyyyyyyyyyk...',
-      '....kooooooooooooooook..',
-      '....kokokokokokokokook..',
-      '....kokokokokokokokook..',
-      '....kokokokokokokokook..',
-      '....kooooooooooooooook..',
-      '.....kkkkkkkkkkkkkkkk...',
-      '........................',
-    ],
-    /* Player one. A bust on a card — hair, face, a headset band,
-       shoulders in a jacket with a cyan collar. */
-    about: [
-      '........................',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '..kwwwwwwwwwwwwwwwwwwk..',
-      '..kwssssssssssssssssdk..',
-      '..kws....hhhhhhhh...sdk.',
-      '..kws...hhhhhhhhhh..sdk.',
-      '..kws..hhffffffffh..sdk.',
-      '..kws.chhffffffffhc.sdk.',
-      '..kws.chfffffffffhc.sdk.',
-      '..kws.chffkffffkffhc.dk.',
-      '..kws.chfffffffffhc.sdk.',
-      '..kws.chffkkkkkkffhc.dk.',
-      '..kws.chhffffffffhc.sdk.',
-      '..kws..hffffffffh...sdk.',
-      '..kws....ffffff.....sdk.',
-      '..kws...cccccccc....sdk.',
-      '..kws..cccccccccc...sdk.',
-      '..kws.cchhhhhhhhcc..sdk.',
-      '..kws.chhhhhhhhhhc..sdk.',
-      '..kwshhhhhhhhhhhhhhssdk.',
-      '..kddddddddddddddddddk..',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '........................',
-      '........................',
-    ],
-    /* A sealed envelope, flap down, with a wax seal on it. The flap
-       edges are stepped rather than ruled, because a diagonal is the
-       one thing this project will not antialias. */
-    contact: [
-      '........................',
-      '........................',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '..kwwwwwwwwwwwwwwwwwwk..',
-      '..kwkwwwwwwwwwwwwwwkwk..',
-      '..kwwkwwwwwwwwwwwwkwwk..',
-      '..kwwwkwwwwwwwwwwkwwwk..',
-      '..kwwwwkwwwwwwwwkwwwwk..',
-      '..kwwwwwkwwwwwwkwwwwwk..',
-      '..kwwwwwwkwwwwkwwwwwwk..',
-      '..kwwwwwwwkwwkwwwwwwwk..',
-      '..kwwwwwwwwkkwwwwwwwwk..',
-      '..kwsswwwwwrrwwwwwwsswk.',
-      '..kwsssswwrrrrwwwsssswk.',
-      '..kwssssssrrrrssssssswk.',
-      '..kwsssssssrrsssssssswk.',
-      '..kwssssssssssssssssswk.',
-      '..kwssssssssssssssssswk.',
-      '..kdddddddddddddddddddk.',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '........................',
-      '........................',
-      '........................',
-      '........................',
-    ],
-    /* A one-page CV: folded top corner, a photo block, ruled lines of
-       type, and a download arrow sitting under it. */
-    resume: [
-      '........................',
-      '........................',
-      '.....kkkkkkkkkkkkkk.....',
-      '.....kwwwwwwwwwwkkk.....',
-      '.....kwwwwwwwwwwswk.....',
-      '.....kwwwwwwwwwwwwk.....',
-      '.....kwmmmmmmwwwwwk.....',
-      '.....kwmmmmmmwwwwwk.....',
-      '.....kwwwwwwwwwwwwk.....',
-      '.....kwssssssssswwk.....',
-      '.....kwsssssssssssk.....',
-      '.....kwwwwwwwwwwwwk.....',
-      '.....kwssssssssswwk.....',
-      '.....kwsssssssssssk.....',
-      '.....kwwwwwwwwwwwwk.....',
-      '.....kwsssssswwwwwk.....',
-      '.....kwwwwwwwwwwwwk.....',
-      '.....kwwwwwwwrrrwwk.....',
-      '.....kwwwwwwwrrrwwk.....',
-      '.....kddddddddddddk.....',
-      '.....kkkkkkkkkkkkkk.....',
-      '........................',
-      '........................',
-      '........................',
-    ],
-
-    /* ---- the contact row ----
-       Four marks, all on the same 24x24 grid with the same one-pixel
-       ink outline, so they read as a set rather than as four logos
-       borrowed from four places. Deliberately generic silhouettes: an
-       envelope, a cat-in-a-circle, a card with a bar, a sheet with an
-       arrow. Nobody needs to be told an envelope is email. */
-    mail: [
-      '........................',
-      '........................',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '..kwwwwwwwwwwwwwwwwwwk..',
-      '..kwkkwwwwwwwwwwwwkkwk..',
-      '..kwwkkwwwwwwwwwwkkwwk..',
-      '..kwwwkkwwwwwwwwkkwwwk..',
-      '..kwwwwkkwwwwwwkkwwwwk..',
-      '..kwwwwwkkwwwwkkwwwwwk..',
-      '..kwwwwwwkkwwkkwwwwwwk..',
-      '..kwwwwwwwkkkkwwwwwwwk..',
-      '..kwwwwwwwwwwwwwwwwwwk..',
-      '..kwkkkkkwwwwwwwwwwwwk..',
-      '..kwkmmmkwwwwwwwwwwwwk..',
-      '..kwkmmmkwwsssssssssdk..',
-      '..kwkkkkkwsssssssssssk..',
-      '..kwsssssssssssssssssk..',
-      '..kwsssssssssssssssssk..',
-      '..kddddddddddddddddddk..',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '........................',
-      '........................',
-      '........................',
-      '........................',
-    ],
-    github: [
-      '........................',
-      '.......kkkkkkkkkk.......',
-      '.....kkwwwwwwwwwwkk.....',
-      '....kwwwwwwwwwwwwwwk....',
-      '...kwwwwwwwwwwwwwwwwk...',
-      '..kwwwkkwwwwwwwwkkwwwk..',
-      '..kwwkddkwwwwwwkddkwwk..',
-      '..kwwkddkwwwwwwkddkwwk..',
-      '..kwwwkkwwwwwwwwkkwwwk..',
-      '..kwwwwwwwwwwwwwwwwwwk..',
-      '..kwwwwwwwkkkkwwwwwwwk..',
-      '..kwwwwwwwkwwkwwwwwwwk..',
-      '...kwwwwwwwwwwwwwwwwk...',
-      '...kwwwwwwwwwwwwwwwwk...',
-      '....kwwwwwwwwwwwwwwk....',
-      '.....kwwwkwwwwkwwwk.....',
-      '......kwwkwwwwkwwk......',
-      '.......kkkwwwwkkk.......',
-      '.........kwwwwk.........',
-      '.........kwwwwk.........',
-      '..........kkkk..........',
-      '........................',
-      '........................',
-      '........................',
-    ],
-    linkedin: [
-      '........................',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '..kwwwwwwwwwwwwwwwwwwk..',
-      '..kwcccccccccccccccccd..',
-      '..kwccwwccccccccccccdd..',
-      '..kwccwwccccccccccccdd..',
-      '..kwcccccccccccccccccd..',
-      '..kwccwwccccwwwwcccccd..',
-      '..kwccwwcccwwwwwwccccd..',
-      '..kwccwwcccwwccwwccccd..',
-      '..kwccwwcccwwccwwccccd..',
-      '..kwccwwcccwwccwwccccd..',
-      '..kwccwwcccwwccwwccccd..',
-      '..kwccwwcccwwccwwccccd..',
-      '..kwccwwcccwwccwwccccd..',
-      '..kwcccccccccccccccccd..',
-      '..kwccccccccccccccccdd..',
-      '..kddddddddddddddddddd..',
-      '..kkkkkkkkkkkkkkkkkkkk..',
-      '........................',
-      '........................',
-      '........................',
-      '........................',
-      '........................',
-    ],
-
-    dribbble: [
-      '........................',
-      '........................',
-      '...........kk...........',
-      '........kkkkkkkk........',
-      '......kkmwwmmmwwkk......',
-      '.....kkwwwwmwwwrrkk.....',
-      '....kkmmwwwwwwrrrrkk....',
-      '....kwwwwwwwmrrrrrrk....',
-      '...kwwwwwwwmrrrrrrrrk...',
-      '...kmmmmmwwwrrrrrrrrk...',
-      '...kmmmmmwwwwrrrrrrrk...',
-      '..kkmmmmmrwwwrrrrrrrkk..',
-      '..kkmmmmrrwwwrrrrrrrkk..',
-      '...kmmmrrrwwwwrrrrrrk...',
-      '...kmmrrrrrwwwrrrrrrk...',
-      '...kmrrrrrrwwwrrrrrrk...',
-      '....krrrrrrrwwwrrrrk....',
-      '....kkrrrrrrwwwrrrkk....',
-      '.....kkrrrrrrwwrrkk.....',
-      '......kkrrrrrwwwkk......',
-      '........kkkkkkkk........',
-      '...........kk...........',
-      '........................',
-      '........................',
-    ],
-
-    dribbble: [
-      '........................',
-      '........................',
-      '...........kk...........',
-      '........kkkkkkkk........',
-      '......kkwwmmmmmmkk......',
-      '.....kkwwwwmmmmmwkk.....',
-      '....kkwwwwwmmwwwwwkk....',
-      '....kwwwwwwwwwwwwmmk....',
-      '...kwwwwwwwwwwmmmmrrk...',
-      '...kwwwwwwwwmmmmmrrrk...',
-      '...kmmmmmwwwwmmmrrrrk...',
-      '..kkmmmmmmwwwmmrrrrrkk..',
-      '..kkmmmmmmwwwwrrrrrrkk..',
-      '...kmmmmmmmwwwwrrrrrk...',
-      '...kmmmmmmmmwwwrrrrrk...',
-      '...kmmmmmmmrwwwwrrrrk...',
-      '....kmmmmmrrwwwwwrrk....',
-      '....kkmmmrrrrwwwwwkk....',
-      '.....kkmrrrrrwwwwkk.....',
-      '......kkrrrrrwwwkk......',
-      '........kkkkkkkk........',
-      '...........kk...........',
-      '........................',
-      '........................',
-    ],
-
-    dribbble: [
-      '........................',
-      '........................',
-      '...........kk...........',
-      '........kkkkkkkk........',
-      '......kkmwwmmmwwkk......',
-      '.....kkwwwwmwwwrrkk.....',
-      '....kkmmwwwwwwrrrrkk....',
-      '....kwwwwwwwmrrrrrrk....',
-      '...kwwwwwwwmrrrrrrrrk...',
-      '...kmmmmmwwwrrrrrrrrk...',
-      '...kmmmmmwwwwrrrrrrrk...',
-      '..kkmmmmmrwwwrrrrrrrkk..',
-      '..kkmmmmrrwwwrrrrrrrkk..',
-      '...kmmmrrrwwwwrrrrrrk...',
-      '...kmmrrrrrwwwrrrrrrk...',
-      '...kmrrrrrrwwwrrrrrrk...',
-      '....krrrrrrrwwwrrrrk....',
-      '....kkrrrrrrwwwrrrkk....',
-      '.....kkrrrrrrwwrrkk.....',
-      '......kkrrrrrwwwkk......',
-      '........kkkkkkkk........',
-      '...........kk...........',
-      '........................',
-      '........................',
-    ],
-  }
-
 
   /* ==================================================================
      THE CONTACT ICONS, AT FULL RESOLUTION
@@ -701,26 +399,6 @@
     cv.dataset.hires = '1'
   })
 
-  document.querySelectorAll('canvas[data-icon]').forEach((cv) => {
-    if (cv.dataset.hires) return
-    const art = ICONS[cv.dataset.icon]
-    if (!art) return
-    const N = 24
-    cv.width = N
-    cv.height = N
-    const g = cv.getContext('2d')
-    g.imageSmoothingEnabled = false
-    for (let y = 0; y < art.length; y++) {
-      const row = art[y]
-      for (let x = 0; x < row.length; x++) {
-        const col = ICON_PAL[row[x]]
-        if (!col) continue
-        g.fillStyle = col
-        g.fillRect(x, y, 1, 1)
-      }
-    }
-  })
-
   /* ==================================================================
      THE CURSOR
 
@@ -981,67 +659,55 @@
 
     let current = null
 
-    /* Showing a page is three things: put the others away, reset the
-       scroll, and reset the view to its deck — landing on a stage you
-       opened ten minutes ago is disorienting in a way that landing on
-       the rack never is. */
+    /* Showing a page is two things: put the others away, and reset the
+       scroll — landing halfway down a case study you read ten minutes ago
+       is disorienting in a way that landing at its title never is. */
     function show(id) {
-      // where we came FROM, so an L2 page's back link can point there
-      const fromId = current
       pages.forEach((el, key) => {
         const on = key === id
         el.hidden = !on
         el.classList.toggle('is-on', on)
-        if (on) {
-          showDeck(el)
-          el.scrollTop = 0
-        }
+        if (on) el.scrollTop = 0
       })
       document.documentElement.dataset.page = id
       current = id
-      // the weather reads this to know what it is landing on
       const live = pages.get(id)
+      // the weather reads this to know what it is landing on
       pages.forEach((el) => el.removeAttribute('data-active'))
       if (live) live.setAttribute('data-active', '')
 
-      /* The back link names where you came from. Arrive at an article from
-         the homepage and it says "Home"; arrive from the writing index and
-         it says "All writing". Referrer wins when it is one of the hubs;
-         otherwise the link falls back to the page's natural parent (an
-         article to the index, everything else to home). */
-      if (live) {
-        const back = live.querySelector('.l2nav .cta')
-        if (back) {
-          const HUBS = { home: 'Home', writing: 'All writing' }
-          let target
-          if (fromId && HUBS[fromId]) {
-            target = { href: '#' + fromId, label: HUBS[fromId] }
-          } else if (/^r\d+$/.test(id)) {
-            target = { href: '#writing', label: 'All writing' }
-          } else {
-            target = { href: '#home', label: 'Home' }
-          }
-          back.setAttribute('href', target.href)
-          back.innerHTML = '<span aria-hidden="true">←</span> ' + target.label
-        }
-      }
-
-      /* Two treatments now, not three:
-           home  — the living city, full strength; it IS the shot.
-           L2    — every article, index, about AND case study opens as a
-                   modal over the SAME backdrop: the city crosses at half
-                   light behind a dark scrim, dimmed and pushed back but
-                   still there. One simple thing instead of a frameless
-                   reading page and a framed case study. `kind` (read vs
-                   stage) still drives the type/label styling; the scene
-                   treatment is shared. */
-      const kind = id === 'home' ? 'home'
-        : (live && live.dataset.kind === 'read') ? 'read' : 'stage'
+      /* Two grounds, three treatments:
+           home — the living city at full strength; it IS the shot.
+           case — a case study: a calm, opaque reading card over a dark
+                  scrim, because the work is the subject and a skyline
+                  moving behind a systems diagram is a distraction.
+           read — the about page, same ground, editorial type. */
+      const kind = id === 'home' ? 'home' : (live && live.dataset.kind) || 'read'
       document.documentElement.dataset.l2 = kind === 'home' ? '' : kind
       if (window.__scene) {
-        // never the full lights-out — we want the city visible, just dim
         if (window.__scene.setFocus) window.__scene.setFocus(false)
         if (window.__scene.setStage) window.__scene.setStage(kind !== 'home')
+      }
+
+      /* The tab, and anything that reads it — history, bookmarks, the
+         preview on a pasted link. A hash route changes the view without a
+         document load, so nothing updates this unless we do. */
+      const NAME = 'Vaibhav Vishal'
+      const t = live && live.querySelector('.cs__title, .read__title')
+      document.title = id === 'home'
+        ? NAME + ' — Product Designer'
+        : (t ? t.textContent.trim() + ' — ' + NAME : NAME)
+
+      /* Announce the change. A hash route swaps the whole view without a
+         document load, so a screen reader is given nothing unless we say
+         something; and focus has to be moved off whatever link was just
+         followed or the next Tab resumes on the page that has gone. */
+      if (live) {
+        const h = live.querySelector('h1, h2')
+        if (h) {
+          h.setAttribute('tabindex', '-1')
+          h.focus({ preventScroll: true })
+        }
       }
     }
 
@@ -1078,6 +744,20 @@
     const CELL = 10
     let irisBusy = false
 
+    /* rAF does not run in a background tab. Without a guard, a navigation
+       fired while the tab is hidden — a restored session, a link opened in
+       the background, a phone locked mid-tap — starts the cover, never gets
+       another frame, and the visitor comes back to an opaque black page with
+       no way out. Three belts: do not start one while hidden, finish it if
+       the tab goes away mid-run, and a wall-clock backstop under everything.
+       A transition is decoration; it must never be able to trap the page. */
+    function finishIris(id) {
+      iris.classList.remove('is-on')
+      if (window.__scene && window.__scene.pause) window.__scene.pause(false)
+      irisBusy = false
+      if (id != null && current !== id) show(id)
+    }
+
     function irisRun(id) {
       irisBusy = true
       /* Freeze the city for the duration. The wipe covers it completely
@@ -1096,12 +776,24 @@
          actually visible as it crosses rather than being a hard arc that
          is over before the eye catches it. */
       const band = maxR * 0.24
-      /* Longer, so the wipe reads as a deliberate movement — closing,
-         holding black, opening — instead of a flash. Still well under a
-         second door to door. */
-      const COVER = 300, HOLD = 90, REVEAL = 300
+      /* Long enough to read as one movement — close, hold, open — and
+         short enough that nobody waits on it. Under half a second, door
+         to door. */
+      const COVER = 200, HOLD = 60, REVEAL = 220
       const cols = Math.ceil(W / CELL), rows = Math.ceil(H / CELL)
       let t0 = null, swapped = false, released = false
+      let done = false
+
+      const bail = () => {
+        if (done) return
+        done = true
+        document.removeEventListener('visibilitychange', onHide)
+        clearTimeout(guard)
+        finishIris(id)
+      }
+      const onHide = () => { if (document.hidden) bail() }
+      document.addEventListener('visibilitychange', onHide)
+      const guard = setTimeout(bail, COVER + HOLD + REVEAL + 600)
 
       function draw(now) {
         if (t0 == null) t0 = now
@@ -1113,12 +805,7 @@
         if (e < COVER) { coverR = ease(e / COVER) * (maxR + band); holeR = 0 }
         else if (e < COVER + HOLD) { coverR = maxR + band; holeR = 0 }
         else if (e < COVER + HOLD + REVEAL) { coverR = maxR + band; holeR = ease((e - COVER - HOLD) / REVEAL) * (maxR + band) }
-        else {
-          iris.classList.remove('is-on')
-          if (window.__scene && window.__scene.pause) window.__scene.pause(false)
-          irisBusy = false
-          return
-        }
+        else { bail(); return }
 
         // swap the page while the frame is fully black
         if (!swapped && e >= COVER) { swapped = true; show(id) }
@@ -1140,82 +827,52 @@
             if (d < coverR - th && !(d < holeR - th)) ictx.fillRect(gx * CELL, gy * CELL, CELL, CELL)
           }
         }
-        requestAnimationFrame(draw)
+        if (!done) requestAnimationFrame(draw)
       }
       requestAnimationFrame(draw)
     }
 
     function go(id, instant) {
       if (id === current) return
-      if (instant || !stepped || irisBusy) { show(id); return }
+      if (instant || !stepped || irisBusy || document.hidden) { show(id); return }
       irisRun(id)
     }
+
+    /* ---- in-page anchors ----
+       #work and the skip link point at a section, not at a route. The page
+       is a fixed, overflow-scrolling container rather than the document, so
+       the browser will not always scroll it for us — and letting these
+       write to location.hash would put a non-route in the history and make
+       the back button lie. Handle them here: scroll the container, move
+       focus so a keyboard user actually lands there, leave the URL alone. */
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href^="#"]')
+      if (!a) return
+      const id = a.getAttribute('href').slice(1)
+      if (!id || pages.has(id)) return
+      const target = document.getElementById(id)
+      if (!target) return
+      e.preventDefault()
+      /* Scroll the page container rather than calling scrollIntoView: the
+         scroller is the .page, not the document, and a smooth scroll does
+         not run in a background tab — so the behaviour is only smooth when
+         there is somebody there to see it. */
+      const scroller = target.closest('.page') || document.scrollingElement
+      const top = scroller.scrollTop + target.getBoundingClientRect().top - 24
+      const smooth = stepped && !document.hidden
+      scroller.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' })
+      const h = target.querySelector('h1, h2, h3') || target
+      h.setAttribute('tabindex', '-1')
+      h.focus({ preventScroll: true })
+    })
 
     window.addEventListener('hashchange', () => go(routeOf()))
     show(routeOf())
 
-    /* ---------------- deck <-> level ----------------
-
-       WORK and ABOUT are select screens, not documents. The page holds
-       two views — the rack of cards and one .level per card — and
-       choosing a card swaps them. Nothing navigates, nothing opens:
-       it is the same page changing what it is showing, which is how a
-       game does it and the only place a route would be overkill. */
-    let lastCard = null
-
-    function showDeck(scope) {
-      const root = scope || document
-      root.querySelectorAll('.level').forEach((l) => (l.hidden = true))
-      root.querySelectorAll('.deck').forEach((d) => (d.hidden = false))
-    }
-
-    function showLevel(id) {
-      const lvl = document.getElementById(id)
-      if (!lvl) return
-      const page = lvl.closest('.page')
-      page.querySelectorAll('.deck').forEach((d) => (d.hidden = true))
-      page.querySelectorAll('.level').forEach((l) => (l.hidden = l.id !== id))
-      // posters inside a hidden pane could not size themselves; now
-      // that it is visible, let the generator have another go
-      if (window.Posters) window.Posters.paintAll(lvl)
-      page.scrollTop = 0
-      const back = lvl.querySelector('[data-back]')
-      if (back) back.focus()
-    }
-
-    document.addEventListener('click', (e) => {
-      const go2 = e.target.closest('[data-goto]')
-      if (go2) {
-        e.preventDefault()
-        if (go2.classList.contains('card')) lastCard = go2
-        showLevel(go2.dataset.goto)
-        return
-      }
-      const back = e.target.closest('[data-back]')
-      if (back) {
-        e.preventDefault()
-        const page = back.closest('.page')
-        showDeck(page)
-        page.scrollTop = 0
-        // hand focus back to the card they came from, so keyboard users
-        // are not dumped at the top of the list
-        if (lastCard && page.contains(lastCard)) lastCard.focus()
-      }
-    })
-
-    /* Escape goes up one level at a time: out of a stage to the rack
-       first, and only home if you are already there. Escape that skips
-       a level feels like a trapdoor. */
+    /* Escape goes home. There is one level of depth now — home, and a
+       page — so there is nothing to step back through. */
     document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return
-      const openLevel = document.querySelector('.page.is-on .level:not([hidden])')
-      if (openLevel) {
-        const page = openLevel.closest('.page')
-        showDeck(page)
-        if (lastCard && page.contains(lastCard)) lastCard.focus()
-        return
-      }
-      if (current !== 'home') location.hash = '#home'
+      if (e.key === 'Escape' && current !== 'home') location.hash = '#home'
     })
   }
 
@@ -1303,6 +960,32 @@
     })
   }
 
+  /* ==================================================================
+     THE CONTROLS BELONG TO THE SCENE
+
+     Which skyline you are standing over, and whether it is raining on it,
+     are controls for the first fold. Once the reading ground has covered
+     the city they are two buttons floating over a work index, pointing at
+     something nobody can see — game chrome sitting on top of the part of
+     the page that has to be taken seriously.
+
+     So they leave with the city. An observer on the hero rather than a
+     scroll listener, because this needs to be true and not approximately
+     true, and it costs nothing per frame.
+     ================================================================== */
+  const heroEl = document.querySelector('.hero')
+  const controlsEl = document.querySelector('.controls')
+  if (heroEl && controlsEl && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0]
+        controlsEl.toggleAttribute('data-away', e.intersectionRatio < 0.35)
+      },
+      { threshold: [0, 0.35, 1] }
+    )
+    io.observe(heroEl)
+  }
+
   /* ---------------- the Konami code ----------------
      Up up down down left right left right B A. It belongs on a title
      screen more than it belongs anywhere else, and the check is a
@@ -1324,39 +1007,9 @@
     document.documentElement.dataset.secret = 'on'
     if (window.__scene && window.__scene.setSecret) window.__scene.setSecret(true)
 
+    // one span, so the flex row and its separators still hold
     const role = document.querySelector('.role')
-    if (role) role.textContent = 'PLAYER 1 READY'
+    if (role) role.innerHTML = '<span>PLAYER 1 READY</span>'
   })
 
-  /* ---------------- keyboard menu ----------------
-     Arrow keys move the cursor, 1-3 jump straight to a row, Enter
-     follows it. The cursor is shown by :hover / :focus-visible in CSS,
-     so this only has to move focus. */
-  const items = Array.from(document.querySelectorAll('.menu a'))
-  if (!items.length) return
-
-  let index = -1
-
-  const focusItem = (next) => {
-    index = (next + items.length) % items.length
-    items[index].focus()
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      focusItem(index + 1)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      focusItem(index - 1)
-    } else if (e.key >= '1' && e.key <= String(items.length)) {
-      focusItem(Number(e.key) - 1)
-    }
-  })
-
-  items.forEach((item, i) => {
-    item.addEventListener('focus', () => {
-      index = i
-    })
-  })
 })()
