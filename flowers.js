@@ -605,14 +605,20 @@
        leaves bald gaps, so a watered bed came up in patches; an even grid
        fills flat. Bloom centres still sit at least their own radius above
        the ground, so no head is sliced by the bottom edge. */
+    // THREE staggered rows now, not two: the extra row packs the bed front
+    // to back so a watered patch comes up dense and layered rather than as a
+    // single thin line of heads. Each row is offset a third of a column from
+    // the last, and sits a little further up the band.
+    const ROWS = 3
     const cols = Math.max(4, Math.round(CAP / 2))
     const colW = (W + 12) / cols
-    for (let row = 0; row < 2; row++) {
+    for (let row = 0; row < ROWS; row++) {
       for (let i = 0; i < cols; i++) {
         const jitter = (rnd() - 0.5) * colW * 0.7
-        const x = -6 + (i + 0.5 + (row ? 0.5 : 0)) * colW + jitter
-        // back row sits a little higher up the band; front row hugs the floor
-        const lift = (row ? 0.35 + rnd() * 0.4 : rnd() * 0.4) * (geo.baseDepth * 0.7)
+        const x = -6 + (i + 0.5 + row * 0.34) * colW + jitter
+        // front row hugs the floor; each row back sits a step higher up
+        const t = row / (ROWS - 1)
+        const lift = (t * 0.55 + rnd() * 0.35) * (geo.baseDepth * 0.7)
         const y = H - RMAX - 2 - lift
         const R = def.size[0] + rnd() * (def.size[1] - def.size[0])
         spots.push({ x: x, y: y, R: R, c: 1 - lift / (geo.baseDepth + 1) })
@@ -783,10 +789,10 @@
   const STILL = window.matchMedia('(prefers-reduced-motion: reduce)')
   const FPS = 12
   const GROW_STEP = 0.09    // how much a growing plant climbs per frame
-  const POUR = 44           // the core of the pour: a full, growing bloom
-  const POUR_WIDE = 120     // and a wider reach that nudges the sides awake
+  const POUR = 58           // the core of the pour: a full, growing bloom
+  const POUR_WIDE = 150     // and a wider reach that nudges the sides awake
   const GROW_MAX = 1.15     // repeated watering grows a bloom a little bigger
-  const SPREAD = 30         // a grown bloom coaxes a neighbour this near
+  const SPREAD = 42         // a grown bloom coaxes a neighbour this near
 
   let running = false
   let lastStep = 0
@@ -934,12 +940,19 @@
        under the copyright. */
     const room = Math.round(parseFloat(cs.paddingBottom) / SCALE - def.size[1] - GAP)
     const baseDepth = clamp(room, 14, 26)
-    // headroom above the band for a bloom's head and a little growth
-    const H = baseDepth + Math.ceil(def.size[1] * 1.9) + 6
+    /* Headroom above the band for a bloom's head plus its growth. The bed
+       is anchored to the bottom (blooms sit at H − radius − lift, stems root
+       at H), so this is pure empty space at the TOP of the canvas — growing
+       it lifts the clip line clear of the tallest, densest, most-watered
+       heads without moving a single flower up the screen. The third row and
+       the bigger watered blooms needed the extra room. */
+    const H = baseDepth + Math.ceil(def.size[1] * 2.9) + 12
     // a dense seed grid so a watered bed fills in fully, like a real bed,
     // and there is always somewhere to spread into — including the sides.
     // They start invisibly small, so the bed reads as bare until watered.
-    const count = clamp(Math.round(cssW / 22), 18, 120)
+    // Seeded thick (a seed roughly every 15px of width) so watering brings
+    // up a full, crowded bed rather than a thin scatter.
+    const count = clamp(Math.round(cssW / 15), 28, 200)
 
     artW = W
     artH = H
@@ -972,8 +985,13 @@
     canvas.width = W * up
     canvas.height = H * up
     canvas.style.height = (H * SCALE) + 'px'
-    // the watering surface covers exactly the bed's band
-    waterer.style.height = (H * SCALE) + 'px'
+    /* The canvas is taller than the bed now — the extra is empty headroom at
+       the top so heads never clip. The watering SURFACE, though, must stay
+       over the flowers only, never up over the copyright or the links: size
+       it to the planted band (the seed depth plus one bloom of growth), not
+       to the whole canvas. */
+    const bandH = baseDepth + Math.ceil(def.size[1] * 1.6) + 6
+    waterer.style.height = (Math.min(H, bandH) * SCALE) + 'px'
     paint()
   }
 

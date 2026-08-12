@@ -2937,11 +2937,44 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   border: 2px solid var(--panel-edge);
   background: var(--panel);
   color: var(--panel-text);
-  box-shadow: 4px 4px 0 var(--ink);
+  /* Depth is built, not blurred — this is a pixel scene. A bevel gives the
+     face its light (highlight top-left, shade bottom-right), and a stack of
+     hard offset shadows in the ink colour builds a solid extruded wall down
+     and to the right, so the button reads as a 3D block standing off the
+     page rather than a card with a drop shadow. */
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.24),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.34),
+    2px 2px 0 var(--ink),
+    4px 4px 0 var(--ink),
+    6px 6px 0 var(--ink),
+    8px 8px 0 var(--ink);
 }
+/* hover lifts the block a step off its wall — the wall grows, the face rises */
 .cta:hover,
-.cta:focus-visible { color: var(--panel-edge); background: var(--panel-bar); outline: none; }
-.cta:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+.cta:focus-visible {
+  color: var(--panel-edge);
+  background: var(--panel-bar);
+  outline: none;
+  transform: translate(-2px, -2px);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.24),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.34),
+    2px 2px 0 var(--ink),
+    4px 4px 0 var(--ink),
+    6px 6px 0 var(--ink),
+    8px 8px 0 var(--ink),
+    10px 10px 0 var(--ink),
+    12px 12px 0 var(--ink);
+}
+/* press drops the whole block flat onto its wall — the extrusion collapses */
+.cta:active {
+  transform: translate(8px, 8px);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.16),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.38),
+    0 0 0 var(--ink);
+}
 /* primary: the filled, accent CTA for the two forward actions on home */
 .cta--primary { background: var(--panel-edge); color: var(--ink); border-color: var(--ink); }
 .cta--primary:hover,
