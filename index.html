@@ -25,58 +25,17 @@
 </head>
 <body>
 
-<!-- Boot screen. A POST sequence, because the whole page is dressed as
-     a machine and this is what a machine does first. It also quietly
-     tells you what is in here: weather, a city, a cat. -->
+<!-- Loading. It was a POST sequence with a painted attract screen, its
+     own weather, a cat chasing a mouse along the bar and a rotating
+     tip. The name and a bar say the same thing in under a second. -->
 <div class="boot" id="boot">
-
-  <!-- The scene assembles while you watch — and the loader PERFORMS its
-       own status lines: rain starts when it says it is ordering rain,
-       a train crosses when it says the train is delayed, the sky
-       flashes when the thunder rehearses. -->
-  <div class="boot__stars" id="bootStars" aria-hidden="true"></div>
-  <div class="boot__moon" aria-hidden="true"></div>
-  <span class="boot__train" aria-hidden="true"></span>
-  <div class="boot__city" id="bootCity" aria-hidden="true"></div>
-  <div class="boot__city boot__city--near" id="bootCityNear" aria-hidden="true"></div>
-  <canvas class="boot__art" id="bootArt" aria-hidden="true"></canvas>
-  <div class="boot__lanterns" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-  <div class="boot__petals" id="bootPetals" aria-hidden="true"></div>
-  <div class="boot__rain" id="bootRain" aria-hidden="true"></div>
-  <span class="boot__duck" aria-hidden="true"></span>
-
   <div class="boot__inner">
-
-    <p class="boot__brand">PORTFOLIO<b>BIOS</b> v2.6</p>
-
     <h1 class="boot__wm">
       <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
       <span class="wordmark__line wordmark__line--b">VISHAL</span>
     </h1>
-
-    <ul class="boot__lines">
-      <li><span>VIDEO</span><i>960 x 540, 64 LEVELS</i><b>OK</b></li>
-      <li><span>SAKURA</span><i>APRIL, AFTER DARK</i><b>OK</b></li>
-      <li><span>SKYLINE</span><i>TOKYO, 30+ LANDMARKS</i><b>OK</b></li>
-      <li><span>YAMANOTE</span><i>OUTER LOOP</i><b class="warn">DELAYED</b></li>
-      <li><span>KONBINI</span><i>OPEN, AS EVER</i><b>24H</b></li>
-      <li><span>VENDING</span><i>1 OF 5,500,000</i><b>STOCKED</b></li>
-      <li><span>ROOFTOP</span><i>1 CAT</i><b>PURRING</b></li>
-    </ul>
-
-    <!-- The bar is a chase: a mouse runs ahead of the cat the whole
-         way, and gets away at the end. When the bar stalls, the cat
-         sits down and waits - watch for it. -->
-    <div class="boot__track">
-      <span class="boot__mouse" id="bootMouse" aria-hidden="true"></span>
-      <span class="boot__cat" id="bootCat" aria-hidden="true"></span>
-      <div class="boot__barwrap"><span class="boot__bar" id="bootBar"></span></div>
-      <p class="boot__pct"><span id="bootPct">0</span>%</p>
-    </div>
-
-    <p class="boot__status" id="bootStatus">&nbsp;</p>
-
-    <p class="boot__tip">TIP<b>&gt;</b> <span id="bootTip">&nbsp;</span></p>
+    <p class="boot__label">NOW LOADING</p>
+    <div class="boot__barwrap"><span class="boot__bar" id="bootBar"></span></div>
   </div>
 </div>
 
@@ -153,28 +112,37 @@
         <span class="wordmark__line wordmark__line--b">VISHAL</span>
       </h1>
 
-      <p class="role">YOUR ROLE &middot; PORTFOLIO 2026</p>
+      <p class="role">PRODUCT DESIGNER &middot; PORTFOLIO 2026</p>
 
       <div class="intro">
-        <p>I'm a product designer based in <b>CITY</b>, currently
-           designing at <b>COMPANY</b>. Before that I spent a few years
-           as a frontend engineer, which is why I still think in
-           components.</p>
+        <p>A product designer from <b>India</b> with <b>6+ years</b> of
+           experience in B2C design. I focus on building from 0 to 1,
+           making data-driven decisions, and crafting intuitive UIs.</p>
       </div>
 
+      <!-- ---- selected work ----
+           The four frames keep the size they always had. What goes in
+           them is drawn, not photographed: posters.js takes the number,
+           the title and one idea from each project and paints a cover
+           at 176x110, which upscales hard and stays sharp at any tile
+           width. Each one has something small hidden in it. -->
       <h2 class="sect">SELECTED WORK</h2>
 
       <ul class="cards">
-        <li><a class="tile" href="#w1" aria-label="W1"></a></li>
-        <li><a class="tile" href="#w2" aria-label="W2"></a></li>
-        <li><a class="tile" href="#w3" aria-label="W3"></a></li>
-        <li><a class="tile" href="#w4" aria-label="W4"></a></li>
+        <li><a class="tile" href="#w1" aria-label="01 — Lights, Camera, Banners: driving user engagement through dynamic banner design">
+          <canvas data-poster="cover" data-seed="1" aria-hidden="true"></canvas></a></li>
+        <li><a class="tile" href="#w2" aria-label="02 — The Sound of Style: a sleek, smarter music player built for seamless listening">
+          <canvas data-poster="cover" data-seed="2" aria-hidden="true"></canvas></a></li>
+        <li><a class="tile" href="#w3" aria-label="03 — Everything, All At Once: unifying OTT subscription and viewing experience">
+          <canvas data-poster="cover" data-seed="3" aria-hidden="true"></canvas></a></li>
+        <li><a class="tile" href="#w4" aria-label="04 — How to Decide?: easing user's decision making to purchase a service">
+          <canvas data-poster="cover" data-seed="4" aria-hidden="true"></canvas></a></li>
       </ul>
 
       <div class="intro">
-        <p>Previously I worked in-house on design systems, and before
-           that freelance with small teams who needed one person to do
-           all of it.</p>
+        <p>Six years of it has been building from nothing: the first
+           version, the first users, and the argument about what the
+           thing is actually for.</p>
       </div>
 
       <!-- ---- articles ----
@@ -227,9 +195,10 @@
            Same idea, in this machine's voice. -->
       <h2 class="sect">ABOUT</h2>
       <div class="intro">
-        <p>I grew up in <b>HOMETOWN</b> and moved for the work. I got
-           here through engineering, which is why I still care more
-           about how a thing is built than how it presents.</p>
+        <p>Six-plus years of B2C product design, most of it spent at the
+           <b>0 to 1</b> end: the first version, the first users, and
+           letting the data settle the arguments rather than the
+           loudest opinion in the room.</p>
       </div>
 
       <!-- ---- the shelf ----
@@ -238,21 +207,23 @@
            says what they are into, which is the thing that actually
            tells you who you would be working with. -->
       <ul class="shelf">
-        <li data-cover="book" data-seed="7"><span>READING</span><b>BOOK TITLE</b><i>Author</i></li>
-        <li data-cover="game" data-seed="12"><span>PLAYING</span><b>GAME TITLE</b><i>Platform</i></li>
-        <li data-cover="film" data-seed="23"><span>WATCHING</span><b>FILM OR SHOW</b><i>Director</i></li>
-        <li data-cover="music" data-seed="31"><span>LISTENING</span><b>ALBUM TITLE</b><i>Artist</i></li>
+        <li data-cover="book" data-seed="7"><span>READING</span><b>BEHAVE</b><i>Robert Sapolsky</i></li>
+        <li data-cover="game" data-seed="12"><span>PLAYING</span><b>BALATRO</b><i>LocalThunk</i></li>
+        <li data-cover="film" data-seed="23"><span>WATCHING</span><b>FOR ALL MANKIND</b><i>Apple TV+</i></li>
+        <li data-cover="cart" data-seed="31"><span>BUILT</span><b>CUSTOM KEYBOARD</b><i>Keycaps &amp; switches</i></li>
       </ul>
 
       <div class="intro">
-        <p>Things I am bad at: estimating, letting a draft go, and
-           saying no to a side project. This is the most likeable
-           paragraph on any about page and almost nobody writes it.</p>
+        <p>Outside the main quests I read fiction, and mostly graphic
+           novels. I used to grind tactical shooters and moved on —
+           these days the competitive urge goes into weight training
+           instead, logged in detail, in a gym at home.</p>
       </div>
 
       <div class="intro">
-        <p>Away from the desk it's bouldering, too many podcasts, and a
-           standing argument about whether filter coffee counts.</p>
+        <p>To reset I pour paint, which is calm in a way a screen never
+           is, and I tinker with hardware — an 8TB mini server that
+           exists for no reason beyond wanting to build it.</p>
 
         <p>Thanks for visiting. If you want to work together, or just
            want to say hello, here are the ways to reach me.</p>
@@ -265,7 +236,7 @@
            that it is quiet. Nobody needs to be TOLD that an envelope
            is email. -->
       <ul class="links">
-        <li><a href="mailto:you@example.com" title="you@example.com">
+        <li><a href="mailto:vaibhavvishalece@gmail.com" title="vaibhavvishalece@gmail.com">
           <canvas class="links__art" data-icon="mail" aria-hidden="true"></canvas>
           <span class="links__name">EMAIL</span></a></li>
         <li><a href="https://linkedin.com/in/handle" title="linkedin.com/in/handle">
@@ -292,9 +263,9 @@
   <section class="page" data-page="w1" hidden>
     <article class="col col--doc cs">
       <p class="cs__eyebrow">PROJECT 01 &middot; PRODUCT DESIGN &middot; 2025 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">PROJECT ONE</h2>
-      <p class="cs__lede">A one-line summary of the outcome — the result in a sentence, not the brief.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="3" aria-hidden="true"></canvas></span>
+      <h2 class="cs__title">LIGHTS, CAMERA, BANNERS</h2>
+      <p class="cs__lede">Driving user engagement through dynamic banner design.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="1" aria-hidden="true"></canvas></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Lead Product Designer</dd></div>
         <div><dt>Timeline</dt><dd>2025 · 4 months</dd></div>
@@ -317,17 +288,17 @@
       </div>
       <h3 class="cs__h">Outcome</h3>
       <div class="prose"><p>What shipped and what changed because of it — a number if you have one, a learning if you don't. Close on the result, not the process.</p></div>
-      <p class="cs__cta"><a href="mailto:you@example.com?subject=PROJECT%20ONE%20walkthrough">Request a walkthrough &rarr;</a></p>
-      <a class="cs__next" href="#w2">Next → PROJECT TWO</a>
+      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=Lights%2C%20Camera%2C%20Banners%20walkthrough">Request a walkthrough &rarr;</a></p>
+      <a class="cs__next" href="#w2">Next → THE SOUND OF STYLE</a>
     </article>
   </section>
 
   <section class="page" data-page="w2" hidden>
     <article class="col col--doc cs">
       <p class="cs__eyebrow">PROJECT 02 &middot; DESIGN SYSTEMS &middot; 2024 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">PROJECT TWO</h2>
-      <p class="cs__lede">A one-line summary of the outcome.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="17" aria-hidden="true"></canvas></span>
+      <h2 class="cs__title">THE SOUND OF STYLE</h2>
+      <p class="cs__lede">A sleek, smarter music player built for seamless listening.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="2" aria-hidden="true"></canvas></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Design Systems Lead</dd></div>
         <div><dt>Timeline</dt><dd>2024 · 6 months</dd></div>
@@ -350,17 +321,17 @@
       </div>
       <h3 class="cs__h">Outcome</h3>
       <div class="prose"><p>The result — a number if you have one, a learning if you don't.</p></div>
-      <p class="cs__cta"><a href="mailto:you@example.com?subject=PROJECT%20TWO%20walkthrough">Request a walkthrough &rarr;</a></p>
-      <a class="cs__next" href="#w3">Next → PROJECT THREE</a>
+      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=The%20Sound%20of%20Style%20walkthrough">Request a walkthrough &rarr;</a></p>
+      <a class="cs__next" href="#w3">Next → EVERYTHING, ALL AT ONCE</a>
     </article>
   </section>
 
   <section class="page" data-page="w3" hidden>
     <article class="col col--doc cs">
       <p class="cs__eyebrow">PROJECT 03 &middot; MOBILE &middot; 2023 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">PROJECT THREE</h2>
-      <p class="cs__lede">A one-line summary of the outcome.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="41" aria-hidden="true"></canvas></span>
+      <h2 class="cs__title">EVERYTHING, ALL AT ONCE</h2>
+      <p class="cs__lede">Unifying OTT subscription and viewing experience.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="3" aria-hidden="true"></canvas></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Product Designer</dd></div>
         <div><dt>Timeline</dt><dd>2023 · 3 months</dd></div>
@@ -383,17 +354,17 @@
       </div>
       <h3 class="cs__h">Outcome</h3>
       <div class="prose"><p>The result — a number if you have one, a learning if you don't.</p></div>
-      <p class="cs__cta"><a href="mailto:you@example.com?subject=PROJECT%20THREE%20walkthrough">Request a walkthrough &rarr;</a></p>
-      <a class="cs__next" href="#w4">Next → PROJECT FOUR</a>
+      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=Everything%2C%20All%20At%20Once%20walkthrough">Request a walkthrough &rarr;</a></p>
+      <a class="cs__next" href="#w4">Next → HOW TO DECIDE?</a>
     </article>
   </section>
 
   <section class="page" data-page="w4" hidden>
     <article class="col col--doc cs">
       <p class="cs__eyebrow">PROJECT 04 &middot; BRAND &middot; 2022 <span class="cs__nda">UNDER NDA</span></p>
-      <h2 class="cs__title">PROJECT FOUR</h2>
-      <p class="cs__lede">A one-line summary of the outcome.</p>
-      <span class="card__art card__art--wide cs__hero"><canvas data-poster="work" data-seed="88" aria-hidden="true"></canvas></span>
+      <h2 class="cs__title">HOW TO DECIDE?</h2>
+      <p class="cs__lede">Easing user&rsquo;s decision making to purchase a service.</p>
+      <span class="card__art card__art--wide cs__hero"><canvas data-poster="cover" data-seed="4" aria-hidden="true"></canvas></span>
       <dl class="cs__meta">
         <div><dt>Role</dt><dd>Designer</dd></div>
         <div><dt>Timeline</dt><dd>2022 · 2 months</dd></div>
@@ -416,7 +387,7 @@
       </div>
       <h3 class="cs__h">Outcome</h3>
       <div class="prose"><p>The result — a number if you have one, a learning if you don't.</p></div>
-      <p class="cs__cta"><a href="mailto:you@example.com?subject=PROJECT%20FOUR%20walkthrough">Request a walkthrough &rarr;</a></p>
+      <p class="cs__cta"><a href="mailto:vaibhavvishalece@gmail.com?subject=How%20to%20Decide%20walkthrough">Request a walkthrough &rarr;</a></p>
       <a class="cs__next" href="#home">← Back home</a>
     </article>
   </section>

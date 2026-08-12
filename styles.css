@@ -643,30 +643,30 @@ svg { display: block; image-rendering: pixelated; }
 .case__go b { color: var(--panel-accent); }
 
 /* ==================================================================
-   BOOT SCREEN
+   LOADING
    ================================================================== */
-/* The boot screen is a CRT before the OS paints, so it does not follow
-   the theme — it forces the night palette locally. It used to inherit
-   day mode, where --ink is never redefined but --panel-text is: a black
-   screen painted with a light-background palette, and the tip line
-   measured 1.25:1. The theme also collapsed two colour pairs, fusing
-   PORTFOLIO/BIOS into one word and the labels into the OK column. */
+/* It was a POST sequence: a painted attract screen with Fuji, a torii
+   and a sakura branch behind it; rain, petals, a train and a duck each
+   cued to their own status line; seven check lines; a cat chasing a
+   mouse along the bar; and a tip that typed itself in. Two and a half
+   seconds of performance in front of a page whose own first screen is
+   the thing actually worth seeing — and every part of it was another
+   thing to get slightly wrong.
+
+   The name, and a bar under it. Under a second. It still steps in
+   whole cells rather than tweening, because a smooth bar would be the
+   only thing here that slides.
+
+   It still forces the night palette locally: this is a CRT before the
+   OS paints, so it does not follow the theme. */
 .boot {
-  --panel-text: #d8c8ff;
-  --moon: #cfd8f5;
-  --panel-dim: #8f7ab8;
-  --panel-quiet: #a68fd8;
-  --panel-edge: #3ef0ff;
-  --panel-accent: #ff3ea5;
   --wm-face: #7dfcff;
-  --leaf: #6fc44e;
+  --boot-cell: #ff3ea5;
 
   position: fixed;
   inset: 0;
   z-index: 40;
   display: flex;
-  /* A title card, centred — the boot stopped being a BIOS the moment
-     it started performing. */
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -676,483 +676,63 @@ svg { display: block; image-rendering: pixelated; }
 
 .boot[hidden] { display: none; }
 
-.boot__inner {
-  position: relative;
-  z-index: 2;
-  width: min(92vw, 720px);
-}
+.boot__inner { width: min(88vw, 440px); }
 
-/* ---- the performance ----
-   Layers the status lines switch on. Every animation steps. */
-
-/* rain: streaks with staggered starts, visible once ordered */
-.boot__rain {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.boot--rain .boot__rain { visibility: visible; }
-
-.boot__rain span {
-  position: absolute;
-  top: -8%;
-  width: 2px;
-  height: 16px;
-  background: #7d5cc8;
-  animation: bootfall 0.9s steps(14, end) infinite;
-}
-
-@keyframes bootfall {
-  from { transform: translateY(0); }
-  to { transform: translateY(118vh); }
-}
-
-/* the delayed train, finally crossing — BEHIND the skyline, so it
-   flickers through the gaps between towers */
-/* The painted scene. Everything behind the type — sky, moon, Fuji,
-   the town, the water — is one canvas drawn at 480x270 and blown up
-   nearest-neighbour, exactly like the main scene. The starfield, the
-   two CSS skylines and the CSS moon it replaces are hidden rather than
-   deleted, because the loader still counts their elements. */
-.boot__art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  image-rendering: pixelated;
-  z-index: 0;
-  pointer-events: none;
-}
-.boot__stars,
-.boot__city,
-.boot__moon { display: none !important; }
-
-/* ==================================================================
-   THE LOADING SCREEN IS IN JAPAN
-
-   Re-writing the POST copy did nothing for this: you read a boot
-   screen for about a second, and in that second you see shapes and
-   colour, not words. So the Japanese has to be in the picture.
-
-   Three things, all in FRONT of the skyline this time — the mistake
-   with the mountain was putting it behind an opaque row of towers.
-   A torii standing on the roofline, a string of chochin across the
-   top of the frame, and blossom coming down over all of it.
-   ================================================================== */
-
-/* ---- chochin ----
-   A string of paper lanterns across the top of the frame, lit from
-   inside. The cord is the container's own top border. */
-.boot__lanterns {
-  position: absolute;
-  left: 4%; right: 4%; top: 6%;
-  display: flex;
-  justify-content: space-between;
-  border-top: 2px solid #3a1a2c;
-  z-index: 4;
-  pointer-events: none;
-}
-.boot__lanterns i {
-  width: 26px; height: 34px;
-  border-top: 3px solid #2a1018;
-  border-bottom: 3px solid #2a1018;
-  background:
-    radial-gradient(ellipse at 34% 28%, #ffd9a8 0 18%, #ff8a5a 42%, #e2402f 72%, #a81f16 100%);
-  animation: bootChochin 2.6s steps(2, end) infinite;
-}
-.boot__lanterns i:nth-child(2n) { animation-delay: 0.7s; }
-.boot__lanterns i:nth-child(3n) { animation-delay: 1.3s; }
-@keyframes bootChochin { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
-
-/* ---- blossom ----
-   Coming down over the whole frame. Stepped, like everything else
-   here: the fall is linear but the sway snaps between two positions,
-   so a petal never slides. */
-.boot__petals { position: absolute; inset: 0; overflow: hidden; z-index: 5; pointer-events: none; }
-.boot__petals span {
-  position: absolute;
-  top: -12px;
-  width: 4px; height: 4px;
-  background: #ffb6d5;
-  box-shadow: 2px 2px 0 0 #ff8ab8;
-  animation: bootFall linear infinite, bootSway 1.1s steps(2, end) infinite;
-}
-.boot__petals span:nth-child(3n) { background: #ffd6e8; box-shadow: 2px 2px 0 0 #ffb6d5; }
-.boot__petals span:nth-child(4n) { width: 3px; height: 3px; opacity: 0.8; }
-@keyframes bootFall { to { transform: translateY(105vh); } }
-@keyframes bootSway { 0%, 100% { margin-left: 0; } 50% { margin-left: 9px; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .boot__petals span, .boot__lanterns i { animation: none; }
-}
-
-.boot__train {
-  position: absolute;
-  z-index: 0;
-  bottom: 38vh;
-  left: -80px;
-  width: 64px;
-  height: 10px;
-  background: #26155c;
-  box-shadow:
-    inset 0 2px 0 #5230a8,
-    12px 0 0 -1px #26155c,
-    inset -4px 0 0 #0b0524;
-  visibility: hidden;
-}
-
-.boot__train::after {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 3px;
-  width: 6px;
-  height: 4px;
-  background: #c2e8ff;
-  box-shadow: 12px 0 0 #c2e8ff, 24px 0 0 #c2e8ff, 36px 0 0 #c2e8ff;
-}
-
-.boot--train .boot__train {
-  visibility: visible;
-  animation: bootcross 1.6s steps(40, end) forwards;
-}
-
-@keyframes bootcross {
-  from { left: -80px; }
-  to { left: 104%; }
-}
-
-/* the moon, polished on cue */
-.boot--glint .boot__moon {
-  animation: glint 0.5s steps(2, end) 2;
-}
-
-@keyframes glint {
-  0%, 49% { filter: brightness(1.6); }
-  50%, 100% { filter: brightness(1); }
-}
-
-/* the rubber duck, briefly found, then lost again */
-.boot__duck {
-  position: absolute;
-  z-index: 1;
-  right: 12%;
-  bottom: 8%;
-  width: 12px;
-  height: 8px;
-  background: #e8c23a;
-  box-shadow:
-    7px -4px 0 -1px #e8c23a,
-    12px -4px 0 -3px #e0662a,
-    inset 0 -2px 0 #c8942a;
-  visibility: hidden;
-}
-
-.boot--duck .boot__duck {
-  visibility: visible;
-  animation: duckgone 0.8s steps(2, end) forwards;
-}
-
-@keyframes duckgone {
-  0%, 70% { opacity: 1; }
-  71%, 100% { opacity: 0; }
-}
-
-/* neon warms up across the skyline on the first cue */
-.boot--neon .boot__city span:nth-child(4n) { border-top-color: var(--panel-edge); }
-.boot--neon .boot__city span:nth-child(7n) { border-top-color: var(--panel-accent); }
-
-/* ---- the attract screen ----
-   A text readout in a black void is a loading screen you resent. This
-   one puts the scene behind it and builds it while you wait: stars,
-   then a skyline that raises one tower at a time as the bar fills, with
-   the moon coming up last. By the time it clears you have already been
-   shown what the site is. */
-.boot__stars,
-.boot__city,
-.boot__moon {
-  position: absolute;
-  pointer-events: none;
-}
-
-.boot__stars {
-  inset: 0;
-  z-index: 0;
-}
-
-.boot__stars span {
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  background: var(--wm-face);
-  animation: twinkle 1.4s steps(2, end) infinite;
-}
-
-@keyframes twinkle {
-  from { opacity: 1; }
-  to { opacity: 0.25; }
-}
-
-.boot__moon {
-  z-index: 0;
-  right: 12%;
-  top: 12%;
-  width: 88px;
-  height: 88px;
-  background: var(--moon);
-  box-shadow:
-    /* craters, as blocks */
-    -18px -14px 0 -32px var(--wm-fringe-l),
-    14px 10px 0 -30px var(--wm-fringe-l),
-    0 0 0 4px var(--ink);
-  /* an octagon, not a circle: eight straight cuts, no antialiasing */
-  clip-path: polygon(36% 0, 64% 0, 100% 36%, 100% 64%, 64% 100%, 36% 100%, 0 64%, 0 36%);
-}
-
-.boot__city {
-  z-index: 1;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 42vh;
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-/* Each tower is hidden until the loader raises it. No transition — it
-   pops, one frame, like a tile being written. */
-/* A dark tower with a sparse grid of lit windows. Two layers: vertical
-   stripes of window colour, then the body colour painted back over most
-   of each row, which leaves dots. A full grid of magenta read as graph
-   paper — buildings are mostly dark, with a few lights on. */
-.boot__city span {
-  flex: 1 1 0;
-  visibility: hidden;
-  background-color: #150931;
-  background-image:
-    repeating-linear-gradient(to bottom, transparent 0 3px, #150931 3px 16px),
-    repeating-linear-gradient(to right, #8a4bbf 0 3px, transparent 3px 13px);
-  border-top: 2px solid #2c1566;
-}
-
-.boot__city--near { height: 30vh; z-index: 2; gap: 4px; }
-
-.boot__city--near span {
-  background-color: #0a0418;
-  background-image:
-    repeating-linear-gradient(to bottom, transparent 0 4px, #0a0418 4px 18px),
-    repeating-linear-gradient(to right, #5a3fa0 0 3px, transparent 3px 15px);
-  border-top-color: #2c1566;
-}
-
-.boot__city span.is-up { visibility: visible; }
-.boot__city span:nth-child(3n) { background-color: #0c0420; }
-.boot__city span:nth-child(4n) { border-top-color: var(--panel-edge); }
-.boot__city span:nth-child(5n) {
-  background-image:
-    repeating-linear-gradient(to bottom, transparent 0 3px, #150931 3px 16px),
-    repeating-linear-gradient(to right, #b8557f 0 3px, transparent 3px 13px);
-}
-
+/* The extra room underneath is for the wordmark's own cast shadow,
+   which hangs below its baseline — set it flush and the bar reads as
+   part of the letterforms. */
 .boot__wm {
-  margin: var(--s5) 0 var(--s6);
+  margin: 0 0 clamp(30px, 3.4vw, 52px);
   font-family: var(--font-display);
   font-size: var(--wm);
   line-height: 1.02;
   color: var(--wm-face);
 }
 
-.boot__brand {
-  margin: 0 0 14px;
+/* ---- the loader ----
+   A hairline that slid from left to right is what a web app does while
+   it fetches. This machine is older than that: a hard frame, and whole
+   cells arriving inside it one at a time, with a gap between each one
+   so you can count them. The frame is drawn in the same cyan as the
+   wordmark and the cells in the hot pink, which is the only pair of
+   colours the boot screen owns. */
+.boot__label {
+  margin: 0 0 12px;
   font-family: var(--font-display);
-  font-size: var(--d2);
-  letter-spacing: 2px;
+  font-size: clamp(8px, 0.8vw, 11px);
+  letter-spacing: 4px;
   color: var(--wm-face);
 }
 
-.boot__brand b { color: var(--panel-accent); font-weight: inherit; }
-
-.boot__rule {
-  height: 2px;
-  margin: 0;
-  border: 0;
-  background: var(--panel-dim);
+/* The caret, blinking the way a machine waiting on itself does. */
+.boot__label::after {
+  content: '_';
+  color: var(--boot-cell);
+  animation: blink 0.5s steps(1, end) infinite;
 }
-
-.boot__lines {
-  margin: 0 auto;
-  max-width: 460px;
-  text-align: center;
-  padding: 20px 0 28px;
-  list-style: none;
-  font-family: var(--font-display);
-  font-size: clamp(8px, 0.72vw, 12px);
-  line-height: 2.4;
-  letter-spacing: 1px;
-  color: var(--panel-text);
-}
-
-/* ---- the walker ----
-   A cat, side on, built from four blocks and a stepped bob. It is
-   parked on top of the bar and moves with the fill, which turns a
-   progress bar into something worth looking at for two seconds. */
-.boot__track { position: relative; padding-top: 26px; }
-
-.boot__cat {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  width: 22px;
-  height: 20px;
-  margin-bottom: 3px;
-  animation: trot 0.24s steps(2, end) infinite;
-}
-
-/* The mouse the cat is chasing: body, ear, tail. It leads the whole
-   way and gets away at the end, because it always does. */
-.boot__mouse {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  width: 14px;
-  height: 8px;
-  margin-bottom: 3px;
-  animation: trot 0.18s steps(2, end) infinite;
-}
-
-.boot__mouse::before {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 8px;
-  height: 5px;
-  background: var(--chrome-dark);
-  box-shadow:
-    6px -2px 0 -3px var(--chrome-dark),
-    -5px 1px 0 -1px var(--chrome-dark);
-}
-
-/* when the bar stalls the chase pauses — the mouse stops to taunt */
-.boot__cat.is-idle,
-.boot__mouse.is-idle { animation: none; }
-
-/* body and haunches */
-.boot__cat::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 2px;
-  width: 15px;
-  height: 8px;
-  background: var(--wm-face);
-  box-shadow:
-    /* head */
-    13px -4px 0 0 var(--wm-face),
-    /* ear */
-    15px -7px 0 -2px var(--wm-face),
-    /* front leg, back leg */
-    2px 8px 0 -3px var(--wm-face),
-    11px 8px 0 -3px var(--wm-face);
-}
-
-/* tail, curling up behind */
-.boot__cat::after {
-  content: '';
-  position: absolute;
-  left: -4px;
-  bottom: 8px;
-  width: 3px;
-  height: 3px;
-  background: var(--wm-face);
-  box-shadow: -3px -3px 0 var(--wm-face), -3px -6px 0 var(--wm-face);
-}
-
-@keyframes trot {
-  from { transform: translateY(0); }
-  to { transform: translateY(-2px); }
-}
-
-/* Each line is revealed by the script, one at a time. */
-.boot__lines li {
-  display: grid;
-  /* 10em, not 8: PARALLAX is eight characters and Press Start 2P is
-     wider than one em a glyph once tracking is added. */
-  grid-template-columns: 10em 1fr auto;
-  gap: 14px;
-  visibility: hidden;
-}
-
-.boot__lines li.is-on { visibility: visible; }
-.boot__lines span { color: var(--panel-edge); }
-.boot__lines i { color: var(--panel-dim); font-style: normal; }
-.boot__lines b { color: var(--leaf); font-weight: inherit; }
-.boot__lines b.warn { color: var(--gold); }
-.boot__lines b.err { color: var(--panel-accent); }
 
 .boot__barwrap {
-  height: 22px;
-  border: 3px solid var(--panel-edge);
-  padding: 3px;
+  height: 26px;
+  padding: 4px;
+  border: 3px solid var(--wm-face);
 }
 
-/* Whole cells, filling left to right. */
+/* Fat cells with a real gap. Thin ones read as a hatched fill; these
+   read as blocks arriving, which is the thing you used to sit and
+   count. */
 .boot__bar {
   display: block;
   width: 0;
   height: 100%;
   background: repeating-linear-gradient(
     90deg,
-    var(--panel-accent) 0 10px,
-    transparent 10px 14px
+    var(--boot-cell) 0 14px,
+    transparent 14px 20px
   );
 }
 
-/* A percentage you can read across the room, which is most of what
-   makes a loading screen feel like a game and not a spinner. */
-.boot__status {
-  margin: var(--s4) 0 0;
-  font-family: var(--font-display);
-  font-size: 14px;
-  letter-spacing: 3px;
-  color: var(--gold);
-  min-height: 1.5em;
-}
-
-.boot__pct {
-  margin: 16px 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(26px, 3vw, 52px);
-  line-height: 1;
-  letter-spacing: 2px;
-  color: var(--panel-accent);
-  text-shadow: 0 4px 0 var(--wm-ext-3);
-}
-
-/* Rotating tips, the way a game does while it loads. These do real
-   work: they are where you find out the cat is clickable. */
-.boot__tip {
-  margin: 22px 0 0;
-  min-height: 2.4em;
-  font-family: var(--font-display);
-  font-size: clamp(8px, 0.7vw, 12px);
-  line-height: 2;
-  letter-spacing: 1px;
-  color: var(--panel-text);
-}
-
-.boot__tip b { color: var(--leaf); font-weight: inherit; }
-
-/* The caret at the end of the typed line. */
-.boot__tip span::after {
-  content: '_';
-  color: var(--panel-accent);
-  animation: blink 0.5s steps(1, end) infinite;
+@media (prefers-reduced-motion: reduce) {
+  .boot__label::after { animation: none; }
 }
 /* ==================================================================
    ABOUT: BIO, NOW PLAYING, STATS, CHIPS
@@ -1860,12 +1440,9 @@ html[data-city='dubai']:not([data-mode='day']) .col {
 
 
 
-  /* Boot: the tip is the most useful line on the screen — it does not
-     get to be the smallest. */
+  /* Boot: the name wants room to breathe on a small screen. */
   .boot { padding: var(--s5); }
   .boot__inner { width: 100%; }
-  .boot__tip { font-size: 12px; }
-  .boot__pct { font-size: 32px; }
 }
 
 /* Portrait crops the 960-wide scene to a slice a quarter wide. The
@@ -4288,6 +3865,31 @@ html:not([data-page='home']) .l2-home:active { transform: translate(4px, 4px); b
   height: 100%;
   object-fit: cover;
   image-rendering: pixelated;
+}
+
+/* The project cover is painted into the frame at 176x110 and upscaled
+   nearest-neighbour, exactly like every other piece of art here. The
+   frame keeps its own 16:10, so the cover is drawn at the ratio it is
+   shown at and nothing gets cropped. */
+.tile > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* The case study opens on the same cover its card wore. .card__art--wide
+   sizes itself 176:99 for the work poster it used to hold, and the cover
+   is 176:110 — so the frame has to be told the new ratio too, or it
+   crops the number off the top and leaves a dead band underneath. */
+.cs__hero { aspect-ratio: 176 / 110; }
+
+.cs__hero canvas {
+  aspect-ratio: 176 / 110;
+  max-height: none;
+  object-fit: contain;
 }
 
 /* ==================================================================

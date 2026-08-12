@@ -8,502 +8,56 @@
   /* ==================================================================
      BOOT
 
-     A POST sequence. The page is dressed as a machine, and this is what
-     a machine does first — but it is also the fastest way to tell
-     somebody what is in here before they have seen any of it: there is
-     weather, there is a city, there is a cat.
+     A bar, with the name over it.
 
-     Two seconds, and every part of it steps. The lines appear one at a
-     time and the bar fills in whole cells, because a smoothly
-     interpolating progress bar would be the only thing on the page
-     that tweens. */
+     It was a POST sequence, and a long one: an attract screen painted
+     at 2880x1620 — sky ramp, stars, Fuji, the far bank, a town, two
+     pagodas, a torii, water, a sakura branch — with rain, petals, a
+     train and a duck cued to fire off its own status lines, seven
+     check rows switching on in sequence, a cat chasing a mouse along
+     the bar, and a tip typing itself in underneath. Two and a half
+     seconds of it.
+
+     All of that was performance in front of the thing it was
+     introducing, and the landing shot is better than any trailer for
+     the landing shot. So: the name, a bar, and out of the way in under
+     a second.
+
+     It still steps rather than tweens — whole cells, because a
+     smoothly interpolating bar would be the only thing on this page
+     that slides.
+     ================================================================== */
   const boot = document.getElementById('boot')
   if (boot) {
-    const lines = boot.querySelectorAll('.boot__lines li')
     const bootBar = document.getElementById('bootBar')
-    /* Skip the whole POST on a phone. A loading screen is a thing you sit
-       through, and on a handset the landing shot IS the experience — it
-       should be there the instant the page is. Reduced-motion skips it
-       for the same reason it always did; the two mobile tests catch a
-       phone in portrait and one turned sideways (wider than the phone
-       breakpoint but still a phone). */
+
+    /* Skip it outright on a phone and under reduced motion. A loading
+       screen is a thing you sit through, and on a handset the landing
+       shot IS the experience — it should be there the instant the page
+       is. The two mobile tests catch a phone in portrait and one turned
+       sideways (wider than the phone breakpoint, still a phone). */
     const skip =
       window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
       window.matchMedia('(max-width: 760px)').matches ||
       window.matchMedia('(hover: none) and (pointer: coarse)').matches
 
-    const cat = document.getElementById('bootCat')
-    const mouse = document.getElementById('bootMouse')
-    const pct = document.getElementById('bootPct')
-    const tipEl = document.getElementById('bootTip')
-    const statusEl = document.getElementById('bootStatus')
-
-    /* The now-loading line. None of these are true, which is the whole
-       genre — a loading screen has always been where a game admits it
-       is having fun. Stepped through in order, one every third of a
-       second. */
-    const STATUSES = [
-      'WARMING UP THE NEON',
-      'ORDERING RAIN (LARGE)',
-      'COUNTING PETALS... 5,000',
-      'DELAYING THE YAMANOTE',
-      'TEACHING CAT TO SIT',
-      'POLISHING THE MOON',
-      'HANGING THE NOREN',
-      'RESTOCKING THE VENDING MACHINE',
-      'QUEUEING FOR RAMEN',
-      'FOLDING ONE THOUSAND CRANES',
-    ]
-
-    /* ==================================================================
-       THE ATTRACT SCREEN, PAINTED
-
-       Authored on 960x540 and supersampled x3 to 2880x1620 — the exact
-       grid and the exact scale factor the main scene uses. The first
-       version of this drew on 480x270, a sixth of the density, which
-       is the whole reason it read as coarse next to the homepage: a
-       one-pixel rafter there is six device pixels here.
-
-       Back to front: sky, stars, moon, Fuji, the far bank, the town,
-       the pagodas, the torii, the water, and a sakura branch over the
-       top. Every number comes from a fixed sequence, so the same view
-       boots every time.
-       ================================================================== */
-    const art = document.getElementById('bootArt')
-    if (art) {
-      const AW = 960
-      const AH = 540
-      const HZ = 392 // the horizon
-      const K = 3 // supersample, as the scene does
-      art.width = AW * K
-      art.height = AH * K
-      const a = art.getContext('2d')
-      a.imageSmoothingEnabled = false
-      a.setTransform(K, 0, 0, K, 0, 0)
-
-      let as = 8814
-      const ar = () => {
-        as = (Math.imul(as, 1103515245) + 12345) >>> 0
-        return as / 4294967296
-      }
-      const px = (x, y, w, h, col) => { a.fillStyle = col; a.fillRect(x, y, w, h) }
-
-      /* ---- sky ----
-         Twenty stops rather than ten, because at this density a ten
-         stop ramp bands visibly across 392 rows. */
-      const RAMP = [
-        '#04050e', '#050713', '#060818', '#070a1d', '#090c22', '#0b0e28',
-        '#0d112e', '#0f1334', '#12163a', '#151940', '#181b45', '#1c1e4a',
-        '#20204e', '#252152', '#2a2354', '#2f2455', '#352554', '#3b2652',
-        '#41274f', '#46284b',
-      ]
-      for (let y = 0; y < HZ; y++) {
-        const t = Math.pow(y / HZ, 1.9)
-        px(0, y, AW, 1, RAMP[Math.min(RAMP.length - 1, Math.floor(t * RAMP.length))])
-      }
-      // a warm haze sitting right on the horizon
-      for (let y = HZ - 46; y < HZ; y++) {
-        a.fillStyle = 'rgba(210,120,130,' + (((y - (HZ - 46)) / 46) * 0.06).toFixed(3) + ')'
-        a.fillRect(0, y, AW, 1)
-      }
-
-      // ---- stars
-      for (let i = 0; i < 340; i++) {
-        const sx = Math.floor(ar() * AW)
-        const sy = Math.floor(Math.pow(ar(), 1.7) * (HZ - 70))
-        const r = ar()
-        px(sx, sy, 1, 1, r < 0.2 ? '#ffd9ec' : '#e8ecff')
-        if (r > 0.97) { // a few bright ones get a cross
-          px(sx - 1, sy, 1, 1, '#9fb4ff'); px(sx + 1, sy, 1, 1, '#9fb4ff')
-          px(sx, sy - 1, 1, 1, '#9fb4ff'); px(sx, sy + 1, 1, 1, '#9fb4ff')
-        }
-      }
-
-      // ---- the moon
-      const MX = 744
-      const MY = 104
-      const MR = 54
-      for (let dy = -MR - 8; dy <= MR + 8; dy++) { // halo
-        const w = Math.floor(Math.sqrt(Math.max(0, (MR + 8) * (MR + 8) - dy * dy)))
-        a.fillStyle = 'rgba(255,214,232,0.07)'
-        a.fillRect(MX - w, MY + dy, w * 2, 1)
-      }
-      for (let dy = -MR; dy <= MR; dy++) {
-        const w = Math.floor(Math.sqrt(Math.max(0, MR * MR - dy * dy)))
-        px(MX - w, MY + dy, w * 2, 1, '#e8dfe8')
-      }
-      for (const [cx, cy, cr, col] of [
-        [-18, -12, 9, '#e6d2e2'], [12, 8, 11, '#e6d2e2'], [-6, 22, 6, '#eddbe8'],
-        [22, -18, 5, '#eddbe8'], [-28, 8, 4, '#eddbe8'], [4, -30, 4, '#e6d2e2'],
-      ]) {
-        for (let dy = -cr; dy <= cr; dy++) {
-          const w = Math.floor(Math.sqrt(Math.max(0, cr * cr - dy * dy)))
-          px(MX + cx - w, MY + cy + dy, w * 2, 1, col)
-        }
-      }
-
-      /* ---- Fuji ----
-         Shaded across three planes — the lit west flank, the body, and
-         the shadowed east — with a treeline skirting the base and the
-         snow broken into gullies down the ridges. */
-      const FX = 224
-      const FTOP = 168
-      const FH = HZ - FTOP
-      for (let y = 0; y < FH; y++) {
-        const t = y / FH
-        const half = Math.round(22 + Math.pow(t, 1.28) * 286)
-        const yy = FTOP + y
-        for (let x = -half; x < half; x++) {
-          const u = x / half
-          const col = u < -0.34 ? '#252048' : u < 0.28 ? '#1c1838' : '#141029'
-          px(FX + x, yy, 1, 1, col)
-        }
-        // the treeline, dark and ragged, skirting the foot
-        if (t > 0.78) {
-          const band = Math.round((t - 0.78) * 60)
-          for (let x = -half; x < half; x++) {
-            if (((x * 7 + yy * 3) % 11) > 6) continue
-            px(FX + x, yy, 1, 1, '#161230')
-          }
-          if (band > 0) px(FX - half, yy, half * 2, 1, ((yy % 3) ? '#191434' : '#161230'))
-        }
-        // snow
-        if (t < 0.34) {
-          if (t < 0.15) {
-            px(FX - half, yy, half * 2, 1, '#dfd8ee')
-            px(FX + Math.round(half * 0.22), yy, Math.round(half * 0.78), 1, '#bdb4d6')
-            px(FX + Math.round(half * 0.62), yy, Math.round(half * 0.38), 1, '#9d95bd')
-          } else {
-            const run = 1 - (t - 0.15) / 0.19
-            for (const gg of [-0.80, -0.56, -0.30, -0.03, 0.26, 0.54, 0.80]) {
-              const gw = Math.max(0, Math.round(half * 0.085 * run * (1 + Math.sin(yy * 0.4 + gg * 9) * 0.3)))
-              if (!gw) continue
-              px(FX + Math.round(half * gg) - gw, yy, gw * 2, 1, gg < -0.1 ? '#cfc7e4' : '#a89fc4')
-            }
-          }
-        }
-      }
-      px(FX - 11, FTOP, 22, 3, '#241f45') // the crater rim
-
-      /* ---- the town ----
-         A machiya is a low box under a deep hipped roof with the eave
-         turned up at both tips. At this density the roof gets tile
-         courses, the front gets a lit paper screen, and a noren hangs
-         in the doorway. */
-      const INK = '#0b0818'
-      const INK2 = '#171238'
-      const TILE = '#1a1436'
-      const WARM = ['#ffb85c', '#ff8f4a', '#ffd88a']
-
-      const roof = (cx, y, half, drop, col, tile) => {
-        for (let k = 0; k < drop; k++) {
-          const w = Math.round(half * (0.40 + (k / drop) * 0.60))
-          px(cx - w, y + k, w * 2, 1, col)
-          if (tile && k % 3 === 2) px(cx - w, y + k, w * 2, 1, TILE)
-        }
-        // the flicked eave
-        px(cx - half - 7, y + drop - 4, 9, 2, col)
-        px(cx + half - 2, y + drop - 4, 9, 2, col)
-        px(cx - half - 11, y + drop - 7, 7, 2, col)
-        px(cx + half + 4, y + drop - 7, 7, 2, col)
-        px(cx - half - 14, y + drop - 10, 5, 2, col)
-        px(cx + half + 9, y + drop - 10, 5, 2, col)
-      }
-
-      const machiya = (cx, w, bh, col, lit) => {
-        px(cx - w, HZ - bh, w * 2, bh, col)
-        roof(cx, HZ - bh - 15, w + 7, 17, col, col === INK)
-        if (lit) {
-          // a shoji screen, and a noren across the door
-          px(cx - Math.round(w * 0.55), HZ - bh + 8, Math.round(w * 1.1), Math.round(bh * 0.34), '#3a2a52')
-          for (let r = 0; r < 3; r++) {
-            px(cx - Math.round(w * 0.5), HZ - bh + 11 + r * 5, Math.round(w), 3, WARM[(r + cx) % 3])
-          }
-          px(cx - 7, HZ - 13, 14, 6, '#2b1a44')
-          px(cx - 7, HZ - 13, 14, 2, '#c9384a')
-        }
-      }
-
-      // far bank
-      for (let i = 0; i < 30; i++) {
-        machiya(Math.round(ar() * AW), 11 + Math.round(ar() * 15), 16 + Math.round(ar() * 24), INK2, false)
-      }
-      // near town
-      for (let i = 0; i < 34; i++) {
-        machiya(Math.round(ar() * AW), 13 + Math.round(ar() * 19), 22 + Math.round(ar() * 38), INK, ar() < 0.62)
-      }
-
-      /* ---- pagodas ----
-         Five roofs stacked and shrinking, each with a rail and rafter
-         line under it, and the sorin standing off the top. */
-      const pagoda = (pxx, base, tiers, scale) => {
-        let y = base
-        let half = Math.round(40 * scale)
-        for (let t = 0; t < tiers; t++) {
-          const bodyW = Math.round(half * 0.56)
-          px(pxx - bodyW, y - 23, bodyW * 2, 23, INK)
-          // the rail
-          px(pxx - bodyW - 3, y - 25, bodyW * 2 + 6, 3, '#241a44')
-          for (let r = -bodyW; r < bodyW; r += 5) px(pxx + r, y - 24, 2, 6, INK)
-          roof(pxx, y - 38, half, 17, INK, true)
-          y -= 36
-          half = Math.round(half * 0.87)
-        }
-        px(pxx - 2, y - 30, 4, 32, INK)
-        for (let k = 0; k < 5; k++) px(pxx - 7 + k, y - 26 + k * 5, 15 - k * 2, 2, INK)
-        px(pxx - 4, y - 34, 8, 4, '#241a44')
-      }
-      pagoda(196, HZ, 5, 1)
-      pagoda(892, HZ, 3, 0.62)
-
-      /* ---- the torii, standing in the water ---- */
-      const TX = 700
-      const TB = HZ + 58
-      const TH = 132
-      const VER = '#e2402f'
-      const VERL = '#ff7a5c'
-      const VERD = '#8f2016'
-      const post = (x) => {
-        px(x - 8, TB - TH, 17, TH, VER)
-        px(x - 8, TB - TH, 4, TH, VERL)
-        px(x + 5, TB - TH, 4, TH, VERD)
-        px(x - 11, TB - 5, 23, 5, VERD) // the stone footing
-      }
-      post(TX - 52)
-      post(TX + 52)
-      px(TX - 66, TB - TH + 44, 132, 13, VER)      // nuki
-      px(TX - 66, TB - TH + 44, 132, 3, VERL)
-      px(TX - 66, TB - TH + 54, 132, 3, VERD)
-      px(TX - 20, TB - TH + 20, 40, 22, VERD)      // gaku, the plaque
-      px(TX - 17, TB - TH + 23, 34, 16, '#2a1410')
-      px(TX - 86, TB - TH + 16, 172, 9, VERD)      // shimaki
-      px(TX - 94, TB - TH, 188, 15, VER)           // kasagi
-      px(TX - 94, TB - TH, 188, 4, VERL)
-      px(TX - 102, TB - TH + 2, 10, 6, VER)        // lifted tips
-      px(TX + 92, TB - TH + 2, 10, 6, VER)
-      px(TX - 110, TB - TH - 3, 10, 6, VER)
-      px(TX + 100, TB - TH - 3, 10, 6, VER)
-
-      /* ---- the water, under seigaiha ---- */
-      const grd = ['#0a0d24', '#090c20', '#080b1c', '#070a18', '#060814', '#050710', '#04050c']
-      for (let y = HZ; y < AH; y++) {
-        px(0, y, AW, 1, grd[Math.min(6, Math.floor(((y - HZ) / (AH - HZ)) * 7))])
-      }
-      // the torii's reflection, broken up
-      for (let y = TB; y < AH; y += 2) {
-        const f = 1 - (y - TB) / (AH - TB)
-        if (ar() > 0.55) continue
-        px(TX - 60 + Math.round(ar() * 6), y, 16, 1, 'rgba(226,64,47,' + (0.3 * f).toFixed(2) + ')')
-        px(TX + 44 + Math.round(ar() * 6), y, 16, 1, 'rgba(226,64,47,' + (0.3 * f).toFixed(2) + ')')
-      }
-      /* The seigaiha field is gone. Eight rows of concentric arcs
-         across the bottom third was a lot of moving detail under a
-         block of text that has to be read in about a second. */
-      // the moon's road
-      for (let y = HZ + 4; y < AH; y += 5) {
-        const w = 10 + (y - HZ) * 0.42
-        for (let x = -w / 2; x < w / 2; x += 8) {
-          a.fillStyle = 'rgba(253,242,246,0.10)'
-          a.fillRect(Math.round(MX + x), y, 4, 2)
-        }
-      }
-
-      /* ---- a sakura branch over the top ---- */
-      const bl = (x0, y0, ang, len, th, depth) => {
-        let cx = x0
-        let cy = y0
-        let an = ang
-        for (let k = 0; k < len; k++) {
-          an += ((((k * 11 + depth * 7) % 5) - 2) * 0.018)
-          cx += Math.cos(an)
-          cy += Math.sin(an)
-          px(Math.round(cx), Math.round(cy), Math.max(1, Math.round(th)), Math.max(1, Math.round(th * 0.7)), '#2a1a2e')
-        }
-        if (depth > 0) {
-          bl(cx, cy, an - 0.5, len * 0.64, th * 0.62, depth - 1)
-          bl(cx, cy, an + 0.42, len * 0.6, th * 0.62, depth - 1)
-          if (depth > 1) bl(cx, cy, an - 0.04, len * 0.5, th * 0.5, depth - 1)
-        } else {
-          for (let f = 0; f < 14; f++) {
-            const fx = Math.round(cx + (ar() * 2 - 1) * 15)
-            const fy = Math.round(cy + (ar() * 2 - 1) * 13)
-            const tone = f % 3 ? '#ffb6d5' : '#ffe0ee'
-            px(fx, fy - 2, 2, 2, tone); px(fx - 2, fy, 2, 2, tone)
-            px(fx + 2, fy, 2, 2, tone); px(fx, fy + 2, 2, 2, tone)
-            px(fx, fy, 2, 2, '#ff6fa6')
-          }
-        }
-      }
-      bl(-8, 12, 0.48, 54, 6, 3)
-      bl(-8, 44, 0.22, 60, 6, 3)
-      bl(AW + 8, 20, Math.PI - 0.40, 50, 6, 3)
-    }
-
-    /* Build the attract screen: a starfield, and a skyline that the
-       loader raises one tower at a time. Heights come from a fixed
-       sequence rather than Math.random so the same city boots twice —
-       which is the whole convention the scene itself already follows. */
-    const stars = document.getElementById('bootStars')
-    const city = document.getElementById('bootCity')
-    let towers = []
-
-    if (stars) {
-      let seed = 20260809
-      const rnd = () => {
-        seed = (Math.imul(seed, 1103515245) + 12345) >>> 0
-        return seed / 4294967296
-      }
-      for (let i = 0; i < 90; i++) {
-        const s = document.createElement('span')
-        s.style.left = (rnd() * 100).toFixed(2) + '%'
-        s.style.top = (rnd() * 58).toFixed(2) + '%'
-        s.style.animationDelay = (rnd() * 1.4).toFixed(2) + 's'
-        stars.appendChild(s)
-      }
-    }
-
-    if (city) {
-      // a skyline profile, hand-set: tall clusters and low gaps
-      const H = [
-        38, 62, 30, 74, 46, 88, 34, 56, 96, 42, 28, 68, 80, 36,
-        52, 92, 44, 26, 70, 58, 84, 32, 64, 48, 76, 40, 60, 30,
-      ]
-      for (const h of H) {
-        const b = document.createElement('span')
-        b.style.height = h + '%'
-        city.appendChild(b)
-      }
-      towers = [...city.children]
-
-      // a nearer, darker row in front — even the loader has parallax
-      const near = document.getElementById('bootCityNear')
-      if (near) {
-        for (let i = 0; i < H.length; i++) {
-          const b = document.createElement('span')
-          b.style.height = H[(i + 9) % H.length] + '%'
-          near.appendChild(b)
-        }
-        towers = towers.concat([...near.children])
-      }
-
-      /* Blossom over the whole boot. Seeded from the same fixed
-         sequence as the skyline, so the same petals fall every time
-         this screen loads. */
-      const petalBox = document.getElementById('bootPetals')
-      if (petalBox) {
-        let ps = 4241
-        const pr = () => {
-          ps = (Math.imul(ps, 1103515245) + 12345) >>> 0
-          return ps / 4294967296
-        }
-        for (let i = 0; i < 34; i++) {
-          const p = document.createElement('span')
-          p.style.left = (pr() * 100).toFixed(2) + '%'
-          p.style.animationDuration = (5 + pr() * 6).toFixed(2) + 's, 1.1s'
-          p.style.animationDelay = (-pr() * 9).toFixed(2) + 's, 0s'
-          petalBox.appendChild(p)
-        }
-      }
-
-      // the rain, waiting for its cue
-      const rainBox = document.getElementById('bootRain')
-      if (rainBox) {
-        let rs = 977
-        const rr = () => {
-          rs = (Math.imul(rs, 1103515245) + 12345) >>> 0
-          return rs / 4294967296
-        }
-        for (let i = 0; i < 42; i++) {
-          const d = document.createElement('span')
-          d.style.left = (rr() * 100).toFixed(2) + '%'
-          d.style.animationDelay = (rr() * 0.9).toFixed(2) + 's'
-          d.style.animationDuration = (0.7 + rr() * 0.5).toFixed(2) + 's'
-          rainBox.appendChild(d)
-        }
-      }
-    }
-
-    /* The tips are not filler. Half of what is in this page is only
-       findable if somebody tells you it is there, and two seconds of
-       loading is exactly when somebody is willing to read. */
-    const TIPS = [
-      'THE CAT ON THE ROOF CAN BE CLICKED.',
-      'ONE BUILDING SPELLS SOMETHING. KEEP LOOKING.',
-      'IT SNOWS IF YOU ASK IT TO.',
-      'UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A.',
-      'THE BLOSSOM FALLS WHETHER YOU WATCH OR NOT.',
-      'THERE IS SOMETHING OUT IN THE BAY. DO NOT WAKE IT.',
-      'WATCH THE PARAPET. SOMETHING RUNS ALONG IT.',
-      'THE VENDING MACHINE IS ALWAYS LIT. ALWAYS.',
-      'FIVE CITIES. TOKYO IS ONLY THE ONE IT OPENS ON.',
-      'IT IS ALWAYS APRIL HERE.',
-    ]
-    const tip = TIPS[Math.floor(Math.random() * TIPS.length)]
-
     if (skip) {
       boot.hidden = true
     } else {
-      const TOTAL = 2400
-      const STEPS = 30
+      const TOTAL = 780
+      const STEPS = 12
       let i = 0
-      let lastP = -1
 
       const tick = () => {
         i++
-        const t = i / STEPS
-
-        /* The bar does not run smoothly to 100. It stalls twice, the
-           way everything did on the machine this is imitating, which
-           is the difference between a progress bar and a progress
-           bar you believe. */
-        const eased = t < 0.4 ? t * 0.55 : t < 0.62 ? 0.22 : t < 0.85 ? t * 0.95 : t
-        const p = Math.min(100, Math.round(eased * 100))
-
-        if (bootBar) bootBar.style.width = p + '%'
-        if (cat) {
-          cat.style.left = 'calc(' + p + '% - ' + (p / 100) * 22 + 'px)'
-          // the bar stalls on purpose; a cat that has stopped chasing
-          // sits still, which is what makes the stall read as a joke
-          // instead of a bug
-          cat.classList.toggle('is-idle', p === lastP)
-        }
-        if (mouse) {
-          // the mouse leads by a body-length and escapes off the end
-          const mp = Math.min(103, p + 11)
-          mouse.style.left = 'calc(' + mp + '% - ' + (mp / 100) * 14 + 'px)'
-          mouse.classList.toggle('is-idle', p === lastP)
-        }
-        lastP = p
-        if (pct) pct.textContent = p
-        const beat = Math.min(STATUSES.length - 1, Math.floor(i / 3))
-        if (statusEl) statusEl.textContent = STATUSES[beat]
-
-        /* The loader performs its own status lines. Once a cue fires
-           it stays fired — rain does not stop because the subject
-           changed. */
-        boot.classList.toggle('boot--neon', beat >= 1)
-        boot.classList.toggle('boot--rain', beat >= 2)
-        if (beat === 3) boot.classList.add('boot--train')
-        if (beat === 4 && cat) cat.classList.add('is-idle') // sit. good cat.
-        if (beat === 5) boot.classList.add('boot--glint')
-        if (beat === 9) boot.classList.add('boot--duck')
-
-        lines.forEach((li, n) => li.classList.toggle('is-on', n < Math.floor(t * lines.length * 1.6)))
-
-        // the city goes up with the bar, tower by tower
-        const up = Math.floor(t * towers.length * 1.15)
-        towers.forEach((b, n) => b.classList.toggle('is-up', n < up))
-
-        // the tip types itself in
-        if (tipEl) tipEl.textContent = tip.slice(0, Math.round(t * 1.5 * tip.length))
-
+        if (bootBar) bootBar.style.width = Math.round((i / STEPS) * 100) + '%'
         if (i < STEPS) {
           setTimeout(tick, TOTAL / STEPS)
           return
         }
         setTimeout(() => {
           boot.hidden = true
-        }, 260)
+        }, 140)
       }
       tick()
 
