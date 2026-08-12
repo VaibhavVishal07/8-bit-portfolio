@@ -2881,14 +2881,19 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  /* iOS Safari only touch-scrolls an overflow container that is itself
+     hit-testable: with pointer-events:none here the swipe fell straight
+     through to the scene and the page never scrolled (Chromium scrolls it
+     regardless, which is why it only showed on a real phone). So the page
+     owns its touches. The scene's two easter eggs — poke the cat, tap the
+     city for a firework — listen on window and hit-test by coordinate with
+     a `closest('.col')` guard, so they still fire through the margins. */
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
   padding: var(--s6) var(--s5) var(--s7);
-  /* the scene owns everything the column is not standing on */
-  pointer-events: none;
 }
 
 .page[hidden] { display: none; }
-
-.page > * { pointer-events: auto; }
 
 /* Home centres in the frame; a document starts at the top and scrolls,
    because a long column that begins in the middle is a column you have
