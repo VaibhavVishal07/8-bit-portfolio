@@ -3550,3 +3550,89 @@ html[data-l2='case'] .col.col--doc.cs {
 }
 
 .page--home .home-cta { text-align: center; }
+
+/* ==================================================================
+   THE CTAs, AS BLOCKS
+
+   The extrusion was already here and it was invisible: the wall was
+   drawn in --ink, and --ink on a near-black panel is a black block
+   against a black ground. The depth existed in the box-shadow and
+   nowhere on the screen.
+
+   The wall takes its own colour now — a dark relative of the face it
+   belongs to — capped with a one-pixel ink edge so the block ends on a
+   hard line rather than fading into the panel. Face lit top-left,
+   shaded bottom-right, and the whole thing rises on hover and presses
+   into its own wall on click. No blur anywhere: this is a pixel scene
+   and depth is built out of offsets.
+   ================================================================== */
+
+.cta {
+  --cta-side: #2a1a5c;
+  --cta-lip: rgba(255, 255, 255, 0.26);
+  --cta-sink: rgba(0, 0, 0, 0.38);
+  position: relative;
+  box-shadow:
+    inset 2px 2px 0 var(--cta-lip),
+    inset -2px -2px 0 var(--cta-sink),
+    2px 2px 0 var(--cta-side),
+    4px 4px 0 var(--cta-side),
+    6px 6px 0 var(--cta-side),
+    7px 7px 0 var(--ink);
+}
+
+.cta:hover,
+.cta:focus-visible {
+  transform: translate(-3px, -3px);
+  box-shadow:
+    inset 2px 2px 0 var(--cta-lip),
+    inset -2px -2px 0 var(--cta-sink),
+    2px 2px 0 var(--cta-side),
+    4px 4px 0 var(--cta-side),
+    6px 6px 0 var(--cta-side),
+    8px 8px 0 var(--cta-side),
+    10px 10px 0 var(--cta-side),
+    11px 11px 0 var(--ink);
+}
+
+/* pressed: the face travels the full depth of its own wall and lands */
+.cta:active {
+  transform: translate(6px, 6px);
+  box-shadow:
+    inset 2px 2px 0 var(--cta-sink),
+    inset -2px -2px 0 var(--cta-lip),
+    1px 1px 0 var(--ink);
+}
+
+.cta:focus-visible { outline: 3px solid var(--teal); outline-offset: 5px; }
+
+/* Each variant names the colour its own side wall is cast in. A teal
+   face throws a deep teal shadow; a magenta face throws a deep magenta
+   one. A grey wall under a coloured face reads as a sticker. */
+.cta--primary { --cta-side: #0f5f70; }
+.cta--primary:hover,
+.cta--primary:focus-visible { --cta-side: #8a1f57; }
+.cta--ghost { --cta-side: #2a1a5c; }
+
+/* ---- the nameplate ----
+   What the pointer is over, out in the city. Mono, small, on the ink,
+   with the same hard offset block the rest of the interface stands on. */
+.nameplate {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  display: none;
+  pointer-events: none;
+  padding: 7px 11px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cream);
+  background: var(--ink);
+  border: 2px solid var(--panel-edge);
+  box-shadow: 3px 3px 0 rgba(2, 1, 6, 0.75);
+}
+.nameplate.is-on { display: block; }

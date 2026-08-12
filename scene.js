@@ -315,7 +315,7 @@
     const x = c.getContext('2d')
     x.imageSmoothingEnabled = false
     x.setTransform(S, 0, 0, S, 0, 0)
-    return { c, x, w, h }
+    return { c, x, w, h, s: S }
   }
 
   const px = (x, y, c) => {
@@ -1554,6 +1554,169 @@
     })
   }
 
+  /* The label each one answers to. Anything not named here falls back
+     to the function name, which is a bug made visible rather than a
+     silent blank. */
+  const NAMES = {
+    arcDeTriomphe: 'Arc de Triomphe',
+    bridge: 'Suspension bridge',
+    burjAlArab: 'Burj Al Arab',
+    burjKhalifa: 'Burj Khalifa',
+    chrysler: 'Chrysler Building',
+    clockTower: 'Clock tower',
+    cocoon: 'Mode Gakuen Cocoon Tower',
+    dubaiFrame: 'Dubai Frame',
+    eiffel: 'Eiffel Tower',
+    empireState: 'Empire State Building',
+    indiaGate: 'India Gate',
+    kaiju: 'Something in the bay',
+    lanterns: 'Chochin lanterns',
+    liberty: 'Statue of Liberty',
+    lighthouse: 'Lighthouse',
+    lotusTemple: 'Lotus Temple',
+    marigoldString: 'Marigold garland',
+    metroGov: 'Metropolitan Government Building',
+    mughalTomb: 'Mughal tomb',
+    observatory: 'Observatory',
+    pagoda: 'Pagoda',
+    precinct: 'Temple precinct',
+    qutubMinar: 'Qutub Minar',
+    radioDish: 'Radio mast',
+    rooftopPool: 'Rooftop pool',
+    sacreCoeur: 'Sacré-Cœur',
+    sakuraTree: 'Sakura in bloom',
+    skytree: 'Tokyo Skytree',
+    stadium: 'Stadium',
+    tokyoTower: 'Tokyo Tower',
+  }
+  /* ---- what is standing out there ----
+
+     Every landmark drawn into a layer registers its anchor here, and the
+     extent is measured off the finished buffer rather than declared:
+     walk out from the anchor until six clear columns in a row, then take
+     the top and bottom of what was found. A landmark that gets redrawn
+     taller next week gets a taller hit box for free.
+
+     Buffer coordinates, not screen ones. The layer they sit on decides
+     where that lands, and it moves — see hitTest(). */
+  let marksHit = []
+  let markPending = null
+  const markOff = []
+
+  function LM(fn, g, o, x) {
+    // drop only the function itself: the callee still wants (g, o, x, ...)
+    const args = Array.prototype.slice.call(arguments, 1)
+    if (markPending) markPending.push({ fn: fn.name, x: Math.round(x) })
+    return fn.apply(null, args)
+  }
+
+  /* One read per layer, and not of the layer.
+
+     Reading a 5760x1356 device buffer costs thirty megabytes and eight
+     million pixel tests per plane, four times over, every time the city
+     is rebuilt — which froze the renderer outright. The buffer is
+     scaled into a small scratch canvas instead and measured there: four
+     authored pixels to a sample is far finer than a hit box needs, and
+     it is fifty thousand pixels rather than eight million.
+
+     Everything below is in SCALED space and multiplied back at the end. */
+  const MARK_DIV = 4
+  let markScratch = null
+
+  function measureMarks(buf, list, layer) {
+    if (!list.length) return
+    const sw = Math.ceil(buf.w / MARK_DIV)
+    const sh = Math.ceil(buf.h / MARK_DIV)
+    if (!markScratch || markScratch.c.width !== sw || markScratch.c.height !== sh) {
+      const c = document.createElement('canvas')
+      c.width = sw
+      c.height = sh
+      markScratch = { c, x: c.getContext('2d', { willReadFrequently: true }) }
+    }
+    const g2 = markScratch.x
+    g2.clearRect(0, 0, sw, sh)
+    g2.drawImage(buf.c, 0, 0, sw, sh)
+    let data
+    try {
+      data = g2.getImageData(0, 0, sw, sh).data
+    } catch (e) {
+      return
+    }
+
+    const inked = new Uint8Array(sw)
+    const colTop = new Int16Array(sw).fill(-1)
+    const colBot = new Int16Array(sw).fill(-1)
+    for (let py = 0; py < sh; py++) {
+      const row = py * sw
+      for (let px = 0; px < sw; px++) {
+        if (data[(row + px) * 4 + 3] <= 8) continue
+        inked[px] = 1
+        if (colTop[px] < 0) colTop[px] = py
+        colBot[px] = py
+      }
+    }
+
+    // walk out from the anchor until the ink stops for a clear run
+    const GAP = Math.max(2, Math.round(6 / MARK_DIV))
+    for (const m of list) {
+      const cx = Math.round(m.x / MARK_DIV)
+      if (cx < 0 || cx >= sw) continue
+      let l = cx
+      for (let run = 0; l > 0 && run < GAP; l--) run = inked[l] ? 0 : run + 1
+      let r = cx
+      for (let run = 0; r < sw - 1 && run < GAP; r++) run = inked[r] ? 0 : run + 1
+      if (r - l < 1) continue
+      let top = sh
+      let bot = -1
+      for (let px = l; px <= r; px++) {
+        if (colTop[px] < 0) continue
+        if (colTop[px] < top) top = colTop[px]
+        if (colBot[px] > bot) bot = colBot[px]
+      }
+      if (bot < 0) continue
+      marksHit.push({
+        layer,
+        name: NAMES[m.fn] || m.fn,
+        x0: l * MARK_DIV, x1: (r + 1) * MARK_DIV,
+        y0: top * MARK_DIV, y1: (bot + 1) * MARK_DIV,
+      })
+    }
+  }
+
+  /* ---- what is that building? ----
+
+     A landmark's hit box is in buffer space and the buffer slides, so
+     the test undoes exactly what blit() does: wrap the layer's current
+     offset into the loop width, subtract, and wrap the result back. The
+     offset is recorded during render rather than recomputed here, so a
+     box can never be a frame out of step with the picture.
+
+     Front to back, because a near tower standing in front of a far one
+     is the one being pointed at. */
+  function landmarkAt(clientX, clientY) {
+    const { scale, ox, oy } = viewMap()
+    const cx = (clientX - ox) / scale
+    const cy = (clientY - oy) / scale
+    if (cy > SKYLINE + 8) return null
+
+    for (let i = marksHit.length - 1; i >= 0; i--) {
+      const m = marksHit[i]
+      const raw = markOff[m.layer]
+      if (raw == null) continue
+      const off = ((raw % W) + W) % W
+      const lift = LIFT[m.layer] || 0
+      // the buffer repeats every W, so a box has two possible homes
+      for (let k = 0; k <= 1; k++) {
+        const sx0 = m.x0 - off + k * W
+        const sx1 = m.x1 - off + k * W
+        if (cx < sx0 - 4 || cx > sx1 + 4) continue
+        if (cy < m.y0 - lift - 6 || cy > m.y1 - lift + 6) continue
+        return { name: m.name, x0: sx0, x1: sx1, y0: m.y0 - lift, y1: m.y1 - lift }
+      }
+    }
+    return null
+  }
+
   function buildCity(seed, o) {
     const buf = makeBuffer(LOOP_W, CITY_H)
     const g = buf.x
@@ -1605,8 +1768,12 @@
       }
     }
 
+    /* Landmarks only. The generated stock — three hundred anonymous
+       towers a plane — was the backdrop; it is the thing that made the
+       skyline read as a city and also the thing nobody could name. What
+       is left is what somebody would point at. */
     let x = -30
-    while (x < LOOP_W + 30) {
+    while (!o.landmarksOnly && x < LOOP_W + 30) {
       let w = o.minW + Math.floor(rnd() * (o.maxW - o.minW))
       let h = o.minH + Math.floor(rnd() * (o.maxH - o.minH))
 
@@ -2517,7 +2684,10 @@
 
     // Landmarks go in with the buildings, before the wash, so they take
     // the same aerial perspective as everything else at this depth.
+    markPending = o.markLayer == null ? null : []
     if (o.landmarks) o.landmarks(g, o, windows, beamSources)
+    const mine = markPending
+    markPending = null
 
     /* Aerial perspective. Everything at this depth is washed toward the
        horizon colour — stronger the further back, stronger again in fog
@@ -2550,6 +2720,9 @@
       }
       g.globalCompositeOperation = 'source-over'
     }
+
+    // measured last, so the wash and every void are already in
+    if (mine && mine.length) measureMarks(buf, mine, o.markLayer)
 
     return { buf, windows, fill: o.fill }
   }
@@ -3841,9 +4014,9 @@
 
     // and what stands on it
     torii(g, o, x - Math.round(hw * 0.52), y - 5, 0.66)
-    sakuraTree(g, o, x + Math.round(hw * 0.12), y - 5, 0.92)
-    sakuraTree(g, o, x + Math.round(hw * 0.62), y - 5, 0.74)
-    lanterns(g, o, x - hw + 6, y - 62, Math.max(3, Math.floor(w / 22)), 6)
+    LM(sakuraTree, g, o, x + Math.round(hw * 0.12), y - 5, 0.92)
+    LM(sakuraTree, g, o, x + Math.round(hw * 0.62), y - 5, 0.74)
+    LM(lanterns, g, o, x - hw + 6, y - 62, Math.max(3, Math.floor(w / 22)), 6)
   }
 
   /* A string of paper lanterns, which is what a Japanese street under
@@ -4760,23 +4933,23 @@
         { gapChance: 0.70, gap: 14, minH: 54, maxH: 122 },
       ],
       layer0: (g, o) => {
-        stadium(g, o, 420)
-        bridge(g, o, 1020)
-        radioDish(g, o, 1640)
+        LM(stadium, g, o, 420)
+        LM(bridge, g, o, 1020)
+        LM(radioDish, g, o, 1640)
       },
       layer1: (g, o, windows) => {
-        clockTower(g, o, 430)
-        rooftopPool(g, o, 950, SKYLINE - 126)
+        LM(clockTower, g, o, 430)
+        LM(rooftopPool, g, o, 950, SKYLINE - 126)
       },
       layer2: (g, o, windows) => {
-        empireState(g, o, 260, windows)
-        chrysler(g, o, 1130, windows)
-        rooftopPool(g, o, 500, SKYLINE - 152)
+        LM(empireState, g, o, 260, windows)
+        LM(chrysler, g, o, 1130, windows)
+        LM(rooftopPool, g, o, 500, SKYLINE - 152)
       },
       layer3: (g, o, windows, beams) => {
-        liberty(g, o, 200)
-        observatory(g, o, 1520)
-        lighthouse(g, o, 1780, beams)
+        LM(liberty, g, o, 200)
+        LM(observatory, g, o, 1520)
+        LM(lighthouse, g, o, 1780, beams)
       },
     },
 
@@ -4837,23 +5010,23 @@
         { gapChance: 0.80, gap: 22, minW: 28, maxW: 54, minH: 46, maxH: 98 },
       ],
       layer0: (g, o) => {
-        stadium(g, o, 380)
-        bridge(g, o, 1060)
-        radioDish(g, o, 1660)
+        LM(stadium, g, o, 380)
+        LM(bridge, g, o, 1060)
+        LM(radioDish, g, o, 1660)
         // something in the bay, a long way out
-        kaiju(g, o, 1420, SKYLINE)
+        LM(kaiju, g, o, 1420, SKYLINE)
       },
       layer1: (g, o, windows) => {
-        pagoda(g, o, 470)
-        lanterns(g, o, 880, SKYLINE - 118, 5, 6)
-        observatory(g, o, 1480)
+        LM(pagoda, g, o, 470)
+        LM(lanterns, g, o, 880, SKYLINE - 118, 5, 6)
+        LM(observatory, g, o, 1480)
         // Shinjuku's two, standing well back
-        metroGov(g, o, 1180, windows)
-        cocoon(g, o, 1300, windows)
+        LM(metroGov, g, o, 1180, windows)
+        LM(cocoon, g, o, 1300, windows)
       },
       layer2: (g, o, windows) => {
-        tokyoTower(g, o, 300, windows)
-        skytree(g, o, 920, windows)
+        LM(tokyoTower, g, o, 300, windows)
+        LM(skytree, g, o, 920, windows)
         /* Tanks on the roofline. Spread across the plane rather than
            clustered, because the point of them is that they are
            everywhere. */
@@ -4863,11 +5036,11 @@
         ]) waterTank(g, o, tx, SKYLINE - ty, ts)
       },
       layer3: (g, o, windows) => {
-        pagoda(g, o, 240)
-        precinct(g, o, 600, 132)
-        precinct(g, o, 1420, 104)
-        sakuraTree(g, o, 860, SKYLINE, 1)
-        sakuraTree(g, o, 1180, SKYLINE, 0.85)
+        LM(pagoda, g, o, 240)
+        LM(precinct, g, o, 600, 132)
+        LM(precinct, g, o, 1420, 104)
+        LM(sakuraTree, g, o, 860, SKYLINE, 1)
+        LM(sakuraTree, g, o, 1180, SKYLINE, 0.85)
 
         /* ---- the street, and what is strung over it ----
            Poles first, then the cable between each pair, then the
@@ -4956,25 +5129,25 @@
         { gapChance: 0.78, gap: 15, minW: 45, maxW: 92, minH: 40, maxH: 84 },
       ],
       layer0: (g, o) => {
-        stadium(g, o, 400)
-        bridge(g, o, 1100)
-        radioDish(g, o, 1620)
+        LM(stadium, g, o, 400)
+        LM(bridge, g, o, 1100)
+        LM(radioDish, g, o, 1620)
       },
       layer1: (g, o, windows) => {
-        clockTower(g, o, 450)
-        marigoldString(g, o, 910, SKYLINE - 124, 6)
-        observatory(g, o, 1490)
+        LM(clockTower, g, o, 450)
+        LM(marigoldString, g, o, 910, SKYLINE - 124, 6)
+        LM(observatory, g, o, 1490)
       },
       layer2: (g, o, windows) => {
-        qutubMinar(g, o, 320, windows)
-        mughalTomb(g, o, 860, windows)
-        rooftopPool(g, o, 1180, SKYLINE - 152)
+        LM(qutubMinar, g, o, 320, windows)
+        LM(mughalTomb, g, o, 860, windows)
+        LM(rooftopPool, g, o, 1180, SKYLINE - 152)
       },
       layer3: (g, o, windows) => {
-        indiaGate(g, o, 300)
-        lotusTemple(g, o, 760)
-        marigoldString(g, o, 1080, SKYLINE - 104, 6)
-        marigoldString(g, o, 1440, SKYLINE - 88, 5)
+        LM(indiaGate, g, o, 300)
+        LM(lotusTemple, g, o, 760)
+        LM(marigoldString, g, o, 1080, SKYLINE - 104, 6)
+        LM(marigoldString, g, o, 1440, SKYLINE - 88, 5)
       },
     },
 
@@ -5033,24 +5206,24 @@
         { gapChance: 0.70, gap: 14, minW: 42, maxW: 85, minH: 52, maxH: 110 },
       ],
       layer0: (g, o) => {
-        stadium(g, o, 430)
-        bridge(g, o, 1080)
-        radioDish(g, o, 1650)
+        LM(stadium, g, o, 430)
+        LM(bridge, g, o, 1080)
+        LM(radioDish, g, o, 1650)
       },
       layer1: (g, o, windows) => {
-        rooftopPool(g, o, 980, SKYLINE - 122)
-        radioDish(g, o, 1500)
+        LM(rooftopPool, g, o, 980, SKYLINE - 122)
+        LM(radioDish, g, o, 1500)
       },
       layer2: (g, o, windows) => {
-        eiffel(g, o, 320, windows)
-        sacreCoeur(g, o, 880)
-        clockTower(g, o, 1260)
-        rooftopPool(g, o, 640, SKYLINE - 148)
+        LM(eiffel, g, o, 320, windows)
+        LM(sacreCoeur, g, o, 880)
+        LM(clockTower, g, o, 1260)
+        LM(rooftopPool, g, o, 640, SKYLINE - 148)
       },
       layer3: (g, o, windows, beams) => {
-        arcDeTriomphe(g, o, 260)
-        observatory(g, o, 1120)
-        lighthouse(g, o, 1760, beams)
+        LM(arcDeTriomphe, g, o, 260)
+        LM(observatory, g, o, 1120)
+        LM(lighthouse, g, o, 1760, beams)
       },
     },
 
@@ -5100,23 +5273,23 @@
         { gapChance: 0.80, gap: 29, minW: 25, maxW: 53, minH: 52, maxH: 132 },
       ],
       layer0: (g, o) => {
-        stadium(g, o, 400)
-        bridge(g, o, 1060)
-        radioDish(g, o, 1640)
+        LM(stadium, g, o, 400)
+        LM(bridge, g, o, 1060)
+        LM(radioDish, g, o, 1640)
       },
       layer1: (g, o, windows) => {
-        radioDish(g, o, 440)
-        stadium(g, o, 1000)
-        clockTower(g, o, 1500)
+        LM(radioDish, g, o, 440)
+        LM(stadium, g, o, 1000)
+        LM(clockTower, g, o, 1500)
       },
       layer2: (g, o, windows) => {
-        burjKhalifa(g, o, 340, windows)
-        dubaiFrame(g, o, 900)
-        rooftopPool(g, o, 1120, SKYLINE - 158)
+        LM(burjKhalifa, g, o, 340, windows)
+        LM(dubaiFrame, g, o, 900)
+        LM(rooftopPool, g, o, 1120, SKYLINE - 158)
       },
       layer3: (g, o, windows) => {
-        burjAlArab(g, o, 320)
-        observatory(g, o, 1200)
+        LM(burjAlArab, g, o, 320)
+        LM(observatory, g, o, 1200)
       },
     },
   }
@@ -5189,6 +5362,10 @@
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
+      /* Nothing is drawn on the ridge but stock, so with the stock gone
+         the ridge is gone: an empty plane still costs a buffer and a
+         blit every frame. */
+      landmarksOnly: true,
       minW: 35, maxW: 80, minH: 16, maxH: 54, gapChance: 0.72, gap: 14,
       step: 3, ww: 1, wh: 1, litChance: 0.028,
       neon: T.neon, neonChance: 0.0000, halo: 0, fog: 0.11,
@@ -5271,6 +5448,7 @@
   }
 
   function buildLayer(i) {
+    marksHit = marksHit.filter((m) => m.layer !== i + 1)
     const L = LAYERS[i]
     /* What this city builds at this distance. A city says only what it
        wants different; everything it does not name comes off the ramp
@@ -5285,6 +5463,9 @@
       /* Spread across the loop so that at any moment one or two are
          in frame and the rest are on their way round. */
       landmarks: marks(L.key),
+      // landmarks only, and tell the registry which plane they land on
+      landmarksOnly: true,
+      markLayer: i + 1,
     })
   }
 
@@ -8086,6 +8267,8 @@
       const L = city[i]
       if (!L) continue
       const off = drift(i + 1) - Math.round(panX * LAYERS[i].pan)
+      // what the hit test needs: the offset actually used this frame
+      markOff[i + 1] = off
       ground(L.fill, LIFT[i + 1])
       blit(L.buf, off, LIFT[i + 1])
       flicker(L, off, LIFT[i + 1])
@@ -8285,6 +8468,9 @@
       panTo = v
     },
     current: () => themeName,
+
+    /* What is under the pointer out there, if anything. */
+    landmarkAt,
 
     /* ---- the skyline picker ----
        `cities` is the whole menu in display order, so the control in

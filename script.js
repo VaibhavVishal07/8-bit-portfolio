@@ -663,6 +663,7 @@
        scroll — landing halfway down a case study you read ten minutes ago
        is disorienting in a way that landing at its title never is. */
     function show(id) {
+      const fromId = current
       pages.forEach((el, key) => {
         const on = key === id
         el.hidden = !on
@@ -702,7 +703,12 @@
          document load, so a screen reader is given nothing unless we say
          something; and focus has to be moved off whatever link was just
          followed or the next Tab resumes on the page that has gone. */
-      if (live) {
+      /* Not on the first paint. With no user interaction behind it,
+         Chrome counts a programmatic focus as keyboard-initiated and
+         paints :focus-visible — which put a ring round the wordmark on
+         every cold load. Announcing the page a visitor has not navigated
+         to yet is not worth that. */
+      if (live && fromId != null) {
         const h = live.querySelector('h1, h2')
         if (h) {
           h.setAttribute('tabindex', '-1')
@@ -985,6 +991,65 @@
     )
     io.observe(heroEl)
   }
+
+  /* ==================================================================
+     NAMING THE SKYLINE
+
+     The backdrop is landmarks only now, so every shape out there is a
+     thing with a name. Point at one and it says what it is.
+
+     The hit test lives in scene.js, because the answer depends on where
+     each parallax plane happens to be this frame and only the scene
+     knows that. This is the label: one element, moved with a transform,
+     and it only asks the scene when the pointer has actually moved to a
+     new place — a hit test per mousemove is a hit test sixty times a
+     second for an answer that changes when you cross a building.
+     ================================================================== */
+  const nameplate = document.createElement('div')
+  nameplate.className = 'nameplate'
+  nameplate.setAttribute('aria-hidden', 'true')
+  document.body.appendChild(nameplate)
+
+  ;(function () {
+    if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return
+    let raf = 0
+    let px = 0
+    let py = 0
+    let shown = null
+
+    const look = () => {
+      raf = 0
+      const sc = window.__scene
+      // never over the page itself: the city is behind the panel
+      const overPage = document.elementFromPoint(px, py)
+      const blocked = overPage && overPage.closest && overPage.closest('.col, .controls, .nameplate')
+      const hit = !blocked && sc && sc.landmarkAt ? sc.landmarkAt(px, py) : null
+      if (!hit) {
+        if (shown) { nameplate.classList.remove('is-on'); shown = null }
+        return
+      }
+      if (hit.name !== shown) {
+        nameplate.textContent = hit.name
+        nameplate.classList.add('is-on')
+        shown = hit.name
+      }
+      const w = nameplate.offsetWidth
+      const x = px + 18 + w > window.innerWidth ? px - w - 14 : px + 18
+      nameplate.style.transform =
+        'translate(' + Math.round(x) + 'px,' + Math.round(py + 16) + 'px)'
+    }
+
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return
+      px = e.clientX
+      py = e.clientY
+      if (!raf) raf = requestAnimationFrame(look)
+    })
+    window.addEventListener('pointerleave', () => {
+      nameplate.classList.remove('is-on')
+      shown = null
+    })
+  })()
 
   /* ---------------- the Konami code ----------------
      Up up down down left right left right B A. It belongs on a title
