@@ -3405,7 +3405,7 @@ html[data-l2='stage'] .controls { display: none; }
 html[data-l2='read'] .col.col--doc.read,
 html[data-l2='read'] .col.col--doc.windex,
 html[data-l2='stage'] .col.col--doc.cs {
-  width: min(92vw, 720px);
+  width: min(94vw, 860px);
   margin-inline: auto;
   min-height: 0;
   background: rgba(12, 10, 20, 0.94);
@@ -3467,14 +3467,18 @@ html[data-l2='read'] .read__standfirst {
   font-size: clamp(20px, 2.2vw, 23px);
   font-weight: 500;
   line-height: 1.5;
-  max-width: 46ch;
+  max-width: 54ch;
 }
-/* body, and everything that reads at body size */
+/* body, and everything that reads at body size. The measure grows with the
+   wider modal so the text fills the card rather than stranding a gutter. */
 html[data-l2='read'] .read__body p,
 html[data-l2='read'] .read__body li {
   font-size: 19px;
   line-height: 1.72;
+  max-width: 74ch;
 }
+html[data-l2='read'] .read__body ul { max-width: 70ch; }
+html[data-l2='read'] .read__body blockquote { max-width: 56ch; }
 html[data-l2='read'] .read__body h3 {
   font-size: clamp(22px, 2vw, 26px);
   font-weight: 700;

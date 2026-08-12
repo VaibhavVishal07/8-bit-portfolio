@@ -986,6 +986,8 @@
        opened ten minutes ago is disorienting in a way that landing on
        the rack never is. */
     function show(id) {
+      // where we came FROM, so an L2 page's back link can point there
+      const fromId = current
       pages.forEach((el, key) => {
         const on = key === id
         el.hidden = !on
@@ -1001,6 +1003,28 @@
       const live = pages.get(id)
       pages.forEach((el) => el.removeAttribute('data-active'))
       if (live) live.setAttribute('data-active', '')
+
+      /* The back link names where you came from. Arrive at an article from
+         the homepage and it says "Home"; arrive from the writing index and
+         it says "All writing". Referrer wins when it is one of the hubs;
+         otherwise the link falls back to the page's natural parent (an
+         article to the index, everything else to home). */
+      if (live) {
+        const back = live.querySelector('.l2nav .cta')
+        if (back) {
+          const HUBS = { home: 'Home', writing: 'All writing' }
+          let target
+          if (fromId && HUBS[fromId]) {
+            target = { href: '#' + fromId, label: HUBS[fromId] }
+          } else if (/^r\d+$/.test(id)) {
+            target = { href: '#writing', label: 'All writing' }
+          } else {
+            target = { href: '#home', label: 'Home' }
+          }
+          back.setAttribute('href', target.href)
+          back.innerHTML = '<span aria-hidden="true">←</span> ' + target.label
+        }
+      }
 
       /* Two treatments now, not three:
            home  — the living city, full strength; it IS the shot.
