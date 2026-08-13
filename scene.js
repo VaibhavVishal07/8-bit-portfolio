@@ -761,8 +761,8 @@
          violet, into a magenta glow sitting on the rooftops. The red
          is gone entirely; nothing in this sky is warmer than pink. */
       sky: [
-        '#04041c', '#07082c', '#0b0b40', '#120e56', '#1d116c',
-        '#31147f', '#4e188c', '#761f92', '#a52590',
+        '#030314', '#05061f', '#08082d', '#0d0a3c', '#140c4c',
+        '#220e59', '#371162', '#531666', '#731a65',
       ],
       haze: '#d63ba6',
       smog: '#4a1a72',
@@ -903,8 +903,8 @@
          pollution band sitting on the skyline. That amber is what makes
          it read as a poisoned afternoon rather than a nice one. */
       sky: [
-        '#17558c', '#22659e', '#2f74ac', '#4a89bd', '#6a93c0',
-        '#9099c1', '#b3a4bf', '#d3adb4', '#f6c193',
+        '#103b62', '#18476f', '#215178', '#346084', '#4a6786',
+        '#656b87', '#7d7386', '#94797e', '#ac8767',
       ],
       haze: '#ffbc7a',
       smog: '#e8a878',
@@ -4798,8 +4798,8 @@
       palette: {
         night: {
           sky: [
-            '#08051c', '#0e0726', '#160a34', '#241046', '#3a1358',
-            '#57186a', '#7a1f74', '#a52d7e', '#d1497f',
+            '#060414', '#0a051b', '#0f0724', '#190b31', '#290d3e',
+            '#3d114a', '#551651', '#731f58', '#923359',
           ],
           haze: '#ff86b8',
           smog: '#6a2050',
