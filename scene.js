@@ -391,6 +391,71 @@
     g.restore()
   }
 
+  /* ---- bloom ----
+
+     Every light in this city was drawn at its own size and stopped
+     there. A window is one lit pixel; a hundred lit windows are a
+     hundred lit pixels, and the air between them stays perfectly
+     clear. That is the single biggest thing separating this from the
+     reference art: not the buildings, the AIR. In a real night city
+     the light does not stay where it was emitted — it scatters off
+     haze, dust and damp all the way to the eye, so a bright thing is
+     always sitting in a soft pool of its own colour and a dense field
+     of small bright things reads as a glow with structure in it.
+
+     Doing that per source is hopeless here: there are several thousand
+     lit cells per layer and glow() spends a gradient on each one.
+
+     So it is done once, on the whole plane, the way a compositor does
+     it. Take the finished layer, throw it down to an eighth scale —
+     which IS a box blur, done by the sampler for free — square it so
+     the darks fall away and only genuine light survives, then add it
+     back over the top at full size with smoothing on. One downscale
+     and one upscale per layer, and every window, sign, tube and
+     beacon in it is suddenly sitting in air.
+
+     Squaring is what keeps this from being a haze filter. Multiplying
+     the small copy by itself sends a mid-grey wall to a quarter of its
+     value and a near-black one to nothing, while a saturated neon at
+     full brightness comes through almost untouched — so the bloom is
+     carried by the lights and not by the buildings they are bolted to. */
+  function bloom(buf, amt, div) {
+    if (!(amt > 0)) return
+    const d = div || 8
+    const dw = Math.max(1, Math.round(buf.c.width / d))
+    const dh = Math.max(1, Math.round(buf.c.height / d))
+
+    const small = document.createElement('canvas')
+    small.width = dw
+    small.height = dh
+    const sx = small.getContext('2d')
+    sx.imageSmoothingEnabled = true
+    sx.drawImage(buf.c, 0, 0, dw, dh)
+
+    /* Crush the darks. Two multiplies is x^3 — enough that the body of
+       a building contributes nothing and a lit window contributes
+       nearly all of itself. */
+    sx.globalCompositeOperation = 'multiply'
+    sx.drawImage(small, 0, 0)
+    sx.drawImage(small, 0, 0)
+    sx.globalCompositeOperation = 'source-over'
+
+    const g = buf.x
+    g.save()
+    /* The buffer context is pixel-snapped and carries the S transform.
+       The bloom is the one thing in it that must be resampled smoothly
+       — a nearest-neighbour upscale of an eighth-scale image is a grid
+       of squares, which is the lattice problem all over again. */
+    g.setTransform(1, 0, 0, 1, 0, 0)
+    g.imageSmoothingEnabled = true
+    g.globalCompositeOperation = 'lighter'
+    g.globalAlpha = amt
+    g.drawImage(small, 0, 0, buf.c.width, buf.c.height)
+    g.restore()
+    g.imageSmoothingEnabled = false
+    g.setTransform(S, 0, 0, S, 0, 0)
+  }
+
   /* A cone of light thrown from a point — a searchlight under a drone,
      a tractor beam under a saucer.
 
@@ -2544,6 +2609,54 @@
        squaring the ramp puts it there: near nothing up high, full
        strength along the skyline. That is what lets a building have a
        readable silhouette and still sit back in the distance. */
+    /* ---- the street you cannot see ----
+
+       In the reference art the single brightest band in the whole
+       picture is the one at the bottom of the buildings, and none of
+       the light in it has a visible source: it is shopfronts, signage
+       and headlights, all of it below the sightline, throwing light UP
+       into the air between the towers. That upward wash is most of
+       what makes a drawn city look inhabited rather than modelled,
+       because it is the only cue that says there are people down
+       there.
+
+       There is no street in this frame — the camera is on a roof and
+       the near plane cuts the city off at its feet. So the street is
+       drawn as the only part of itself that would actually be visible
+       from up here, which is its glow on the air.
+
+       'lighter' and source-atop in two passes: the wash goes into the
+       air between the towers AND onto the towers' own lower storeys,
+       because light bouncing off a street lands on both. Warm, always,
+       whatever the layer's neon is doing — sodium and headlights are
+       warm, and a warm base under a cool sky is the oldest depth cue
+       in night painting. */
+    if (o.street > 0) {
+      /* Kept SHORT and kept weak. The first pass ran this to nearly
+         half the frame height at three times this strength, and it did
+         exactly what a full-width warm wash always does: it turned a
+         purple night into a brown evening, pulled every tower to the
+         same tan value, and left the neon with nothing to be brighter
+         than. Street light does not fill a city — it pools at the
+         bottom of it and is gone within a few storeys. */
+      const rise = Math.round(SKYLINE * 0.15)
+      g.save()
+      g.globalCompositeOperation = 'lighter'
+      const grd = g.createLinearGradient(0, SKYLINE - rise, 0, SKYLINE + 6)
+      grd.addColorStop(0, rgba(o.streetCol || '#ff9a4a', 0))
+      grd.addColorStop(0.6, rgba(o.streetCol || '#ff9a4a', 0.022 * o.street))
+      grd.addColorStop(1, rgba(o.streetCol || '#ff9a4a', 0.11 * o.street))
+      g.fillStyle = grd
+      g.fillRect(0, SKYLINE - rise, LOOP_W, rise + 6)
+      g.restore()
+    }
+
+    /* Bloom BEFORE the wash, so the haze sits over the light rather
+       than under it. A distant plane's glow should read as already
+       having travelled through the air between here and there, which
+       means the fog has to be the last thing that touches it. */
+    bloom(buf, o.bloom === undefined ? 0.5 : o.bloom)
+
     const amt = Math.min(FOG_CAP, o.fog + fogBoost() * (o.fog > 0.15 ? 1.2 : 0.7))
     if (amt > 0.01) {
       const col = fogColour()
@@ -5194,8 +5307,8 @@
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
       minW: 35, maxW: 80, minH: 16, maxH: 54, gapChance: 0.72, gap: 14,
-      step: 3, ww: 1, wh: 1, litChance: 0.028,
-      neon: T.neon, neonChance: 0.0000, halo: 0, fog: 0.11,
+      step: 3, ww: 1, wh: 1, litChance: 0.028, bloom: 0.22,
+      neon: T.neon, neonChance: 0.0000, halo: 0, fog: 0.21, street: 0.32,
       ...localGlass(recede(depthen(T.cityFar, 0.2), 0.5)),
     })
   }
@@ -5232,21 +5345,21 @@
      it had and the whole skyline stops reading as texture at any
      distance you look at it. */
   const LAYERS = [
-    { key: 'layer0', seed: 4411, recede: 0.40, fog: 0.085, pan: 0.16,
+    { key: 'layer0', seed: 4411, recede: 0.40, fog: 0.165, pan: 0.16,
       minW: 15, maxW: 32, minH: 54, maxH: 134, gapChance: 0.61, gap: 9,
-      step: 3, ww: 1, wh: 1, litChance: 0.033, neonChance: 0.0050 },
+      step: 3, ww: 1, wh: 1, litChance: 0.033, neonChance: 0.0050, bloom: 0.34, street: 0.55 },
 
-    { key: 'layer1', seed: 5273, recede: 0.25, fog: 0.062, pan: 0.26,
+    { key: 'layer1', seed: 5273, recede: 0.25, fog: 0.115, pan: 0.26,
       minW: 19, maxW: 39, minH: 74, maxH: 172, gapChance: 0.61, gap: 10,
-      step: 3, ww: 1, wh: 2, litChance: 0.037, neonChance: 0.0075 },
+      step: 3, ww: 1, wh: 2, litChance: 0.037, neonChance: 0.0075, bloom: 0.42, street: 0.75 },
 
-    { key: 'layer2', seed: 881, recede: 0.11, fog: 0.032, pan: 0.42,
+    { key: 'layer2', seed: 881, recede: 0.11, fog: 0.058, pan: 0.42,
       minW: 22, maxW: 47, minH: 90, maxH: 205, gapChance: 0.64, gap: 12,
-      step: 3, ww: 1, wh: 2, litChance: 0.045, neonChance: 0.0125, escapes: true },
+      step: 3, ww: 1, wh: 2, litChance: 0.045, neonChance: 0.0125, escapes: true, bloom: 0.52, street: 0.95 },
 
     { key: 'layer3', seed: 2266, recede: 0, fog: 0, pan: 0.68,
       minW: 31, maxW: 64, minH: 50, maxH: 130, gapChance: 0.67, gap: 14,
-      step: 4, ww: 2, wh: 2, litChance: 0.043, neonChance: 0.0125, escapes: true },
+      step: 4, ww: 2, wh: 2, litChance: 0.043, neonChance: 0.0125, escapes: true, bloom: 0.64, street: 1 },
   ]
 
   /* Four planes off a three-stop authored ramp. The stops are the
