@@ -752,7 +752,7 @@ Same two rules as the scene, applied to the DOM:
 Three, one job each. **Press Start 2P** is the interface — the wordmark, the
 section markers, the city controls, anything that is furniture. **JetBrains
 Mono** is the machine's speaking voice: labels, captions, the readout under the
-name, every word inside a diagram. **Satoshi** carries the reading — the case
+name, every word inside a diagram. **Geist** carries the reading — the case
 studies and the about page.
 
 A pixel font is a costume, and nobody should have to read a costume.

@@ -158,12 +158,12 @@
 
   --font-display: 'Press Start 2P', 'Courier New', monospace;
   /* Two faces, one job each. The pixel face is the INTERFACE - titles,
-     buttons, labels, anything that is furniture. Satoshi is the
+     buttons, labels, anything that is furniture. Geist is the
      READING face: prose, bios, case studies, anything a person has to
      get through a paragraph of. A pixel font is a costume, and nobody
      should have to read a costume. */
   /* ---- the body face ----
-     Was Satoshi, a geometric sans. It read as a product page wearing
+     Was Geist, a geometric sans. It read as a product page wearing
      an arcade hat: the display face is a 5x7 bitmap and the body face
      was a smooth grotesk, and the two had nothing to say to each
      other.
@@ -180,9 +180,9 @@
   /* ---- the reading face ----
      A monospace column is calm but tiring over several paragraphs, and a
      case study is the one place on this site that asks for sustained
-     reading. Satoshi carries the long prose; the interface, the labels
+     reading. Geist carries the long prose; the interface, the labels
      and everything on home stay on the mono. */
-  --font-read: 'Satoshi', var(--font-body);
+  --font-read: 'Geist', var(--font-body);
 }
 
 @media (min-width: 1500px) {
@@ -382,7 +382,7 @@ svg { display: block; image-rendering: pixelated; }
 /* The line under the name. It was set in the pixel face at 13px with
    2px of tracking — the same treatment as every label and button on
    the page, which made the one line that is actually ABOUT somebody
-   read as furniture. Satoshi, white, and big enough to be a sentence
+   read as furniture. Geist, white, and big enough to be a sentence
    rather than a caption. The tracking comes off with the pixel face;
    a geometric sans does not need it. */
 .role {
@@ -1176,7 +1176,7 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    home CTAs ("All writing", "Know more about me") and the navigation bar
    at the top of each L2 page. It is tactile in the language of the rest
    of the scene — proud on a hard offset shadow, and it drops flat onto
-   that shadow on press, no easing, a snap. Set in Satoshi like the rest
+   that shadow on press, no easing, a snap. Set in Geist like the rest
    of the reading type.
    ================================================================== */
 .cta {
@@ -1249,7 +1249,7 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    THE CASE STUDY
 
    Roomier than the rest of the site on purpose — a case study is read,
-   not scanned. Set entirely in Satoshi, on the same pinned scale as the
+   not scanned. Set entirely in Geist, on the same pinned scale as the
    articles, so the work reads in parity with the writing. The city still
    crosses at half light behind the panel; only the type is unified.
    ================================================================== */
@@ -1257,7 +1257,7 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    return to. (The rest of the site centres; this deliberately does not.) */
 .cs { text-align: left; padding: var(--s4) var(--s2) var(--s7); }
 
-/* Set entirely in Satoshi, on the same pinned scale as the article and
+/* Set entirely in Geist, on the same pinned scale as the article and
    index pages, so a case study reads in parity with the writing rather
    than in a second, louder voice. Labels (kicker, meta terms) are the
    reading face doing small, upper, letter-spaced chrome work. */
@@ -1538,7 +1538,7 @@ html[data-l2='stage'] .col.col--doc.cs {
 /* ==================================================================
    L2 READING TYPE — one face, one scale
 
-   Everything on a reading page is set in Satoshi (the pixel and mono faces
+   Everything on a reading page is set in Geist (the pixel and mono faces
    are the city's voice, not the article's), and every step of the scale is
    pinned here so the sizes stay in parity across the article, the index and
    the foot navigation. Labels are the reading face too, just small, upper
@@ -2257,7 +2257,7 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .col__waterer { display: none; } }
 
 /* ==================================================================
-   THE MODAL READS IN SATOSHI
+   THE MODAL READS IN GEIST
 
    The column was set in the two machine faces: Press Start for every
    label and marker, JetBrains Mono for every sentence. That is the
@@ -2265,7 +2265,7 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    land on — a whole column of pixel type and monospace prose is a lot
    of costume to read through before you get to what somebody does.
 
-   So the modal reads in Satoshi. The wordmark does not: it is the
+   So the modal reads in Geist. The wordmark does not: it is the
    logo, it is the one thing here that IS the machine, and it keeps
    the pixel face it was drawn in. Everything else — the role line,
    the prose, the section markers, the writing list, the shelf, the
@@ -3366,7 +3366,7 @@ html[data-l2='case'] .col.col--doc.cs {
    THE PANEL'S THREE VOICES
 
    The panel sets its default in the reading face (see "everything comes
-   over to Satoshi" above), which is right for the sentences. It is wrong
+   over to Geist" above), which is right for the sentences. It is wrong
    for the furniture: a section marker, the numeral on a work row, a
    domain tag and the colophon are the machine talking, not me, and they
    belong to the pixel and mono faces the rest of the shell is built in.
@@ -3422,7 +3422,7 @@ html[data-l2='case'] .col.col--doc.cs {
 .page--home .band--end { padding-bottom: 0; }
 .page--home .masthead { padding-bottom: 0; }
 
-/* A line of Satoshi at 27px in an 860px panel: wide enough to be a
+/* A line of Geist at 27px in an 860px panel: wide enough to be a
    sentence, narrow enough to stay a masthead.
 
    The measure is matched to the section ledes below it. Those run to
@@ -3586,9 +3586,9 @@ html[data-l2='case'] .col.col--doc.cs {
 
 
 /* ==================================================================
-   L2 IS ALL SATOSHI
+   L2 IS ALL GEIST
    The pixel and mono faces are the city's voice, not the reading — so on
-   every L2 page the whole article is set in Satoshi. The only exception
+   every L2 page the whole article is set in Geist. The only exception
    is the schematic diagram labels, which keep the technical mono face.
    ================================================================== */
 html[data-l2] .col--doc,
