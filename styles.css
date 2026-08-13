@@ -806,7 +806,7 @@ html[data-city='dubai']:not([data-mode='day']) {
    property. So each city re-paints the frame here: same tile, same
    staircase corners, the fill and the two glows swapped to match. */
 html[data-city='tokyo']:not([data-mode='day']) .col {
-  border-color: rgba(255, 92, 156, 0.30);
+  border-color: rgba(255, 92, 156, 0.42);
   box-shadow:
     0 26px 70px rgba(0, 0, 0, 0.55),
     0 2px 14px rgba(0, 0, 0, 0.42),
@@ -815,7 +815,7 @@ html[data-city='tokyo']:not([data-mode='day']) .col {
 }
 
 html[data-city='delhi']:not([data-mode='day']) .col {
-  border-color: rgba(255, 154, 42, 0.26);
+  border-color: rgba(255, 154, 42, 0.4);
   box-shadow:
     0 26px 70px rgba(0, 0, 0, 0.55),
     0 2px 14px rgba(0, 0, 0, 0.42),
@@ -824,7 +824,7 @@ html[data-city='delhi']:not([data-mode='day']) .col {
 }
 
 html[data-city='paris']:not([data-mode='day']) .col {
-  border-color: rgba(232, 180, 90, 0.26);
+  border-color: rgba(232, 180, 90, 0.4);
   box-shadow:
     0 26px 70px rgba(0, 0, 0, 0.55),
     0 2px 14px rgba(0, 0, 0, 0.42),
@@ -833,7 +833,7 @@ html[data-city='paris']:not([data-mode='day']) .col {
 }
 
 html[data-city='dubai']:not([data-mode='day']) .col {
-  border-color: rgba(74, 220, 232, 0.28);
+  border-color: rgba(74, 220, 232, 0.42);
   box-shadow:
     0 26px 70px rgba(0, 0, 0, 0.55),
     0 2px 14px rgba(0, 0, 0, 0.42),
@@ -1525,7 +1525,7 @@ html[data-city='dubai']:not([data-mode='day']) .col {
      the very edges — but it is turned right down, so an L2 page reads as a
      card opened OVER the city, cleanly separated from it, not a dim panel
      floating in the same murk. */
-  background: rgba(3, 2, 8, 0.62);
+  background: rgba(3, 2, 8, 0.12);
 }
 html[data-l2='read'] .reading-surface,
 html[data-l2='stage'] .reading-surface { display: block; }
@@ -1956,7 +1956,10 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    near-black is about as legible as this palette gets.
    ================================================================== */
 .col {
-  background: rgba(10, 7, 22, 0.5);
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 45%),
+    repeating-linear-gradient(to bottom, var(--panel-grain) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
+    rgba(10, 7, 22, 0.5);
   border: 3px solid var(--panel-edge);
   box-shadow:
     inset 3px 3px 0 0 rgba(62, 240, 255, 0.22),
@@ -2117,13 +2120,16 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    Whole pixels, one colour, no file on disk. Same rules as the scene.
    ================================================================== */
 .col {
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  border: 2.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
   box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.55),
-    0 2px 14px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    0 3px 16px rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.32),
+    inset 0 0 24px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(26px) saturate(1.85) brightness(1.08);
+  -webkit-backdrop-filter: blur(26px) saturate(1.85) brightness(1.08);
   filter: none;
 }
 
@@ -2362,14 +2368,8 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    twentieth opacity, which is enough to warm the black without
    lifting it. Tokyo's panel goes faintly pink, Dubai's faintly cyan,
    and neither costs a step of contrast under the body text. */
-.page--home .col {
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      var(--panel-grain) 0 1px,
-      rgba(0, 0, 0, 0) 1px 3px
-    );
-}
+/* Scanline + sheen now live on the base .col background, so the home
+   panel and every L2 page are lit by the same glass — nothing here. */
 
 /* ---- the joints ----
    A section marker was grey type floating in the middle of a column
