@@ -2381,7 +2381,7 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    - each section leads with the same measured silence and a full-width
      joint, so the eye reads a rhythm of sections instead of one scroll.
    ================================================================== */
-.page--home .col { width: min(90vw, 860px); }
+.page--home .col { width: min(94vw, 1000px); }
 .page--home .col { padding-top: clamp(30px, 3.6vw, 56px); }
 /* the joint reads as a deliberate seam: a hair brighter than the dim
    hairlines inside a section, and the label spaced off it */
