@@ -557,10 +557,9 @@
       '<span class="wk__plate">' +
       (w.cover
         ? '<img class="wk__img" src="' + w.cover + '" alt="" loading="lazy">'
-        : '<span class="wk__no" aria-hidden="true">' + w.n + '</span>') +
+        : '') +
       '</span>' +
       '<span class="wk__foot">' +
-      '<span class="wk__n" aria-hidden="true">' + w.n + '</span>' +
       '<span class="wk__title">' + w.title + '</span>' +
       '</span></a></li>').join('')
   }
