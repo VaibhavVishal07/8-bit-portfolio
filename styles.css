@@ -1436,17 +1436,8 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    the piece stays text-first. Full measure, a caption beneath. A real image
    drops straight in; the placeholder is the same canvas art as everything
    else, a slot waiting for its picture. */
-/* a drop cap opens the body — one big letter in the reading face, in the
-   city's own edge colour, to say 'the reading starts here' */
-.read__lead::first-letter {
-  float: left;
-  font-family: var(--font-read);
-  font-weight: 700;
-  font-size: 3.1em;
-  line-height: 0.78;
-  padding: 5px 10px 0 0;
-  color: var(--panel-edge);
-}
+/* No drop cap. The body opens as plain prose — the reading pages stay
+   simple and even, every paragraph set the same way. */
 /* hands the reader the next piece — a tactile block like the rest of the
    L2 furniture */
 /* Foot navigation: a quiet way back to the index, then Previous / Next
@@ -1545,10 +1536,14 @@ html[data-l2='stage'] .controls { display: none; }
    wider rather than as a different, quieter object. */
 html[data-l2='read'] .col.col--doc.read,
 html[data-l2='stage'] .col.col--doc.cs {
-  width: min(94vw, 1040px);
+  width: min(94vw, 860px);
   margin-inline: auto;
   min-height: 0;
-  padding: clamp(26px, 3.6vw, 48px) clamp(22px, 3.4vw, 44px) clamp(36px, 5vw, 64px);
+  /* The generous side padding IS the centred reading column: the prose
+     measure fills the space between, so every block ranges from the same
+     left edge and the frame's extra room falls evenly on both sides —
+     no stranded gutter, and the title still ranges left with the body. */
+  padding: clamp(24px, 3vw, 40px) clamp(22px, 5vw, 66px) clamp(32px, 4vw, 56px);
 }
 
 /* ==================================================================
@@ -1626,7 +1621,6 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
 
 @media (max-width: 760px) {
   .read__body p, .read__body li { font-size: 20px; }
-  .read__lead::first-letter { font-size: 2.7em; }
 }
 
 /* ---- the measure ----
@@ -2767,10 +2761,10 @@ html[data-l2='case'] .controls { display: none; }
    the base `.col` background and per-city neon frame fall through, so the
    case study wears the home panel rather than a separate quiet card. */
 html[data-l2='case'] .col.col--doc.cs {
-  width: min(96vw, 1120px);
+  width: min(96vw, 1040px);
   margin-inline: auto;
   min-height: 0;
-  padding: clamp(26px, 3.6vw, 48px) clamp(22px, 3.4vw, 44px) clamp(36px, 5vw, 64px);
+  padding: clamp(24px, 3vw, 40px) clamp(20px, 2.6vw, 34px) clamp(32px, 4vw, 56px);
 }
 
 /* ---- the measure ----

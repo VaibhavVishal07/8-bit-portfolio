@@ -7357,18 +7357,18 @@
      direct manipulation that takes two seconds to answer does not read
      as a slow firework, it reads as a page that did not hear you.
 
-     Five frames now, and the shell starts a fixed short distance
+     Three frames now, and the shell starts a fixed short distance
      BELOW the burst point rather than at the horizon, so the wait is
-     the same wherever you tap and it is under half a second. That is
-     still long enough to read as a launch — you see the tail go up —
-     and short enough that the burst feels like the answer to the tap
-     rather than a separate event.
+     the same wherever you tap and it is about a quarter second. There
+     is still one frame of tail going up — enough to read as a launch —
+     but the burst now lands almost on the tap rather than after a
+     noticeable fuse: a direct manipulation should feel immediate.
 
-     The burst itself is untouched apart from a slightly shorter tail.
+     The burst itself is untouched apart from a shorter tail.
      The burst is the part you wanted; the fuse was never the point. */
-  const SHELL_RISE = 5
+  const SHELL_RISE = 3
   const SHELL_LIVE = 38
-  const SHELL_DROP = 46 // how far below the burst the shell starts
+  const SHELL_DROP = 28 // how far below the burst the shell starts
 
   /* Seven at once, and it used to DROP the eighth tap on the floor.
      A control that ignores you when you use it quickly is the same
