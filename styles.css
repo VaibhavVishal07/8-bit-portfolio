@@ -335,13 +335,12 @@ svg { display: block; image-rendering: pixelated; }
        as a bad signal, and the whole reason this looks cyberpunk */
     var(--wmo) 0 0 var(--wm-fringe-r),
     calc(var(--wmo) * -1) 0 0 var(--wm-fringe-l),
-    /* extrusion, down-and-left, every offset a whole pixel */
+    /* extrusion, down-and-left, every offset a whole pixel — kept short
+       (three treads, not six) so the name reads as a clean logotype
+       instead of a heavy stack of ghost lines receding off it */
     calc(var(--wmo) * -1) var(--wmo) 0 var(--wm-ext-1),
-    calc(var(--wmo) * -2) calc(var(--wmo) * 2) 0 var(--wm-ext-1),
-    calc(var(--wmo) * -3) calc(var(--wmo) * 3) 0 var(--wm-ext-2),
-    calc(var(--wmo) * -4) calc(var(--wmo) * 4) 0 var(--wm-ext-2),
-    calc(var(--wmo) * -5) calc(var(--wmo) * 5) 0 var(--wm-ext-3),
-    calc(var(--wmo) * -6) calc(var(--wmo) * 6) 0 var(--wm-outline);
+    calc(var(--wmo) * -2) calc(var(--wmo) * 2) 0 var(--wm-ext-2),
+    calc(var(--wmo) * -3) calc(var(--wmo) * 3) 0 var(--wm-outline);
 }
 
 /* The narrower line also gets the wider tracking, so the two lines end
@@ -1533,32 +1532,22 @@ html[data-l2='stage'] .reading-surface { display: block; }
 html[data-l2='read'] .controls,
 html[data-l2='stage'] .controls { display: none; }
 /* ---- the L2 modal ----
-   ONE treatment for every L2 page — articles, the index, the about and the
-   case studies alike: a calm dark card, the reading measure wide, centred
-   over the dimmed city. It replaces the old split (frameless reading vs a
-   neon-framed case study) with a single, simpler thing, and it reads as
-   what it is — a modal opened over the scene.
+   ONE treatment for every L2 page — the about and the case studies alike:
+   the SAME panel the home page opens in, wearing the same near-black
+   ground and the same per-city neon pixel frame, just opened wider. The
+   only thing an L2 page changes is the measure it gives the reading
+   inside it; the card around it stays the home panel.
 
-   The per-city `.col` rules that paint the neon frame carry specificity
-   (0,3,1); the trebled class ties them and wins on source order, so the
-   border-image, its cast and the extruded drop-shadow filter all step off
-   and this quiet card takes their place. */
+   So this rule sets width and padding only, and deliberately does NOT
+   touch background, border-image, box-shadow or filter — the base `.col`
+   ground (#06030f) and the per-city neon frame and cast fall straight
+   through, which is what makes an L2 card read as the home panel grown
+   wider rather than as a different, quieter object. */
 html[data-l2='read'] .col.col--doc.read,
 html[data-l2='stage'] .col.col--doc.cs {
-  width: min(94vw, 860px);
+  width: min(94vw, 1040px);
   margin-inline: auto;
   min-height: 0;
-  /* Fully opaque and a touch lighter than the scrim behind it, so the card
-     is a distinct surface — the city never bleeds THROUGH the panel — with
-     a defined edge and a real drop that lifts it off the dimmed backdrop. */
-  background: #16131f;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-image: none;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 30px 90px rgba(0, 0, 0, 0.7),
-    0 6px 24px rgba(0, 0, 0, 0.5);
-  filter: none;
   padding: clamp(26px, 3.6vw, 48px) clamp(22px, 3.4vw, 44px) clamp(36px, 5vw, 64px);
 }
 
@@ -2769,24 +2758,18 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
 html[data-l2='case'] .reading-surface { display: block; }
 html[data-l2='case'] .controls { display: none; }
 
-/* Same card the articles and the about page open in — the modal over the
-   dimmed city, at the width it has always been. The case study earns its
-   room from the measure inside it rather than from a wider card. */
-/* Wider than the panel it opens out of — that width change IS the
-   transition. A case study also has more to hold than the index does:
-   a reading measure with figures breaking out either side of it. */
+/* The same panel the home page and the about page open in — same
+   near-black ground, same per-city neon frame — opened wider still.
+   The width change IS the transition, and a case study earns the extra
+   room: a reading measure with figures breaking out either side of it.
+
+   Like the read rule above, this sets width and padding only and lets
+   the base `.col` background and per-city neon frame fall through, so the
+   case study wears the home panel rather than a separate quiet card. */
 html[data-l2='case'] .col.col--doc.cs {
-  width: min(96vw, 1080px);
+  width: min(96vw, 1120px);
   margin-inline: auto;
   min-height: 0;
-  background: #16131f;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-image: none;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 30px 90px rgba(0, 0, 0, 0.7),
-    0 6px 24px rgba(0, 0, 0, 0.5);
-  filter: none;
   padding: clamp(26px, 3.6vw, 48px) clamp(22px, 3.4vw, 44px) clamp(36px, 5vw, 64px);
 }
 
@@ -3308,8 +3291,6 @@ html[data-l2='case'] .col.col--doc.cs {
   html[data-l2='case'] .col.col--doc.cs {
     width: 100%;
     padding: 20px 18px 48px;
-    border-left: none;
-    border-right: none;
   }
   .cs__sec { margin-top: 40px; }
   .cs .prose p { font-size: 17px; }
@@ -3460,11 +3441,16 @@ html[data-l2='case'] .col.col--doc.cs {
 .page--home .masthead { padding-bottom: 0; }
 
 /* A line of Satoshi at 27px in an 860px panel: wide enough to be a
-   sentence, narrow enough to stay a masthead. */
-.page--home .col .lede { max-width: 32ch; }
+   sentence, narrow enough to stay a masthead.
+
+   The measure is matched to the section ledes below it. Those run to
+   62ch at 19px; the lede is set at 27px, so 62 * 19/27 ~ 44ch renders
+   to the same pixel width — the intro and the paragraphs under it carry
+   the same side padding regardless of which reading font has loaded. */
+.page--home .col .lede { max-width: 44ch; }
 
 @media (max-width: 760px) {
-  .page--home .col .lede { max-width: 24ch; }
+  .page--home .col .lede { max-width: 30ch; }
 }
 
 /* ---- air around the wordmark ----
