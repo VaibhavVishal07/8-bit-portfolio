@@ -806,39 +806,19 @@ html[data-city='dubai']:not([data-mode='day']) {
    property. So each city re-paints the frame here: same tile, same
    staircase corners, the fill and the two glows swapped to match. */
 html[data-city='tokyo']:not([data-mode='day']) .col {
-  border-color: rgba(255, 92, 156, 0.42);
-  box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.55),
-    0 2px 14px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  filter: none;
+  --edge-glow: rgba(255, 92, 156, 0.14);
 }
 
 html[data-city='delhi']:not([data-mode='day']) .col {
-  border-color: rgba(255, 154, 42, 0.4);
-  box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.55),
-    0 2px 14px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  filter: none;
+  --edge-glow: rgba(255, 154, 42, 0.12);
 }
 
 html[data-city='paris']:not([data-mode='day']) .col {
-  border-color: rgba(232, 180, 90, 0.4);
-  box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.55),
-    0 2px 14px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  filter: none;
+  --edge-glow: rgba(232, 180, 90, 0.12);
 }
 
 html[data-city='dubai']:not([data-mode='day']) .col {
-  border-color: rgba(74, 220, 232, 0.42);
-  box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.55),
-    0 2px 14px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  filter: none;
+  --edge-glow: rgba(74, 220, 232, 0.14);
 }
 
 /* ==================================================================
@@ -1551,11 +1531,8 @@ html[data-l2='stage'] .col.col--doc.cs {
   width: min(94vw, 860px);
   margin-inline: auto;
   min-height: 0;
-  /* The generous side padding IS the centred reading column: the prose
-     measure fills the space between, so every block ranges from the same
-     left edge and the frame's extra room falls evenly on both sides —
-     no stranded gutter, and the title still ranges left with the body. */
-  padding: clamp(24px, 3vw, 40px) clamp(22px, 5vw, 66px) clamp(32px, 4vw, 56px);
+  /* Home's width, with even modest padding; the reading measure fills it. */
+  padding: clamp(26px, 3vw, 40px) clamp(24px, 3vw, 40px) clamp(34px, 4vw, 56px);
 }
 
 /* ==================================================================
@@ -1610,9 +1587,9 @@ html[data-l2='read'] .read__body p,
 html[data-l2='read'] .read__body li {
   font-size: 19px;
   line-height: 1.72;
-  max-width: 74ch;
+  max-width: 80ch;
 }
-html[data-l2='read'] .read__body ul { max-width: 70ch; }
+html[data-l2='read'] .read__body ul { max-width: 76ch; }
 html[data-l2='read'] .read__body blockquote { max-width: 56ch; }
 html[data-l2='read'] .read__body h3 {
   font-size: clamp(22px, 2vw, 26px);
@@ -1957,9 +1934,10 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    ================================================================== */
 .col {
   background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 45%),
-    repeating-linear-gradient(to bottom, var(--panel-grain) 0 1px, rgba(0, 0, 0, 0) 1px 3px),
-    rgba(10, 7, 22, 0.5);
+    linear-gradient(155deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 45%) padding-box,
+    repeating-linear-gradient(to bottom, var(--panel-grain) 0 1px, rgba(0, 0, 0, 0) 1px 3px) padding-box,
+    linear-gradient(rgba(10, 7, 22, 0.5), rgba(10, 7, 22, 0.5)) padding-box,
+    linear-gradient(150deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 28%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0.34) 100%) border-box;
   border: 3px solid var(--panel-edge);
   box-shadow:
     inset 3px 3px 0 0 rgba(62, 240, 255, 0.22),
@@ -2120,14 +2098,14 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    Whole pixels, one colour, no file on disk. Same rules as the scene.
    ================================================================== */
 .col {
-  border: 2.5px solid rgba(255, 255, 255, 0.2);
+  border: 2.5px solid transparent;
   border-radius: 14px;
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.55),
     0 3px 16px rgba(0, 0, 0, 0.45),
     inset 0 2px 0 rgba(255, 255, 255, 0.24),
     inset 0 -2px 0 rgba(0, 0, 0, 0.32),
-    inset 0 0 24px rgba(255, 255, 255, 0.05);
+    inset 0 0 26px var(--edge-glow, rgba(255, 255, 255, 0.05));
   backdrop-filter: blur(26px) saturate(1.85) brightness(1.08);
   -webkit-backdrop-filter: blur(26px) saturate(1.85) brightness(1.08);
   filter: none;
@@ -2771,10 +2749,10 @@ html[data-l2='case'] .controls { display: none; }
    the base `.col` background and per-city neon frame fall through, so the
    case study wears the home panel rather than a separate quiet card. */
 html[data-l2='case'] .col.col--doc.cs {
-  width: min(96vw, 1040px);
+  width: min(94vw, 860px);
   margin-inline: auto;
   min-height: 0;
-  padding: clamp(24px, 3vw, 40px) clamp(20px, 2.6vw, 34px) clamp(32px, 4vw, 56px);
+  padding: clamp(26px, 3vw, 40px) clamp(24px, 3vw, 40px) clamp(34px, 4vw, 56px);
 }
 
 /* ---- the measure ----
@@ -3605,3 +3583,16 @@ html[data-l2='case'] .col.col--doc.cs {
 .cta--ghost { --cta-side: #2a1a5c; }
 
 
+
+
+/* ==================================================================
+   L2 IS ALL SATOSHI
+   The pixel and mono faces are the city's voice, not the reading — so on
+   every L2 page the whole article is set in Satoshi. The only exception
+   is the schematic diagram labels, which keep the technical mono face.
+   ================================================================== */
+html[data-l2] .col--doc,
+html[data-l2] .col--doc * { font-family: var(--font-read); }
+html[data-l2] .col--doc .dg__t,
+html[data-l2] .col--doc .dg__tag,
+html[data-l2] .col--doc .dg__cap { font-family: var(--font-body); }
