@@ -1934,10 +1934,10 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
    ================================================================== */
 .col {
   background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 45%) padding-box,
+    linear-gradient(155deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 45%) padding-box,
     repeating-linear-gradient(to bottom, var(--panel-grain) 0 1px, rgba(0, 0, 0, 0) 1px 3px) padding-box,
-    linear-gradient(rgba(10, 7, 22, 0.5), rgba(10, 7, 22, 0.5)) padding-box,
-    linear-gradient(150deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 28%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0.34) 100%) border-box;
+    linear-gradient(rgba(7, 5, 16, 0.72), rgba(7, 5, 16, 0.72)) padding-box,
+    linear-gradient(150deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.07) 30%, rgba(255, 255, 255, 0.03) 58%, rgba(255, 255, 255, 0.18) 100%) border-box;
   border: 3px solid var(--panel-edge);
   box-shadow:
     inset 3px 3px 0 0 rgba(62, 240, 255, 0.22),
@@ -2103,11 +2103,11 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.55),
     0 3px 16px rgba(0, 0, 0, 0.45),
-    inset 0 2px 0 rgba(255, 255, 255, 0.24),
+    inset 0 2px 0 rgba(255, 255, 255, 0.14),
     inset 0 -2px 0 rgba(0, 0, 0, 0.32),
     inset 0 0 26px var(--edge-glow, rgba(255, 255, 255, 0.05));
-  backdrop-filter: blur(26px) saturate(1.85) brightness(1.08);
-  -webkit-backdrop-filter: blur(26px) saturate(1.85) brightness(1.08);
+  backdrop-filter: blur(26px) saturate(1.5) brightness(0.82);
+  -webkit-backdrop-filter: blur(26px) saturate(1.5) brightness(0.82);
   filter: none;
 }
 
