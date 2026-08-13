@@ -491,13 +491,13 @@ svg { display: block; image-rendering: pixelated; }
 .boot__sun {
   position: absolute;
   left: 50%; top: 46%;
-  width: 300px; height: 300px;
+  width: 250px; height: 250px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 44%, #ffd0b0 0%, #ff7a5c 34%, #ff3e5f 60%, #e0264f 100%);
+  background: radial-gradient(circle at 50% 44%, #ffdcc6 0%, #ff9c82 40%, #ec6180 68%, #bb3f68 100%);
   box-shadow:
-    0 0 0 7px rgba(255, 120, 120, 0.16),
-    0 0 90px 30px rgba(255, 62, 95, 0.28);
+    0 0 0 7px rgba(255, 120, 120, 0.12),
+    0 0 80px 26px rgba(255, 62, 95, 0.18);
 }
 
 /* Rising-sun rays fanning out behind it, turning very slowly so the
@@ -510,11 +510,11 @@ svg { display: block; image-rendering: pixelated; }
   transform: translate(-50%, -50%);
   background: repeating-conic-gradient(
     from 0deg,
-    rgba(255, 120, 130, 0.13) 0deg 7deg,
+    rgba(255, 120, 130, 0.06) 0deg 7deg,
     transparent 7deg 22deg);
-  -webkit-mask: radial-gradient(circle, #000 24%, transparent 62%);
-  mask: radial-gradient(circle, #000 24%, transparent 62%);
-  animation: boot-rays 9s steps(24, end) infinite;
+  -webkit-mask: radial-gradient(circle, #000 22%, transparent 56%);
+  mask: radial-gradient(circle, #000 22%, transparent 56%);
+  animation: boot-rays 48s steps(48, end) infinite;
 }
 @keyframes boot-rays { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
@@ -552,7 +552,7 @@ svg { display: block; image-rendering: pixelated; }
   0%   { transform: translateY(-12vh) translateX(0) rotate(0deg); opacity: 0; }
   10%  { opacity: 1; }
   90%  { opacity: 1; }
-  100% { transform: translateY(112vh) translateX(40px) rotate(220deg); opacity: 0; }
+  100% { transform: translateY(112vh) translateX(20px) rotate(110deg); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
