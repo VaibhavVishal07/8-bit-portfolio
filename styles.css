@@ -2512,7 +2512,7 @@ html[data-l2='read'] .read__nav__ttl { font-size: 18px; font-weight: 600; }
   max-width: 26ch;
   margin: 0 auto var(--s4);
   font-family: var(--font-read);
-  font-size: clamp(20px, 2.2vw, 27px);
+  font-size: clamp(17px, 2.2vw, 24px);
   font-weight: 500;
   line-height: 1.36;
   letter-spacing: -0.01em;
@@ -3260,7 +3260,7 @@ html[data-l2='case'] .col.col--doc.cs {
 }
 
 @media (max-width: 760px) {
-  .masthead .lede { font-size: 22px; max-width: 22ch; }
+  .masthead .lede { font-size: 19px; max-width: 22ch; }
   .band { padding-top: 64px; }
 
   /* One column of cards on a phone: two-up makes a 150px plate, which is
@@ -3330,7 +3330,7 @@ html[data-l2='case'] .col.col--doc.cs {
 @media (max-width: 560px) {
   .masthead .role { font-size: 11px; gap: 5px 10px; }
   .masthead .role span + span::before { margin-right: 10px; }
-  .masthead .lede { font-size: 21px; max-width: 20ch; }
+  .masthead .lede { font-size: 18px; max-width: 20ch; }
 }
 
 @media (max-width: 560px) {
@@ -3359,7 +3359,7 @@ html[data-l2='case'] .col.col--doc.cs {
   .masthead { padding-bottom: var(--s4); }
   .masthead .wordmark { margin-bottom: var(--s4); }
   .masthead .role { margin-bottom: 18px; }
-  .masthead .lede { font-size: clamp(19px, 2vw, 24px); }
+  .masthead .lede { font-size: clamp(16px, 2vw, 21px); }
 }
 
 /* ==================================================================
