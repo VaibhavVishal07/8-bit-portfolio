@@ -269,25 +269,38 @@ svg { display: block; image-rendering: pixelated; }
    the cat still land where you tapped. */
 :root { --scene-drop: 1.2; }
 
-#scene,
-#weather {
+/* ---- the backdrop ----
+   The slot the pixel city used to fill. It keeps that layer's geometry
+   exactly: fixed, full-bleed, anchored at the top, sitting under
+   everything the page draws in front of it.
+
+   For now it is one flat ground with a very slight lift toward the top,
+   so the glass panel has something to be glass AGAINST — a panel with
+   backdrop-filter over a dead flat colour reads as a solid box, and the
+   whole point of the material is that there is something behind it.
+
+   A replacement goes here. Give .backdrop a background-image, or drop
+   an <img>/<canvas>/<video> in as its child with width/height 100% and
+   object-fit: cover, and nothing in front of it has to change. */
+.backdrop {
   position: fixed;
   inset: 0 0 auto 0;
+  z-index: 0;
   width: 100%;
   height: calc(100% * var(--scene-drop));
-  object-fit: cover;
-  /* Anchored at the TOP now. Everything cropped comes off the bottom,
-     which is the rooftop — the same trade the old `50% 72%` anchor was
-     making on a wide viewport, in the same direction, but always. */
-  object-position: 50% 0%;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(86, 96, 140, 0.14), rgba(0, 0, 0, 0) 62%),
+    linear-gradient(#0a0c17, #05070f 58%);
 }
 
-#scene { z-index: 0; }
-
-/* Above the panel, so weather falls in front of it. */
-#weather { z-index: 5; pointer-events: none; }
+.backdrop > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0%;
+  display: block;
+}
 
 /* The iris wipe. A full-frame canvas above EVERYTHING, drawn only while
    a navigation is in flight (see the iris in script.js). */
@@ -1057,16 +1070,11 @@ html[data-city='dubai']:not([data-mode='day']) .col {
   .boot__inner { width: 100%; }
 }
 
-/* Portrait crops the 960-wide scene to a slice a quarter wide. The
-   default centre slice contains neither the moon nor the cat — so the
-   anchor slides right, where the cat, the tree, the chess game and the
-   string lights live. The one interactive thing in the scene stays on
-   screen. */
+/* Portrait crops a wide backdrop hard. A replacement that carries its
+   own subject will want to say where the crop falls; the centre is the
+   safe default until there is something in there to frame. */
 @media (orientation: portrait) {
-  #scene,
-  #weather {
-    object-position: 72% 0%;
-  }
+  .backdrop > * { object-position: 50% 0%; }
 }
 
 /* Touch devices get the simplified world regardless of width — a phone
@@ -3596,3 +3604,442 @@ html[data-l2] .col--doc * { font-family: var(--font-read); }
 html[data-l2] .col--doc .dg__t,
 html[data-l2] .col--doc .dg__tag,
 html[data-l2] .col--doc .dg__cap { font-family: var(--font-body); }
+
+/* ==================================================================
+   THE SHEET — the home panel, restructured
+
+   The home column was a centred title card with centred sections
+   under it. It is a document now: one fixed 715px measure with a rule
+   down either side, sections divided by a hatched band, and each one
+   opening with a plain 30px heading over a full-bleed rule.
+
+   The panel itself — the dark glass, the radius, the cast shadow —
+   is untouched. These rules only govern what happens inside it.
+   ================================================================== */
+
+:root {
+  --sx-line: rgba(255, 255, 255, 0.1);
+  --sx-line-2: rgba(255, 255, 255, 0.055);
+  --sx-gut: 0px;
+  --sx-pad: 0px;
+  /* Where a heading's text starts, and so where every block under it
+     starts too. The heading RULE still runs the full width of the
+     column; only the content is inset. */
+  --sx-in: calc(var(--sx-gut) + var(--sx-pad));
+  --sx-fg: rgba(255, 255, 255, 0.98);
+  --sx-fg-2: rgba(255, 255, 255, 0.72);
+  --sx-fg-3: rgba(255, 255, 255, 0.45);
+}
+
+.col--sheet {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+}
+
+.col--sheet > * { position: relative; z-index: 1; }
+
+/* ---- a section ----
+   Heading, then content. The heading rule runs the full width of the
+   column, which is what makes the sections read as bands rather than
+   as paragraphs. */
+.sxsec { padding: 0 0 34px; }
+.sxsec--end { padding-bottom: 26px; }
+
+.sxh {
+  margin: 0 var(--sx-gut) 18px;
+  padding: 18px var(--sx-pad) 14px;
+  font-family: var(--font-read);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--sx-fg);
+  border-bottom: 1px solid var(--sx-line);
+}
+.sxh::after { content: none; }
+
+.sxlede {
+  margin: 0 0 22px;
+  padding: 0 var(--sx-in);
+  font-family: var(--font-read);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--sx-fg-2);
+  text-wrap: pretty;
+}
+
+/* ---- about bullets ---- */
+.sxbul {
+  margin: 0;
+  padding: 0 var(--sx-in) 0
+           calc(var(--sx-in) + 18px);
+  list-style: disc;
+}
+.sxbul li {
+  margin: 0 0 8px;
+  font-family: var(--font-read);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--sx-fg-2);
+  text-wrap: pretty;
+}
+.sxbul li::marker { color: var(--sx-fg-3); }
+
+/* ---- connect ----
+   A 3x2 rack. The tiles share their rules: every cell draws its right
+   and bottom border, the container draws the outer top and left. */
+.sxgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 var(--sx-in);
+  border-top: 1px solid var(--sx-line);
+  border-left: 1px solid var(--sx-line);
+}
+.sxtile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 14px;
+  border-right: 1px solid var(--sx-line);
+  border-bottom: 1px solid var(--sx-line);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.sxtile:hover { background: rgba(255, 255, 255, 0.05); }
+.sxtile__ico {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--sx-line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.sxtile__t {
+  flex: 1 1 auto;
+  font-family: var(--font-read);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sx-fg);
+}
+.sxtile__go {
+  flex: none;
+  font-size: 13px;
+  color: var(--sx-fg-3);
+}
+.sxtile:hover .sxtile__go { color: var(--panel-edge); }
+
+/* ---- chips ---- */
+.sxchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sxchips li,
+.sxchips span {
+  padding: 4px 9px;
+  border: 1px solid var(--sx-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-read);
+  font-size: 12px;
+  color: var(--sx-fg-2);
+}
+
+/* ---- projects ----
+   Two columns of cards, each a plate, a body, and a footer split off
+   by a rule. Rendered by work.js from the WORK array. */
+.sxprj {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 var(--sx-in);
+  padding: 0;
+  list-style: none;
+}
+.sxcard { display: flex; }
+.sxcard__a {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--sx-line);
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.028);
+  transition: background 0.15s, border-color 0.15s;
+}
+.sxcard__a:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(62, 240, 255, 0.35);
+}
+.sxcard__a:focus-visible {
+  outline: 3px solid var(--panel-edge);
+  outline-offset: 3px;
+}
+.sxcard__plate {
+  display: block;
+  aspect-ratio: 16 / 10;
+  border-bottom: 1px solid var(--sx-line);
+  background-color: rgba(255, 255, 255, 0.03);
+  background-image:
+    repeating-linear-gradient(to right, var(--sx-line-2) 0 1px, rgba(0, 0, 0, 0) 1px 8px),
+    repeating-linear-gradient(to bottom, var(--sx-line-2) 0 1px, rgba(0, 0, 0, 0) 1px 8px);
+}
+.sxcard__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+.sxcard__body {
+  display: block;
+  flex: 1 1 auto;
+  padding: 13px 14px 14px;
+}
+.sxcard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sxcard__t {
+  font-family: var(--font-read);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--sx-fg);
+}
+.sxcard__yr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-family: var(--font-read);
+  font-size: 12px;
+  color: var(--sx-fg-3);
+}
+.sxcard__yr i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--panel-accent);
+}
+.sxcard__sub {
+  display: block;
+  margin: 3px 0 9px;
+  font-family: var(--font-read);
+  font-size: 12px;
+  color: var(--sx-fg-3);
+}
+.sxcard__d {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 11px;
+  font-family: var(--font-read);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sx-fg-2);
+}
+.sxcard__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-top: 1px solid var(--sx-line);
+}
+.sxcard__go {
+  font-family: var(--font-read);
+  font-size: 13px;
+  color: var(--sx-fg-2);
+}
+.sxcard__a:hover .sxcard__go { color: var(--panel-edge); }
+.sxcard__n {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--sx-fg-3);
+}
+
+/* ---- writing ---- */
+.sxpost {
+  margin: 0 var(--sx-in);
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--sx-line);
+}
+.sxpost li { border-bottom: 1px solid var(--sx-line); }
+.sxpost a {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 3px 14px;
+  padding: 14px var(--sx-pad);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.sxpost a:hover { background: rgba(255, 255, 255, 0.05); }
+.sxpost__t {
+  font-family: var(--font-read);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sx-fg);
+}
+.sxpost__d {
+  grid-column: 1;
+  font-family: var(--font-read);
+  font-size: 13px;
+  color: var(--sx-fg-3);
+}
+.sxpost__go {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  font-size: 13px;
+  color: var(--sx-fg-3);
+}
+.sxpost a:hover .sxpost__go { color: var(--panel-edge); }
+
+.sxfoot {
+  margin: 18px 0 0;
+  padding: 0 var(--sx-in);
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--sx-fg-3);
+}
+
+/* ---- narrow ----
+   Below the measure the three-up and two-up racks fold, the counter
+   leaves the hero row, and the gutters close up so the sheet keeps as
+   much width as a phone can give it. */
+@media (max-width: 720px) {
+  :root { --sx-gut: 0px; --sx-pad: 0px; }
+  .sxgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sxprj { grid-template-columns: minmax(0, 1fr); }
+  .sxh { font-size: 17px; }
+}
+
+/* The home page forces the reading face onto every element inside the
+   column (see .page--home .col b, i, a, span above). The sheet keeps
+   that for prose, but these three are furniture and stay on the pixel
+   face — so they need the same specificity to win it back. */
+.page--home .col .sxcard__n,
+.page--home .col .sxfoot { font-family: var(--font-display); }
+
+/* ---- the glass panel ----
+   One panel, and it is glass: a translucent ground over a heavy blur,
+   a hairline lit edge, and a 20px radius so the corners read as a card
+   rather than as a cut. The city stays visible through it, which is
+   the whole point of putting it over a city.
+
+   The side padding scales with the viewport: enough air at full width
+   that the measure is not pressed against its own border, closing up
+   on a phone where there is none to spare. */
+.page--home .col--sheet {
+  /* The reference measures 715px. This runs wider, inherited from the
+     old home column (.page--home .col, further up). Left as it is
+     because it is what the sheet has been reviewed at — drop it to
+     715px here if the lines start reading long. */
+  width: min(94vw, 1000px);
+  padding: 0 clamp(20px, 4.4vw, 52px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  background:
+    linear-gradient(158deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 42%),
+    rgba(9, 6, 20, 0.62);
+  backdrop-filter: blur(28px) saturate(1.6) brightness(0.86);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6) brightness(0.86);
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.page--home .col--sheet::before { content: none; }
+
+/* ---- nav ----
+   A row of ways in, ranged right at the head of the panel. No ground
+   and no border: the section headings already carry the rules, and a
+   second horizontal line this close to the first one would read as a
+   title bar. */
+.sxnav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px 22px;
+  padding: 26px 0 4px;
+}
+.sxnav__l {
+  font-family: var(--font-read);
+  font-size: 14px;
+  white-space: nowrap;
+  color: var(--sx-fg-3);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.sxnav__l:hover,
+.sxnav__l:focus-visible { color: var(--sx-fg); }
+
+/* Connect lost its heading, so it also loses the gap the heading used
+   to sit in — the tiles come straight up under the About bullets. */
+.sxsec--tight { margin-top: -16px; }
+
+@media (max-width: 720px) {
+  .sxnav { gap: 6px 16px; padding: 20px 0 2px; }
+  .sxnav__l { font-size: 13px; }
+  .page--home .col--sheet { padding: 0 16px; }
+}
+
+/* ---- masthead ----
+   Structure lifted from the Figma frame, node 2012:70. Every number
+   below is the design's, measured off that frame:
+
+     avatar    82 x 82, round
+     gap       23px  (avatar bottom 214 -> wordmark top 237)
+     wordmark  48px, lowercase, 55px box
+     bio       18px / 28px, capped at the frame's 684px column
+     gap       45px  (bio bottom 376 -> next section top 421)
+
+   What is NOT the design's is colour. The frame is black on white; this
+   panel is dark glass, so the wordmark takes the sheet's primary ink and
+   the bio takes the muted one — the design's black-at-50% reads as the
+   same relationship against the opposite ground. The modal itself is
+   untouched. */
+.sxmast { padding: 24px 0 45px; }
+
+.sxmast__ava {
+  display: block;
+  width: 82px;
+  height: 82px;
+  margin: 0 0 23px;
+  border: 1px solid var(--sx-line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Same face as the section headings — Geist, regular weight, the same
+   negative tracking — just set much larger. The designed face was
+   Kalipixel, which is not a Google font and is not loaded here; the mono
+   it was falling back to read as a different voice from everything under
+   it, so the wordmark now sits on the page's own heading font and the
+   type reads as one family throughout. */
+.sxmast__wm {
+  margin: 0;
+  font-family: var(--font-read);
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 55px;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+  color: var(--sx-fg);
+}
+
+@media (max-width: 720px) {
+  .sxmast { padding: 18px 0 32px; }
+  .sxmast__ava { width: 64px; height: 64px; margin-bottom: 18px; }
+  .sxmast__wm { font-size: 36px; line-height: 42px; }
+}

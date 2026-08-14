@@ -552,16 +552,33 @@
      so it is still announced and still indexed. */
   function cardsHTML() {
     return WORK.map((w) =>
-      '<li class="wk"><a class="wk__a" href="#' + w.id + '" ' +
+      '<li class="sxcard"><a class="sxcard__a" href="#' + w.id + '" ' +
       'aria-label="' + esc(w.title + ' — ' + w.subject) + '">' +
-      '<span class="wk__plate">' +
+
+      '<span class="sxcard__plate">' +
       (w.cover
-        ? '<img class="wk__img" src="' + w.cover + '" alt="" loading="lazy">'
+        ? '<img class="sxcard__img" src="' + w.cover + '" alt="" loading="lazy">'
         : '') +
       '</span>' +
-      '<span class="wk__foot">' +
-      '<span class="wk__title">' + w.title + '</span>' +
-      '</span></a></li>').join('')
+
+      '<span class="sxcard__body">' +
+        '<span class="sxcard__head">' +
+          '<span class="sxcard__t">' + esc(w.title) + '</span>' +
+          '<span class="sxcard__yr"><i aria-hidden="true"></i>' + esc(w.year) + '</span>' +
+        '</span>' +
+        '<span class="sxcard__sub">' + esc(w.subject) + '</span>' +
+        '<span class="sxcard__d">' + esc(w.lede) + '</span>' +
+        '<span class="sxchips sxchips--card">' +
+          w.tags.map((t) => '<span>' + esc(t) + '</span>').join('') +
+        '</span>' +
+      '</span>' +
+
+      '<span class="sxcard__foot">' +
+        '<span class="sxcard__go">Read the case study</span>' +
+        '<span class="sxcard__n">' + esc(w.n) + '</span>' +
+      '</span>' +
+
+      '</a></li>').join('')
   }
 
   // ---- wire it up ----

@@ -830,27 +830,27 @@
          violet, into a magenta glow sitting on the rooftops. The red
          is gone entirely; nothing in this sky is warmer than pink. */
       sky: [
-        '#030314', '#05061f', '#08082d', '#0d0a3c', '#140c4c',
-        '#220e59', '#371162', '#531666', '#731a65',
+        '#08080f', '#0c0d18', '#121223', '#19182e', '#211e3a',
+        '#2c2344', '#38274c', '#472c50', '#5b3254',
       ],
-      haze: '#d63ba6',
-      smog: '#4a1a72',
-      fog: '#3a1880',
+      haze: '#ab6696',
+      smog: '#48325a',
+      fog: '#443563',
       fogAmt: [0.26, 0.11, 0.0],
-      rainSky: '#0d0520',
-      snowSky: '#241c48',
+      rainSky: '#100c19',
+      snowSky: '#2c283c',
       snowWash: [0.06, 0.16], blanket: [0.85, 0.15], fogSnowBoost: 0.09,
       lightning: '#c9b6ff', boltCore: '#ffffff',
 
-      orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#6b1fa8',
+      orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#674582',
       craters: true, orbShine: false,
       /* Cloud is lit from BELOW here. There is no moon doing this work
          — the city is, and a city throws magenta up at its own weather.
          The underside was the same violet as the body, which made every
          cloud a flat cut-out. */
-      cloud: '#2e1257', cloudLit: '#66259b', cloudDark: '#180835',
+      cloud: '#322544', cloudLit: '#63457b', cloudDark: '#1c1429',
       // cold teal, deep indigo, one thin violet — see the high pools
-      high: ['#0f3a6b', '#241a72', '#521a8c'],
+      high: ['#283c52', '#37325a', '#53396d'],
       /* Four tiers, not three. A sky of white dots and a few amber ones
          is a texture; adding a blue-white tier between them is what
          makes it read as stars at different temperatures. No extra
@@ -4915,16 +4915,16 @@
       palette: {
         night: {
           sky: [
-            '#060414', '#0a051b', '#0f0724', '#190b31', '#290d3e',
-            '#3d114a', '#551651', '#731f58', '#923359',
+            '#090810', '#0d0b15', '#130f1c', '#1c1527', '#271a31',
+            '#34213a', '#442742', '#5c3650', '#784d5e',
           ],
-          haze: '#ff86b8',
-          smog: '#6a2050',
-          fog: '#5c1a56',
-          rainSky: '#180a26',
-          orb: '#ffeaf4', orbShade: '#e0aecc', orbGlow: '#b03878',
-          cloud: '#3a1440', cloudLit: '#8a2f6e', cloudDark: '#1e0824',
-          high: ['#2a1a5e', '#4a1a64', '#7a1f6a'],
+          haze: '#dea7be',
+          smog: '#56344a',
+          fog: '#4a2c47',
+          rainSky: '#18121e',
+          orb: '#ffeaf4', orbShade: '#e0aecc', orbGlow: '#8f5976',
+          cloud: '#312034', cloudLit: '#714864', cloudDark: '#1a101c',
+          high: ['#342d4b', '#442e50', '#61385a'],
           starDim: '#f0a8d0',
           neon: ['#ff3d7a', '#ff8ac0', '#ffffff', '#ff2b2b', '#ffd0e4', '#c04aff', '#ff7a3a'],
           sep: '#a83a86', sepDark: '#2a0e22',
@@ -5023,16 +5023,16 @@
       palette: {
         night: {
           sky: [
-            '#070a20', '#0b0f2c', '#101540', '#182150', '#26265e',
-            '#402a5c', '#6a3a50', '#9a5a38', '#c8802e',
+            '#0e0f19', '#141623', '#1d1f33', '#272b41', '#35354f',
+            '#42384e', '#5d4751', '#7f6253', '#9e7d58',
           ],
-          haze: '#ffb04a',
-          smog: '#8a5426',
-          fog: '#7a4626',
-          rainSky: '#140f1f',
-          orb: '#ffe9c2', orbShade: '#dcc090', orbGlow: '#b07a30',
-          cloud: '#37242e', cloudLit: '#8a5a40', cloudDark: '#1c1016',
-          high: ['#153a64', '#38295c', '#7a3a48'],
+          haze: '#cdaa7c',
+          smog: '#6e5642',
+          fog: '#634c3d',
+          rainSky: '#16131b',
+          orb: '#ffe9c2', orbShade: '#dcc090', orbGlow: '#8d7553',
+          cloud: '#32292e', cloudLit: '#766054', cloudDark: '#191316',
+          high: ['#2b3b4e', '#3e374e', '#684c52'],
           starDim: '#f0cc96',
           /* Saffron, India-green and white lead — the flag colours are
              the loudest neon on the street — with gold, rose and a
@@ -5105,16 +5105,16 @@
       palette: {
         night: {
           sky: [
-            '#050718', '#080c26', '#0d1236', '#141a4a', '#1f245e',
-            '#302a6e', '#4a3178', '#6e3d76', '#9c5a64',
+            '#0a0b13', '#10121e', '#181b2b', '#23263b', '#30334d',
+            '#3f3d5b', '#504564', '#634d66', '#8a6c71',
           ],
-          haze: '#ffcf8a',
-          smog: '#7a4a3a',
-          fog: '#6a4038',
-          rainSky: '#120c20',
-          orb: '#fff6e0', orbShade: '#d8c49c', orbGlow: '#8a6a3c',
-          cloud: '#2a1e3e', cloudLit: '#7a5a5e', cloudDark: '#160e22',
-          high: ['#123058', '#2e2660', '#5a3460'],
+          haze: '#dfc9aa',
+          smog: '#68534c',
+          fog: '#5c4946',
+          rainSky: '#14111b',
+          orb: '#fff6e0', orbShade: '#d8c49c', orbGlow: '#756651',
+          cloud: '#2c2735', cloudLit: '#716365', cloudDark: '#17141c',
+          high: ['#253345', '#3a3650', '#514054'],
           starDim: '#e8d0a8',
           neon: ['#ffd88a', '#fff0c8', '#e8a04a', '#7fc4d8', '#ff8ab0', '#ffffff', '#c04a3a'],
           sep: '#c29a5a', sepDark: '#241a14',
@@ -5180,16 +5180,16 @@
       palette: {
         night: {
           sky: [
-            '#02060f', '#030b1c', '#04122c', '#061c3e', '#093052',
-            '#0e4a62', '#2c6a6a', '#7a8a5c', '#d8a84c',
+            '#06070b', '#0a0d15', '#0f1521', '#151f2f', '#1d2f3e',
+            '#25404b', '#3d5959', '#767d69', '#b29c72',
           ],
-          haze: '#ffd06a',
-          smog: '#8a6a2c',
-          fog: '#6a5228',
-          rainSky: '#0a1420',
-          orb: '#fff4d0', orbShade: '#dcc898', orbGlow: '#a08238',
-          cloud: '#1a2c3e', cloudLit: '#6a7a5c', cloudDark: '#0c1620',
-          high: ['#0a4460', '#166070', '#5a7a56'],
+          haze: '#d6c193',
+          smog: '#706246',
+          fog: '#584d3a',
+          rainSky: '#10151a',
+          orb: '#fff4d0', orbShade: '#dcc898', orbGlow: '#837655',
+          cloud: '#242c34', cloudLit: '#6b7264', cloudDark: '#11161b',
+          high: ['#223c48', '#2f5057', '#627060'],
           starDim: '#c8e0d0',
           neon: ['#ffd24a', '#4adce8', '#ffffff', '#8affd0', '#ff9a3c', '#c8a8ff', '#ff5c7a'],
           sep: '#c2a04a', sepDark: '#141a14',
@@ -5280,34 +5280,36 @@
   /* ==================================================================
      DENSITY
 
-     Doubled, and the doubling is nearly all in `step`.
+     Down four times, and the reduction is all in `step`.
 
      Total windows across a layer works out as (building height) over
      (step squared) — the building WIDTH cancels, because a narrower
      tower has fewer windows on it and there are proportionally more
-     towers. So the only lever that actually multiplies the pixel count
-     in a skyline is the window pitch, and it multiplies it as the
-     square: every layer's step comes down by about a third, which is
-     twice the windows, twice the mullions and twice the floor ledges
-     on every face in the frame.
+     towers. So the only lever that actually moves the pixel count in a
+     skyline is the window pitch, and it moves it as the SQUARE. Double
+     the pitch and you get a quarter of the windows, a quarter of the
+     mullions and a quarter of the floor ledges on every face in the
+     frame. Every layer's step doubles here: 3 to 6 across the ridge and
+     the first three planes, 4 to 8 on the near one.
 
-     Widths come down alongside it, by a quarter rather than a half.
-     That is worth a third again as many buildings — more silhouette,
-     more crowns, more setbacks against the sky — without turning the
-     near layer into a row of posts, which is what halving them did.
+     Widths are untouched. Reducing detail is not the same as reducing
+     buildings, and the silhouette — the crowns, the setbacks, the
+     staggered heights — is the part of a skyline worth keeping. What
+     opens it up instead is air BETWEEN the towers: every layer's gap
+     grows by about half and its gapChance goes up eight points, so
+     there is more sky visible through the city than city.
 
-     The window CELLS shrink to match, because a 2px window on a 3px
-     pitch is a solid lit wall. Near layer 3x3 to 2x3, mid 2x3 to 2x2,
-     far 2x2 to 1x2. Smaller cells and twice as many of them is exactly
-     the trade a higher-resolution skyline is. */
+     The window CELLS stay small. A 1px window on a 6px pitch is a lit
+     room seen from a long way off, which is the correct reading; the
+     old 3px pitch had them close enough to merge into a lit wall. */
   function buildRidge() {
     /* The far ridge: low, wide, nearly featureless towers one step off
        the haze colour. No neon, almost no windows, no flicker — at that
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
-      minW: 35, maxW: 80, minH: 16, maxH: 54, gapChance: 0.72, gap: 14,
-      step: 3, ww: 1, wh: 1, litChance: 0.028, bloom: 0.22,
+      minW: 35, maxW: 80, minH: 16, maxH: 54, gapChance: 0.80, gap: 22,
+      step: 6, ww: 1, wh: 1, litChance: 0.028, bloom: 0.22,
       neon: T.neon, neonChance: 0.0000, halo: 0, fog: 0.21, street: 0.32,
       ...localGlass(recede(depthen(T.cityFar, 0.2), 0.5)),
     })
@@ -5346,20 +5348,20 @@
      distance you look at it. */
   const LAYERS = [
     { key: 'layer0', seed: 4411, recede: 0.40, fog: 0.165, pan: 0.16,
-      minW: 15, maxW: 32, minH: 54, maxH: 134, gapChance: 0.61, gap: 9,
-      step: 3, ww: 1, wh: 1, litChance: 0.033, neonChance: 0.0050, bloom: 0.34, street: 0.55 },
+      minW: 15, maxW: 32, minH: 54, maxH: 134, gapChance: 0.69, gap: 15,
+      step: 6, ww: 1, wh: 1, litChance: 0.033, neonChance: 0.0050, bloom: 0.34, street: 0.55 },
 
     { key: 'layer1', seed: 5273, recede: 0.25, fog: 0.115, pan: 0.26,
-      minW: 19, maxW: 39, minH: 74, maxH: 172, gapChance: 0.61, gap: 10,
-      step: 3, ww: 1, wh: 2, litChance: 0.037, neonChance: 0.0075, bloom: 0.42, street: 0.75 },
+      minW: 19, maxW: 39, minH: 74, maxH: 172, gapChance: 0.69, gap: 16,
+      step: 6, ww: 1, wh: 2, litChance: 0.037, neonChance: 0.0075, bloom: 0.42, street: 0.75 },
 
     { key: 'layer2', seed: 881, recede: 0.11, fog: 0.058, pan: 0.42,
-      minW: 22, maxW: 47, minH: 90, maxH: 205, gapChance: 0.64, gap: 12,
-      step: 3, ww: 1, wh: 2, litChance: 0.045, neonChance: 0.0125, escapes: true, bloom: 0.52, street: 0.95 },
+      minW: 22, maxW: 47, minH: 90, maxH: 205, gapChance: 0.72, gap: 19,
+      step: 6, ww: 1, wh: 2, litChance: 0.045, neonChance: 0.0125, escapes: true, bloom: 0.52, street: 0.95 },
 
     { key: 'layer3', seed: 2266, recede: 0, fog: 0, pan: 0.68,
-      minW: 31, maxW: 64, minH: 50, maxH: 130, gapChance: 0.67, gap: 14,
-      step: 4, ww: 2, wh: 2, litChance: 0.043, neonChance: 0.0125, escapes: true, bloom: 0.64, street: 1 },
+      minW: 31, maxW: 64, minH: 50, maxH: 130, gapChance: 0.75, gap: 22,
+      step: 8, ww: 2, wh: 2, litChance: 0.043, neonChance: 0.0125, escapes: true, bloom: 0.64, street: 1 },
   ]
 
   /* Four planes off a three-stop authored ramp. The stops are the

@@ -25,75 +25,34 @@
 </head>
 <body>
 
-<!-- Loading. Short on purpose: it exists to cover the first paint of a
-     960x540 canvas being generated, not to be an attract mode. It bails
-     the moment the scene is up, is skipped entirely under
-     prefers-reduced-motion, and is skipped on a deep link — arriving at a
-     case study from a shared URL should not mean watching a title card
-     for somebody else's home page. -->
-<div class="boot" id="boot" aria-hidden="true">
-  <div class="boot__scene">
-    <div class="boot__rays"></div>
-    <div class="boot__sun"></div>
-    <div class="boot__fuji"></div>
-    <div class="boot__petals" id="bootPetals"></div>
-  </div>
-  <div class="boot__inner">
-    <p class="boot__wm">
-      <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
-      <span class="wordmark__line wordmark__line--b">VISHAL</span>
-    </p>
-    <div class="boot__barwrap"><span class="boot__bar" id="bootBar"></span></div>
-  </div>
-</div>
-
 <a class="skip" href="#work">Skip to the work</a>
 
-<!-- The whole background is one 960x540 pixel canvas, drawn in
-     scene.js and upscaled nearest-neighbour to fill the viewport. -->
-<canvas id="scene" aria-hidden="true"></canvas>
+<!-- ==================================================================
+     THE BACKDROP SLOT
 
-<!-- Weather draws on its own canvas *above* the panel, so rain and snow
-     pass in front of it and can land on its top edge. -->
-<canvas id="weather" aria-hidden="true"></canvas>
+     The generated pixel city that used to live here is gone, and with
+     it the loading screen that covered its first paint, the weather
+     canvas, and the two controls that drove it — which city you stood
+     over and whether it was raining on it.
+
+     What is left is the slot itself: one fixed layer behind everything,
+     filling the viewport, painted from CSS. Drop a replacement in here
+     and it inherits the position, the sizing and the stacking the
+     canvases had, so nothing in front of it has to move.
+     ================================================================== -->
+<div class="backdrop" aria-hidden="true"></div>
 
 <!-- A solid, still reading surface behind the case studies and the about
      page. Long-form reading gets a calm dark ground with nothing moving
-     behind it; home keeps the living scene. -->
+     behind it. -->
 <div class="reading-surface" aria-hidden="true"></div>
-
-<!-- Two controls: which city you are standing over, and whether it is
-     raining on it. The city list is built at runtime from
-     __scene.cities(), so the skylines are declared in exactly one place. -->
-<div class="controls">
-  <div class="picker" id="cityPicker">
-    <button class="btn" id="cityToggle" type="button"
-            aria-haspopup="true" aria-expanded="false" aria-controls="cityMenu">
-      <span class="btn__glyph btn__glyph--city" aria-hidden="true"></span>
-      <span class="btn__label">TOKYO</span>
-      <span class="btn__caret" aria-hidden="true"></span>
-    </button>
-    <ul class="picker__menu" id="cityMenu" role="menu" aria-label="Skyline" hidden></ul>
-  </div>
-
-  <button class="btn" id="rainToggle" type="button" aria-pressed="false">
-    <span class="btn__glyph btn__glyph--rain" aria-hidden="true"></span>
-    <span class="btn__label">RAIN OFF</span>
-  </button>
-</div>
 
 <!-- ==================================================================
      ONE PANEL, AND CARDS OVER IT
 
-     The shell is the one this grew out of: a neon-framed HUD column
-     standing on the skyline with a band of living city down either side,
-     and every deeper page — the case studies, the about — opening as a
-     card over that same city, dimmed behind a scrim.
-
-     What changed is what is inside it. The four work slots used to be
-     empty frames; they are an index now, each row saying what the project
-     was before you open it. And the case studies stopped being one
-     template repeated four times.
+     The home sheet, and every deeper page — the case studies, the
+     about — opening as a card over the same backdrop, dimmed behind a
+     scrim.
      ================================================================== -->
 <main class="app">
 
@@ -108,121 +67,148 @@
          because a work index is a list to be scanned and a scanned list
          does not centre.
          ================================================================== -->
-    <div class="col">
+    <!-- ==================================================================
+         THE SHEET
 
-      <header class="masthead">
-        <h1 class="wordmark">
-          <span class="wordmark__line wordmark__line--a">VAIBHAV</span>
-          <span class="wordmark__line wordmark__line--b">VISHAL</span>
-        </h1>
+         One glass panel, 715px wide, with a rule down either side and
+         every section opening with a heading over a full-bleed rule.
+         That rule is the only separator. Nothing is centred inside the
+         sheet — a document ranges left.
+         ================================================================== -->
 
-        <!-- Three segments rather than one string, so a narrow screen breaks
-             between them instead of through the middle of "6 YEARS". -->
-        <p class="role"><span>PRODUCT DESIGNER</span><span>6 YEARS</span><span>INDIA</span></p>
+    <div class="col col--sheet">
 
-        <p class="lede">I design consumer products at the scale where small
-          decisions get expensive — content discovery, streaming, subscriptions,
-          and the journeys that tie them together.</p>
+      <!-- ---- nav ----
+           Back inside the panel and ranged right, as a quiet row of ways
+           in rather than a bar. No ground, no pill: it should read as the
+           first thing in the document, not as chrome bolted above it.
+
+           The masthead that used to sit under this is out — a new one is
+           coming, and a placeholder would only get in the way of it. -->
+      <nav class="sxnav" aria-label="Sections">
+        <a class="sxnav__l" href="#bio">About</a>
+        <a class="sxnav__l" href="#work">Work</a>
+        <a class="sxnav__l" href="#writing">Writing</a>
+        <a class="sxnav__l" href="#contact">Contact</a>
+      </nav>
+
+      <!-- ---- masthead ----
+           Structure taken from the Figma frame (node 2012:70): an 82px
+           disc, a 23px gap, the wordmark set large and lowercase, and 45px
+           of air before the first section.
+
+           The bio the frame carried under the wordmark is out — About
+           says the same thing a section later, and saying it twice made
+           the top of the panel an introduction to an introduction.
+
+           Geometry is the design's. The colour is not — the frame is
+           black-on-white and this panel is dark, so the wordmark takes
+           the sheet's own ink and the modal is left exactly as it was. -->
+      <header class="sxmast">
+        <span class="sxmast__ava" aria-hidden="true"></span>
+        <h1 class="sxmast__wm">vaibhav</h1>
       </header>
 
-    <!-- ---- work ---- -->
-    <section class="band" id="work">
-      <h2 class="sect">Selected work</h2>
-      <p class="band__lede">Four projects, four different problems, so four
-        different write-ups. All of it is client work under NDA — which means
-        each one is built out of reasoning and structure rather than
-        screenshots. That turns out to be the more useful half anyway.</p>
+      <!-- ---- about ----
+           Bullets, not a paragraph: four scannable claims beat a block
+           nobody finishes. All one weight — nothing is emphasised, so
+           the reader is not told which half of a sentence matters. -->
+      <section class="sxsec" id="bio">
+        <h2 class="sxh">About</h2>
+        <ul class="sxbul">
+          <li>I'm a product designer six-plus years in, working where the population
+            using a thing is large enough that a decision made on Tuesday shows up in a
+            chart on Friday.</li>
+          <li>I design discovery, streaming, subscriptions and merchandising —
+            ecosystems rather than apps, carried across television, mobile and web.</li>
+          <li>I work close to engineering on design systems, growth and experimentation,
+            which mostly teaches you to stop treating your own taste as evidence.</li>
+          <li>I turn tangled products into one spine every surface can agree on, then
+            write up the reasoning rather than the screenshots.</li>
+        </ul>
+      </section>
 
-      <!-- Filled by work.js from the WORK array, so a card and its case
-           study can never drift apart. -->
-      <ul class="wks" id="workList"></ul>
-    </section>
+      <!-- ---- connect ----
+           A 3x2 rack of bordered tiles, each a label and an arrow.
 
-    <!-- ---- articles ----
-         The same boxy rack as Selected work: three pieces of writing and a
-         fourth card out to the rest. Titles and hrefs are placeholders —
-         swap the "#" links for the real posts as they go up. -->
-    <section class="band">
-      <h2 class="sect">Articles</h2>
-      <p class="band__lede">Occasional writing on the craft — the systems, the
-        trade-offs, and what the data actually turned out to say.</p>
+           NOTE: only the email below is a real destination. The five marked
+           data-todo point at "#" on purpose — fill in the real URLs and
+           delete the attribute. A dead social link on a portfolio is worse
+           than no social link, so ship them empty or ship them right. -->
+      <section class="sxsec sxsec--tight" id="contact">
+        <div class="sxgrid">
+          <a class="sxtile" href="mailto:vaibhavvishalece@gmail.com?subject=Hello%20Vaibhav">
+            <span class="sxtile__ico" aria-hidden="true"></span>
+            <span class="sxtile__t">Email</span>
+            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
+          <a class="sxtile" href="#" data-todo>
+            <span class="sxtile__ico" aria-hidden="true"></span>
+            <span class="sxtile__t">Resume</span>
+            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
+          <a class="sxtile" href="#" data-todo>
+            <span class="sxtile__ico" aria-hidden="true"></span>
+            <span class="sxtile__t">LinkedIn</span>
+            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
+          <a class="sxtile" href="#" data-todo>
+            <span class="sxtile__ico" aria-hidden="true"></span>
+            <span class="sxtile__t">Dribbble</span>
+            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
+          <a class="sxtile" href="#" data-todo>
+            <span class="sxtile__ico" aria-hidden="true"></span>
+            <span class="sxtile__t">Read.cv</span>
+            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
+          <a class="sxtile" href="#" data-todo>
+            <span class="sxtile__ico" aria-hidden="true"></span>
+            <span class="sxtile__t">X (Twitter)</span>
+            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
+        </div>
+      </section>
 
-      <ul class="wks">
-        <li class="wk"><a class="wk__a" href="#" aria-label="Read: Systems, not screens">
-          <span class="wk__plate"></span>
-          <span class="wk__foot"><span class="wk__title">Systems, not screens</span></span>
-        </a></li>
-        <li class="wk"><a class="wk__a" href="#" aria-label="Read: Let the data settle it">
-          <span class="wk__plate"></span>
-          <span class="wk__foot"><span class="wk__title">Let the data settle it</span></span>
-        </a></li>
-        <li class="wk"><a class="wk__a" href="#" aria-label="Read: Trade-offs, out loud">
-          <span class="wk__plate"></span>
-          <span class="wk__foot"><span class="wk__title">Trade-offs, out loud</span></span>
-        </a></li>
-        <li class="wk wk--more"><a class="wk__a" href="#" aria-label="See more articles">
-          <span class="wk__plate"><span class="wk__no" aria-hidden="true">&rarr;</span></span>
-          <span class="wk__foot"><span class="wk__title">See more</span></span>
-        </a></li>
-      </ul>
-    </section>
+      <!-- ---- projects ----
+           Two columns of cards. Filled by work.js from the WORK array, so a
+           card and its case study can never drift apart. -->
+      <section class="sxsec" id="work">
+        <h2 class="sxh">Projects</h2>
+        <p class="sxlede">Four projects, four different problems, so four different
+          write-ups. All of it is client work under NDA — which means each one is built
+          out of reasoning and structure rather than screenshots. That turns out to be
+          the more useful half anyway.</p>
+        <ul class="sxprj" id="workList"></ul>
+      </section>
 
-    <!-- ---- about ---- -->
-    <section class="band">
-      <h2 class="sect">About</h2>
-      <p class="band__lede">Six-plus years of consumer product design, most of
-        it on entertainment and content products: discovery, streaming,
-        subscriptions, merchandising, and the growth work that runs across all
-        of them. Big ecosystems, high-scale journeys, a lot of experimentation.</p>
+      <!-- ---- writing ----
+           Titles and hrefs are placeholders — swap the "#" links for the
+           real posts as they go up. -->
+      <section class="sxsec" id="writing">
+        <h2 class="sxh">Writing</h2>
+        <p class="sxlede">Occasional writing on the craft — the systems, the trade-offs,
+          and what the data actually turned out to say.</p>
+        <ul class="sxpost">
+          <li><a href="#" data-todo><span class="sxpost__t">Systems, not screens</span>
+            <span class="sxpost__d">Why the interesting problem is rarely on the screen
+              you were handed.</span>
+            <span class="sxpost__go" aria-hidden="true">&#8599;</span></a></li>
+          <li><a href="#" data-todo><span class="sxpost__t">Let the data settle it</span>
+            <span class="sxpost__d">On taste as a generator of hypotheses, and a poor
+              judge of them.</span>
+            <span class="sxpost__go" aria-hidden="true">&#8599;</span></a></li>
+          <li><a href="#" data-todo><span class="sxpost__t">Trade-offs, out loud</span>
+            <span class="sxpost__d">If you cannot name what a proposal gives up, you do
+              not understand it yet.</span>
+            <span class="sxpost__go" aria-hidden="true">&#8599;</span></a></li>
+        </ul>
+      </section>
 
-      <!-- Four lines about what is actually on the desk this month. A
-           readout of what somebody is into tells you who you would be
-           working with, and it does it without a paragraph of cover letter. -->
-      <ul class="shelf">
-        <li data-cover="book" data-seed="7"><span>READING</span><b>BEHAVE</b><i>Robert Sapolsky</i></li>
-        <li data-cover="game" data-seed="12"><span>PLAYING</span><b>BALATRO</b><i>LocalThunk</i></li>
-        <li data-cover="film" data-seed="23"><span>WATCHING</span><b>FOR ALL MANKIND</b><i>Apple TV+</i></li>
-        <li data-cover="cart" data-seed="31"><span>BUILT</span><b>CUSTOM KEYBOARD</b><i>Keycaps &amp; switches</i></li>
-      </ul>
+      <!-- ---- setup / colophon ---- -->
+      <section class="sxsec sxsec--end">
+        <h2 class="sxh">Setup</h2>
+        <p class="sxlede">The city behind this page is drawn in code — no images, no
+          libraries, about eight and a half thousand lines of it, at twelve frames a
+          second, because that is how the machines I grew up with would have done it.
+          Tap the sky.</p>
 
-      <p class="home-cta"><a class="cta cta--ghost" href="#about">The longer version
-        <span aria-hidden="true">&rarr;</span></a></p>
-    </section>
-
-    <!-- ---- contact ----
-         One address, stated plainly, instead of a row of icons implying
-         four channels I do not equally watch. "Send a raven" would be
-         worse than "email me" and a mailto: is worse than nothing if the
-         handle behind it is fictional. -->
-    <section class="band band--end">
-      <h2 class="sect">Get in touch</h2>
-      <p class="band__lede">If any of the above is the kind of problem your team
-        is sitting on, I would like to hear about it. Email is the fastest way
-        to a real conversation — and I am happy to walk through the actual
-        screens behind any of these projects.</p>
-
-      <p class="home-cta">
-        <a class="cta cta--primary cta--big" href="mailto:vaibhavvishalece@gmail.com?subject=Hello%20Vaibhav">
-          vaibhavvishalece@gmail.com</a>
-      </p>
-
-      <!-- Add the real profile URLs here and these come back. They are out
-           rather than pointing at /handle: a dead social link on a portfolio
-           is worse than no social link.
-      <ul class="links">
-        <li><a href="https://www.linkedin.com/in/YOUR-HANDLE">
-          <canvas class="links__art" data-icon="linkedin" aria-hidden="true"></canvas>
-          <span class="links__name">LINKEDIN</span></a></li>
-        <li><a href="https://dribbble.com/YOUR-HANDLE">
-          <canvas class="links__art" data-icon="dribbble" aria-hidden="true"></canvas>
-          <span class="links__name">DRIBBBLE</span></a></li>
-      </ul>
-      -->
-
-      <p class="copyright">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span>
-        &middot; the city behind this page is drawn in code — no images, no
-        libraries, about eight and a half thousand lines of it. Tap the sky.</p>
-    </section>
+        <p class="sxfoot">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span></p>
+      </section>
     </div>
   </section>
 
@@ -314,17 +300,9 @@
 
 </main>
 
-<!-- The cover that follows the cursor over a shelf row. One element,
-     reused for all four — the art is generated by posters.js unless a
-     row carries data-cover-src, in which case that image is used. -->
-<div class="peek" aria-hidden="true" hidden><canvas></canvas><img alt="" hidden /></div>
-
 <div class="wipe" aria-hidden="true"></div>
 
-<script src="scene.js"></script>
-<script src="posters.js"></script>
 <script src="work.js"></script>
 <script src="script.js"></script>
-<script src="flowers.js"></script>
 </body>
 </html>
