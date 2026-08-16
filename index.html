@@ -13,11 +13,15 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- Geist (Vercel) — the reading face for the case studies, where a
-     monospace column gets tiring. The shell stays pixel and mono.
-     One Google Fonts request now serves all three faces. -->
+<!-- Two faces over the network, both machine voices: Press Start 2P for
+     the display bits and JetBrains Mono for anything technical.
+
+     The reading face is NOT here. It is Open Sauce Sans, which the Figma
+     file is actually set in, and it ships with the site out of fonts/
+     rather than off a CDN — see the @font-face block in styles.css.
+     Geist used to stand in for it here and has been withdrawn. -->
 <link
-  href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;700&family=Geist:wght@400;500;600;700&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;700&display=swap"
   rel="stylesheet"
 />
 
@@ -59,246 +63,179 @@
   <section class="page page--home is-on" data-page="home">
 
     <!-- ==================================================================
-         ONE PANEL
-
-         The HUD panel, back where it was: a neon-framed column standing on
-         the skyline with a band of city down either side. The masthead is
-         centred in it and everything under the first joint ranges left,
-         because a work index is a list to be scanned and a scanned list
-         does not centre.
-         ================================================================== -->
-    <!-- ==================================================================
          THE SHEET
 
-         One glass panel, 715px wide, with a rule down either side and
-         every section opening with a heading over a full-bleed rule.
-         That rule is the only separator. Nothing is centred inside the
-         sheet — a document ranges left.
+         Rebuilt from the Figma frame (node 2022:127, "Desktop - 2",
+         1440x2436), and re-cut after the frame dropped its border.
+
+         Every rule is gone. There were two vertical rails down either
+         side, a rung between every section, and finally a single rule
+         closing the document; the design carries none of them now.
+         Sections are held apart by space alone, and the only hairlines
+         left in here are the ones between article rows and the ones
+         around each project card.
+
+         The modal geometry is the design own too, at last. Frame 2026:3
+         is a reference rectangle drawn around the whole document: 804
+         wide at x=318, top at y=116, against content that starts at 378
+         and runs 684. That is 60px of padding on the left, the right and
+         the top — so the card is 684 + 60 + 60 and every gap below is
+         measured off the same frame.
+
+         The modal itself is untouched — same card, same radius, same
+         cast shadow, same width. What changed is the ground inside it:
+         this panel was dark glass and is now the frame's white paper
+         with black ink on it. The pages behind it — the case studies,
+         the about — stay dark, so home reads as a different surface
+         from the rest on purpose.
          ================================================================== -->
 
     <div class="col col--sheet">
+      <div class="sx">
 
-      <!-- ---- nav ----
-           Back inside the panel and ranged right, as a quiet row of ways
-           in rather than a bar. No ground, no pill: it should read as the
-           first thing in the document, not as chrome bolted above it.
+        <!-- ---- masthead ----
+             68px disc at 10px radius, 22px of air, then the wordmark in
+             Kalipixel — the face the frame is actually drawn in, loaded
+             from fonts/Kalipixel.ttf. The full stop after it is not a
+             glyph: the design sets a 5px black square just off the
+             baseline, so that is what this is. -->
+        <header class="sxmast" id="bio">
+          <span class="sxmast__ava" aria-hidden="true"></span>
+          <h1 class="sxmast__wm">vaibhav<i class="sxmast__dot" aria-hidden="true"></i></h1>
+          <p class="sxmast__bio">product designer/engineer focused on building products
+            where craft, systems thinking, and technology come together. I believe that
+            as AI lowers the barrier to building, taste and aesthetics will become an
+            increasingly important differentiator.</p>
+          <p class="sxmast__bio">Currently leading design for Airtel Entertainment.</p>
+        </header>
 
-           The masthead that used to sit under this is out — a new one is
-           coming, and a placeholder would only get in the way of it. -->
-      <nav class="sxnav" aria-label="Sections">
-        <a class="sxnav__l" href="#bio">About</a>
-        <a class="sxnav__l" href="#work">Work</a>
-        <a class="sxnav__l" href="#writing">Writing</a>
-        <a class="sxnav__l" href="#contact">Contact</a>
-      </nav>
+        <!-- ---- the two calls ----
+             161x46 each, 12px apart, the first filled black and the
+             second on #f2f2f2.
 
-      <!-- ---- masthead ----
-           Structure taken from the Figma frame (node 2012:70): an 82px
-           disc, a 23px gap, the wordmark set large and lowercase, and 45px
-           of air before the first section.
-
-           The bio the frame carried under the wordmark is out — About
-           says the same thing a section later, and saying it twice made
-           the top of the panel an introduction to an introduction.
-
-           Geometry is the design's. The colour is not — the frame is
-           black-on-white and this panel is dark, so the wordmark takes
-           the sheet's own ink and the modal is left exactly as it was. -->
-      <header class="sxmast">
-        <span class="sxmast__ava" aria-hidden="true"></span>
-        <h1 class="sxmast__wm">vaibhav</h1>
-      </header>
-
-      <!-- ---- about ----
-           Bullets, not a paragraph: four scannable claims beat a block
-           nobody finishes. All one weight — nothing is emphasised, so
-           the reader is not told which half of a sentence matters. -->
-      <section class="sxsec" id="bio">
-        <h2 class="sxh">About</h2>
-        <ul class="sxbul">
-          <li>I'm a product designer six-plus years in, working where the population
-            using a thing is large enough that a decision made on Tuesday shows up in a
-            chart on Friday.</li>
-          <li>I design discovery, streaming, subscriptions and merchandising —
-            ecosystems rather than apps, carried across television, mobile and web.</li>
-          <li>I work close to engineering on design systems, growth and experimentation,
-            which mostly teaches you to stop treating your own taste as evidence.</li>
-          <li>I turn tangled products into one spine every surface can agree on, then
-            write up the reasoning rather than the screenshots.</li>
-        </ul>
-      </section>
-
-      <!-- ---- connect ----
-           A 3x2 rack of bordered tiles, each a label and an arrow.
-
-           NOTE: only the email below is a real destination. The five marked
-           data-todo point at "#" on purpose — fill in the real URLs and
-           delete the attribute. A dead social link on a portfolio is worse
-           than no social link, so ship them empty or ship them right. -->
-      <section class="sxsec sxsec--tight" id="contact">
-        <div class="sxgrid">
-          <a class="sxtile" href="mailto:vaibhavvishalece@gmail.com?subject=Hello%20Vaibhav">
-            <span class="sxtile__ico" aria-hidden="true"></span>
-            <span class="sxtile__t">Email</span>
-            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
-          <a class="sxtile" href="#" data-todo>
-            <span class="sxtile__ico" aria-hidden="true"></span>
-            <span class="sxtile__t">Resume</span>
-            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
-          <a class="sxtile" href="#" data-todo>
-            <span class="sxtile__ico" aria-hidden="true"></span>
-            <span class="sxtile__t">LinkedIn</span>
-            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
-          <a class="sxtile" href="#" data-todo>
-            <span class="sxtile__ico" aria-hidden="true"></span>
-            <span class="sxtile__t">Dribbble</span>
-            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
-          <a class="sxtile" href="#" data-todo>
-            <span class="sxtile__ico" aria-hidden="true"></span>
-            <span class="sxtile__t">Read.cv</span>
-            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
-          <a class="sxtile" href="#" data-todo>
-            <span class="sxtile__ico" aria-hidden="true"></span>
-            <span class="sxtile__t">X (Twitter)</span>
-            <span class="sxtile__go" aria-hidden="true">&#8599;</span></a>
+             NOTE: both point at "#" on purpose — drop the real booking
+             link and the real resume URL in and delete data-todo. -->
+        <div class="sxcta" id="contact">
+          <a class="sxbtn sxbtn--fill" href="#" data-todo>Book a call</a>
+          <a class="sxbtn" href="#" data-todo>Get Resume</a>
         </div>
-      </section>
 
-      <!-- ---- projects ----
-           Two columns of cards. Filled by work.js from the WORK array, so a
-           card and its case study can never drift apart. -->
-      <section class="sxsec" id="work">
-        <h2 class="sxh">Projects</h2>
-        <p class="sxlede">Four projects, four different problems, so four different
-          write-ups. All of it is client work under NDA — which means each one is built
-          out of reasoning and structure rather than screenshots. That turns out to be
-          the more useful half anyway.</p>
-        <ul class="sxprj" id="workList"></ul>
-      </section>
+        <!-- ---- recent projects ----
+             A 2x2 rack of 331x329 bordered cards, filled by work.js from
+             the WORK array so a card and its case study cannot drift
+             apart. Each card is a 299x201 plate, a title, and the
+             project's one-line subject. -->
+        <section class="sxsec" id="work">
+          <div class="sxsec__head">
+            <h2 class="sxh">Recent projects</h2>
+            <a class="sxall" href="#" data-todo>See all<span class="sxall__go" aria-hidden="true">&#8599;</span></a>
+          </div>
+          <ul class="sxprj" id="workList"></ul>
+        </section>
 
-      <!-- ---- writing ----
-           Titles and hrefs are placeholders — swap the "#" links for the
-           real posts as they go up. -->
-      <section class="sxsec" id="writing">
-        <h2 class="sxh">Writing</h2>
-        <p class="sxlede">Occasional writing on the craft — the systems, the trade-offs,
-          and what the data actually turned out to say.</p>
-        <ul class="sxpost">
-          <li><a href="#" data-todo><span class="sxpost__t">Systems, not screens</span>
-            <span class="sxpost__d">Why the interesting problem is rarely on the screen
-              you were handed.</span>
-            <span class="sxpost__go" aria-hidden="true">&#8599;</span></a></li>
-          <li><a href="#" data-todo><span class="sxpost__t">Let the data settle it</span>
-            <span class="sxpost__d">On taste as a generator of hypotheses, and a poor
-              judge of them.</span>
-            <span class="sxpost__go" aria-hidden="true">&#8599;</span></a></li>
-          <li><a href="#" data-todo><span class="sxpost__t">Trade-offs, out loud</span>
-            <span class="sxpost__d">If you cannot name what a proposal gives up, you do
-              not understand it yet.</span>
-            <span class="sxpost__go" aria-hidden="true">&#8599;</span></a></li>
-        </ul>
-      </section>
+        <!-- ---- playground ----
+             Three empty plates, exactly as drawn: one full-measure band
+             and a wide/narrow pair under it. They are placeholders in
+             the design and they are placeholders here — drop the real
+             pieces in and give each plate its content. -->
+        <section class="sxsec" id="playground">
+          <h2 class="sxh">Playground</h2>
+          <div class="sxplay">
+            <div class="sxplay__b sxplay__b--wide" data-todo></div>
+            <div class="sxplay__b sxplay__b--l" data-todo></div>
+            <div class="sxplay__b sxplay__b--r" data-todo></div>
+          </div>
+        </section>
 
-      <!-- ---- setup / colophon ---- -->
-      <section class="sxsec sxsec--end">
-        <h2 class="sxh">Setup</h2>
-        <p class="sxlede">The city behind this page is drawn in code — no images, no
-          libraries, about eight and a half thousand lines of it, at twelve frames a
-          second, because that is how the machines I grew up with would have done it.
-          Tap the sky.</p>
+        <!-- ---- articles ----
+             A numbered list, hairline between rows. The numeral is
+             Kalipixel at 48px and 10% black — a ghosted figure the title
+             sits beside rather than a marker it hangs off.
 
-        <p class="sxfoot">&copy; 2026 <span class="accent">VAIBHAV VISHAL</span></p>
-      </section>
+             Titles and hrefs are placeholders — swap the "#" links for
+             the real posts as they go up. -->
+        <section class="sxsec sxsec--end" id="writing">
+          <h2 class="sxh">Articles</h2>
+          <ol class="sxart">
+            <li><a href="#" data-todo>
+              <span class="sxart__n" aria-hidden="true">1</span>
+              <span class="sxart__b">
+                <span class="sxart__t">Systems, not screens</span>
+                <span class="sxart__d">Why the interesting problem is rarely on the
+                  screen you were handed.</span>
+              </span></a></li>
+            <li><a href="#" data-todo>
+              <span class="sxart__n" aria-hidden="true">2</span>
+              <span class="sxart__b">
+                <span class="sxart__t">Let the data settle it</span>
+                <span class="sxart__d">On taste as a generator of hypotheses, and a
+                  poor judge of them.</span>
+              </span></a></li>
+            <li><a href="#" data-todo>
+              <span class="sxart__n" aria-hidden="true">3</span>
+              <span class="sxart__b">
+                <span class="sxart__t">Trade-offs, out loud</span>
+                <span class="sxart__d">If you cannot name what a proposal gives up,
+                  you do not understand it yet.</span>
+              </span></a></li>
+          </ol>
+        </section>
+
+      </div>
     </div>
   </section>
 
-  <!-- ==== ABOUT (L2) ==== -->
-  <section class="page" data-page="about" data-kind="read" hidden>
-    <article class="col col--doc read about">
-      <nav class="l2nav"><a class="cta cta--ghost" href="#home"><span aria-hidden="true">&larr;</span> Home</a></nav>
-      <p class="read__eyebrow">ABOUT <span class="read__sep">&middot;</span> VAIBHAV VISHAL</p>
-      <h1 class="read__title">The longer version</h1>
-      <p class="read__standfirst">Six years designing things a lot of people use at
-        once, mostly in entertainment. Here is what that has actually involved, how
-        I work, and what I do when I am not doing it.</p>
-      <div class="read__rule" aria-hidden="true"></div>
+  <!-- ==================================================================
+       THE L2 PAGES ARE GONE
 
-      <div class="prose read__body">
-        <p class="read__lead">I am a product designer, based in India, six-plus years
-          in. Almost all of it consumer — products where the population using them is
-          large enough that a decision you make on a Tuesday shows up in a chart on
-          Friday, and where the interesting problems are rarely the ones you can see
-          on a single screen.</p>
+       An about page and four generated case studies used to live here
+       and be appended by work.js. Both are scrapped, pending a rebuild.
 
-        <p>Most of my recent work has been in entertainment and content products:
-          content discovery, streaming, subscriptions, merchandising, and the
-          experiences that carry all of that onto a television and back onto a phone.
-          Those are ecosystems rather than apps. The catalogue, the entitlement, the
-          bill, the home screen and the player all have to agree with each other, and
-          the design problem is usually that they do not.</p>
+       WORK in work.js is untouched — it still carries all four studies
+       in full, and still fills the cards above. What it no longer does
+       is render a page per entry, so the cards point at "#" and carry
+       data-todo like every other placeholder in here. Restore the link
+       by putting the id back in cardsHTML once the pages exist.
 
-        <h3>What I actually do</h3>
-        <p>Less of it is drawing than people expect. A good share of my week is spent
-          on the shape of the thing — what a surface is for, what it is allowed to
-          promise, what has to be true underneath before an interface can say it
-          plainly. The rest is the craft: interaction, motion, hierarchy, the
-          typography of a screen somebody looks at for half a second while doing
-          something else.</p>
-
-        <p>I have spent a lot of time on growth and experimentation, which mostly
-          teaches you humility. You watch a change you were sure about do nothing, and
-          a change you argued against move a number, and after enough of those you
-          stop treating your own taste as evidence. It stays useful — it is what
-          generates the hypotheses — but it stops being the thing that settles them.</p>
-
-        <h3>How I work</h3>
-        <ul>
-          <li><b>Frame before you draw.</b> The first version of almost every brief I
-            get is a solution wearing a problem's clothes. Working out what the actual
-            question is buys more than any number of explorations.</li>
-          <li><b>Design against the messy account, not the demo one.</b> The tidy user
-            with one subscription and no history is the user nobody has. Systems get
-            tangled because they were designed for the screenshot.</li>
-          <li><b>Say what it costs.</b> Every decision worth making gives something up.
-            If I cannot name what a proposal loses, I do not understand it well enough
-            to defend it yet.</li>
-          <li><b>Ship the smallest honest version.</b> Then learn in public, with
-            instrumentation in place before launch rather than bolted on after
-            somebody asks how it went.</li>
-        </ul>
-
-        <p>I work best close to engineering. Most of the projects I am proud of came
-          out of a conversation where somebody said "we could do that, but not the way
-          you have drawn it" and the third idea was better than either of the first two.</p>
-
-        <h3>Away from the screen</h3>
-        <p>I read fiction, mostly graphic novels. I used to grind tactical shooters and
-          moved on — these days the competitive urge goes into weight training instead,
-          logged in detail, in a gym at home. To reset I pour paint, which is calm in a
-          way a screen never is.</p>
-
-        <p>And I tinker with hardware. There is an 8TB mini server in this flat that
-          exists for no reason beyond wanting to build it, and a keyboard I put together
-          switch by switch. This website is the same instinct: the city behind it is
-          eight and a half thousand lines of code that draws every pixel of a skyline
-          from scratch, at twelve frames a second, because that is how the machines I
-          grew up with would have done it.</p>
-      </div>
-
-      <nav class="read__nav">
-        <a class="read__nav__back" href="#home"><span aria-hidden="true">&larr;</span> Back home</a>
-        <div class="read__nav__seq">
-          <a class="read__nav__link read__nav__next" href="#w1">
-            <span class="read__nav__dir">The work &rarr;</span>
-            <span class="read__nav__ttl">Lights, Camera, Banners</span></a>
-        </div>
-      </nav>
-    </article>
-  </section>
-
-  <!-- The four case studies are appended here by work.js. -->
+       Their stylesheet is untouched too: .col--doc, .read__*, .cs__*
+       and the html[data-l2] rules are all still in styles.css, unused
+       but intact, so the rebuild has something to land on.
+       ================================================================== -->
 
 </main>
+
+<!-- ==================================================================
+     THE BOTTOM BAR
+
+     One floating pill, centred on the bottom edge: four icon stops and
+     a call to action riding in the same bar, the shape muratalpay.me
+     uses. The icons are inline SVG on currentColor — no sprite, no
+     request, and they take the bar's ink automatically.
+
+     Every stop is an in-page anchor, which is all there is to point at
+     now that the L2 pages are gone. script.js already intercepts any
+     href that is not a route and scrolls the .page container itself
+     (the page is a fixed overflow-scroller, so the browser will not
+     always do it), so these need no wiring.
+
+     Home is marked --on because home is the only page there is. When
+     the L2 pages come back this wants to follow the route instead.
+     ================================================================== -->
+<nav class="bnav" aria-label="Sections">
+  <a class="bnav__i bnav__i--on" href="#bio" aria-label="Top">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.2 9.4 10 3.6l6.8 5.8V16a1 1 0 0 1-1 1h-3.4v-4.6H7.6V17H4.2a1 1 0 0 1-1-1Z"/></svg>
+  </a>
+  <a class="bnav__i" href="#work" aria-label="Recent projects">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.6 6.1a1 1 0 0 1 1-1h3.6l1.5 2h7.7a1 1 0 0 1 1 1v6.8a1 1 0 0 1-1 1H3.6a1 1 0 0 1-1-1Z"/></svg>
+  </a>
+  <a class="bnav__i" href="#playground" aria-label="Playground">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.4 12.4c1.8-6.4 4.2-6.4 6 0s4.2 6.4 6 0"/><circle cx="16.9" cy="6.2" r="1.3"/></svg>
+  </a>
+  <a class="bnav__i" href="#writing" aria-label="Articles">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.4 5.6h13.2M3.4 10h13.2M3.4 14.4h8.4"/></svg>
+  </a>
+  <a class="bnav__cta" href="#" data-todo>Book a call</a>
+</nav>
 
 <div class="wipe" aria-hidden="true"></div>
 

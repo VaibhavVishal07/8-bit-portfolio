@@ -182,7 +182,7 @@
      case study is the one place on this site that asks for sustained
      reading. Geist carries the long prose; the interface, the labels
      and everything on home stay on the mono. */
-  --font-read: 'Geist', var(--font-body);
+  --font-read: 'Open Sauce Sans', 'Geist', var(--font-body);
 }
 
 @media (min-width: 1500px) {
@@ -292,6 +292,16 @@ svg { display: block; image-rendering: pixelated; }
   background:
     radial-gradient(120% 80% at 50% 0%, rgba(86, 96, 140, 0.14), rgba(0, 0, 0, 0) 62%),
     linear-gradient(#0a0c17, #05070f 58%);
+}
+
+/* In dark, the backdrop drops its gradient and takes the sheet's own
+   value. The two are the same surface now, so any variation between
+   them reads as a seam down both sides of the column. */
+@media (prefers-color-scheme: dark) {
+  /* Flat black behind the card. The card's own gradient runs down to
+     black, so the two meet at the foot and the modal has no bottom
+     edge — which is exactly how the frame renders. */
+  .backdrop { background: var(--sx-page); }
 }
 
 .backdrop > * {
@@ -3606,440 +3616,798 @@ html[data-l2] .col--doc .dg__tag,
 html[data-l2] .col--doc .dg__cap { font-family: var(--font-body); }
 
 /* ==================================================================
-   THE SHEET — the home panel, restructured
+   THE SHEET — the home panel, rebuilt from the frame
 
-   The home column was a centred title card with centred sections
-   under it. It is a document now: one fixed 715px measure with a rule
-   down either side, sections divided by a hatched band, and each one
-   opening with a plain 30px heading over a full-bleed rule.
+   Everything below is measured off the Figma frame (node 2022:127,
+   "Desktop - 2", 1440 x 2436). That drawing is a technical one: the
+   whole document sits inside a ladder of hairlines — two vertical
+   rails down either side, a horizontal rung between every section —
+   with the content held 64px inside the rails on a 684px measure.
 
-   The panel itself — the dark glass, the radius, the cast shadow —
-   is untouched. These rules only govern what happens inside it.
+   Two things about it are worth stating, because they are the only
+   places this file departs from the frame.
+
+   The palette is a set of tokens, not literals. The frame is drawn
+   black-on-white and that is what ships by default, but every colour
+   in it is declared once at the top and referenced everywhere else,
+   so the dark scheme at the bottom of this file is a swap of eleven
+   values rather than a second copy of the stylesheet. Nothing below
+   the token block names a colour directly. Keep it that way — a
+   literal here is a bug that only shows up in one scheme.
+
+   The modal is NOT the design's. The card, its radius, its border and
+   its cast shadow are the ones this panel already had — the frame is
+   a full-bleed 1440 desktop page and has no opinion about a card, so
+   the shell it is dropped into keeps its own. Its width is now the
+   ladder plus a fixed margin of air, which is the one number the
+   frame cannot give you.
    ================================================================== */
 
-:root {
-  --sx-line: rgba(255, 255, 255, 0.1);
-  --sx-line-2: rgba(255, 255, 255, 0.055);
-  --sx-gut: 0px;
-  --sx-pad: 0px;
-  /* Where a heading's text starts, and so where every block under it
-     starts too. The heading RULE still runs the full width of the
-     column; only the content is inset. */
-  --sx-in: calc(var(--sx-gut) + var(--sx-pad));
-  --sx-fg: rgba(255, 255, 255, 0.98);
-  --sx-fg-2: rgba(255, 255, 255, 0.72);
-  --sx-fg-3: rgba(255, 255, 255, 0.45);
+/* Kalipixel is the face the frame's wordmark and its article numerals
+   are actually drawn in. It is not a webfont anywhere, so it ships
+   with the site. Nothing else uses it: it is a display face for two
+   things, and it would be unreadable at any size a sentence needs. */
+/* Open Sauce Sans — the face the Figma file is set in.
+
+   It stood in as Geist for most of this build, because Open Sauce is not
+   on Google Fonts and there was nothing to load. It is not a stand-in
+   any more: four weights ship out of fonts/, taken from the project's
+   own repo (marcologous/Open-Sauce-Fonts, SIL OFL, licence alongside
+   them). Four and not the whole family — 300/400/500/600 is exactly
+   what the sheet asks for, and every extra weight is another 37KB for
+   nothing.
+
+   One family, four files, all named the same: the browser picks by
+   font-weight, so nothing in the stylesheet has to name a file. */
+@font-face {
+  font-family: 'Open Sauce Sans';
+  src: url('fonts/OpenSauceSans-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sauce Sans';
+  src: url('fonts/OpenSauceSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sauce Sans';
+  src: url('fonts/OpenSauceSans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sauce Sans';
+  src: url('fonts/OpenSauceSans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
 }
 
+@font-face {
+  font-family: 'Kalipixel';
+  src: url('fonts/Kalipixel.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ---- the frame's palette, verbatim ---- */
+  --sx-paper: #ffffff;
+  --sx-ground: #ffffff;              /* what the modal actually paints */
+  --sx-page: transparent;            /* the backdrop keeps its own gradient */
+  --sx-ink: #000000;
+  --sx-ink-2: rgba(0, 0, 0, 0.6);    /* card + article descriptions */
+  --sx-ink-3: rgba(0, 0, 0, 0.5);    /* the bio */
+  --sx-ink-4: rgba(0, 0, 0, 0.4);    /* "See all" */
+  --sx-ghost: rgba(0, 0, 0, 0.1);    /* the article numerals */
+  /* OPAQUE, not alpha — and this matters more than it looks.
+     The ladder is a lattice: every rail crosses every rung, and with a
+     translucent line each of those crossings blends twice and comes
+     out as a dark knot at the corner. The frame does not have that
+     problem because Figma draws these as solid strokes (sampled off
+     node 2022:530: a flat rgb(235,235,235), no alpha). Solid here too,
+     so a crossing is the same colour as the line and the corners read
+     as one continuous frame.
+
+     Which leaves the weight to be set as a flat value rather than an
+     alpha. #e8e8e8 is 9% ink on the paper — half the strength this
+     line carried a moment ago, and within a hair of the frame own
+     #ebebeb. Softening it by reaching for rgba() instead would undo
+     the paragraph above: the knots come straight back at every
+     crossing. Half the ink, none of the alpha. */
+  --sx-line: #e8e8e8;                /* the ladder, and the row rules */
+  --sx-card: rgba(217, 217, 217, 0.7);
+  --sx-plate: #f4f4f4;               /* the playground blocks */
+  --sx-cover: #f4f4f4;               /* an empty project cover */
+  --sx-fill: #f2f2f2;                /* the secondary button */
+  --sx-ava: rgba(217, 217, 217, 0.3);
+
+  /* ---- the parts the frame does not draw ----
+     A flat page has no card edge, no lift and no hover, so these five
+     are this panel's rather than the design's. They are tokens all the
+     same, because they are the ones that invert hardest. */
+  --sx-on-fill: #ffffff;             /* label on the filled button */
+  --sx-edge: rgba(0, 0, 0, 0.08);    /* the modal's own border */
+  --sx-glint: rgba(255, 255, 255, 0.6); /* its inset top highlight */
+  --sx-cast: rgba(0, 0, 0, 0.5);     /* the drop shadow under the sheet */
+  --sx-wash: rgba(0, 0, 0, 0.02);    /* hover ground */
+  --sx-press: rgba(0, 0, 0, 0.12);   /* hover on the secondary button */
+  --sx-press-fill: rgba(0, 0, 0, 0.78); /* hover on the filled one */
+  --sx-card-hi: rgba(0, 0, 0, 0.35); /* card border, hovered */
+
+  /* ---- the frame's geometry ----
+     Two numbers now, and both are the design's. --sx-mes is the
+     measure: content runs 378 -> 1062. --sx-air is the padding around
+     it, read off the reference rectangle the design supplies for
+     exactly this (node 2026:3, x=318 w=804 y=116) — 804 - 684 is 120,
+     so 60 a side, and 176 - 116 is the same 60 down from the top. That
+     rectangle is the first time the card itself has been specified;
+     every earlier version of this file had to invent the number.
+
+     The old --sx-gut (the 64px a rail stood off the text) and
+     --sx-rung (the 12px between a rule's two lines) are gone with the
+     border that needed them. */
+  --sx-mes: 684px;
+  --sx-air: 60px;
+
+  /* ---- the radii ----
+     Read one by one out of the Figma file rather than guessed. Trying
+     to measure them off a rendered frame failed its own controls (it
+     fitted 6px for the modal, which is 18), so these came from the
+     Design panel per node:
+
+       page frame  2028:555   0
+       modal       2028:556  18
+       card        2028:581  10
+       cover       2028:585   8
+       Book a call 2028:566   8
+       Get Resume  2028:569   8
+       avatar      2028:564  10
+       playground  2028:558/559/560  8 (all three)
+
+     Two values, not one: 8 for the small furniture, 10 for the two
+     things that hold something (the card, the avatar), 18 for the
+     sheet. The bar's 999 is mine — the frame does not draw it. */
+  --sx-r-sm: 8px;
+  --sx-r-md: 10px;
+  --sx-r-lg: 18px;
+}
+
+/* ==================================================================
+   DARK
+
+   The same drawing on the opposite ground. Every value here is a
+   replacement for one directly above it, in the same order, so the
+   two can be read side by side.
+
+   It is a swap, not a dimming. The relationships the frame sets up
+   are what carry over — the bio one step back from the headings, the
+   descriptions one step back from the titles, the numerals barely
+   there — so the percentages move where a straight inversion would
+   have read wrong. Ink at 60% black is a comfortable grey; white at
+   60% on near-black is not, it glares, so the muted steps all sit a
+   little lower than their light-scheme counterparts, and the two
+   hairline greys sit a little higher because a 9% white line on black
+   disappears where a 9% black line on white does not.
+
+   The filled button inverts completely: black-on-white becomes
+   white-on-black's opposite again, which is a white plate with black
+   type. It stays the loudest thing in the panel either way, which is
+   the only property of it that actually matters.
+   ================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Every value below is measured off the frame, not invented: the
+       modal rectangle (node 2028:556) reports its own fill and radius,
+       and the rest is sampled out of the rendered frame.
+
+       The headline is that the modal is a card again. It carries an
+       18px radius and a gradient — #171717 at the head, pure black at
+       the foot — over a page that is pure black, so it fades INTO its
+       own background rather than sitting on it. That reverses two
+       things asked for by hand a moment ago (square corners, one flat
+       colour shared with the page); the frame is the newer instruction
+       and it wins, but it is worth knowing it was a reversal. */
+    --sx-ground: linear-gradient(180deg, #171717 0%, #000000 100%);
+    --sx-paper: #171717;               /* the head of that gradient */
+    --sx-page: #000000;                /* the backdrop, behind the card */
+
+    --sx-ink: #ffffff;
+    --sx-ink-2: #969696;               /* card + article descriptions */
+    --sx-ink-3: #b8b8b8;               /* the bio */
+    /* The frame gives "See all" the same white as the heading beside
+       it — measured, not assumed: both come back with an identical
+       brightness distribution. It reads louder than the light scheme
+       had it, and that is the design's call. */
+    --sx-ink-4: #ffffff;
+    --sx-ghost: rgba(255, 255, 255, 0.12);
+
+    /* Back to an alpha, and safe now: alpha was banned here only
+       because the ladder crossed itself and every crossing blended
+       twice. The ladder is gone — the sole hairlines left are the
+       article dividers, which cross nothing — and an opaque line
+       cannot work over a gradient anyway, since it would only match
+       the ground at one height. */
+    --sx-line: rgba(255, 255, 255, 0.1);
+
+    /* The project cards have no fill at all. A card and the modal
+       behind it sample within one level of each other; the hairline is
+       the only thing that draws them. */
+    --sx-card: rgba(217, 217, 217, 0.13);    /* 2028:581, stroke at 13% */
+
+    /* These three were sampled off a render and are now taken from the
+       file, which is both more accurate and more robust: an alpha over
+       the modal's gradient tracks the gradient, where a flat composite
+       only matches at the height it was sampled.
+
+       The playground plates in particular are NOT the near-white I had.
+       They are the same F2F2F2 the buttons use, at 5% — a wash, not a
+       block. Whatever they looked like in the frame I sampled earlier,
+       the file says 5% now. */
+    --sx-plate: rgba(242, 242, 242, 0.05);   /* 2028:558/559/560 */
+    --sx-cover: rgba(242, 242, 242, 0.05);   /* same wash for an empty cover */
+    --sx-fill: rgba(242, 242, 242, 0.05);    /* Get Resume, 2028:569 */
+    --sx-ava: rgba(217, 217, 217, 0.1);      /* 2028:564 */
+    --sx-on-fill: #000000;             /* label on the white button */
+
+    --sx-edge: rgba(255, 255, 255, 0.1);
+    --sx-glint: transparent;
+    --sx-cast: transparent;
+    --sx-wash: rgba(255, 255, 255, 0.045);
+    --sx-press: rgba(255, 255, 255, 0.16);
+    --sx-press-fill: rgba(255, 255, 255, 0.86);
+    --sx-card-hi: rgba(255, 255, 255, 0.28);
+  }
+}
+
+/* ==================================================================
+   THE MODAL
+
+   Unchanged in structure — same radius, same border, same cast
+   shadow as the glass panel it replaces. What went is the
+   translucency: paper does not let a city through it, and the frame's
+   ink over a blurred skyline is unreadable either way round. So the
+   ground is opaque and the backdrop stays behind it rather than in
+   it.
+   ================================================================== */
 .col--sheet {
   position: relative;
   padding: 0;
   overflow: hidden;
   text-align: left;
 }
-
 .col--sheet > * { position: relative; z-index: 1; }
 
-/* ---- a section ----
-   Heading, then content. The heading rule runs the full width of the
-   column, which is what makes the sections read as bands rather than
-   as paragraphs. */
-.sxsec { padding: 0 0 34px; }
-.sxsec--end { padding-bottom: 26px; }
-
-.sxh {
-  margin: 0 var(--sx-gut) 18px;
-  padding: 18px var(--sx-pad) 14px;
-  font-family: var(--font-read);
-  font-size: 21px;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  color: var(--sx-fg);
-  border-bottom: 1px solid var(--sx-line);
-}
-.sxh::after { content: none; }
-
-.sxlede {
-  margin: 0 0 22px;
-  padding: 0 var(--sx-in);
-  font-family: var(--font-read);
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--sx-fg-2);
-  text-wrap: pretty;
-}
-
-/* ---- about bullets ---- */
-.sxbul {
-  margin: 0;
-  padding: 0 var(--sx-in) 0
-           calc(var(--sx-in) + 18px);
-  list-style: disc;
-}
-.sxbul li {
-  margin: 0 0 8px;
-  font-family: var(--font-read);
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--sx-fg-2);
-  text-wrap: pretty;
-}
-.sxbul li::marker { color: var(--sx-fg-3); }
-
-/* ---- connect ----
-   A 3x2 rack. The tiles share their rules: every cell draws its right
-   and bottom border, the container draws the outer top and left. */
-.sxgrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0 var(--sx-in);
-  border-top: 1px solid var(--sx-line);
-  border-left: 1px solid var(--sx-line);
-}
-.sxtile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 14px;
-  border-right: 1px solid var(--sx-line);
-  border-bottom: 1px solid var(--sx-line);
-  text-decoration: none;
-  transition: background 0.15s;
-}
-.sxtile:hover { background: rgba(255, 255, 255, 0.05); }
-.sxtile__ico {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--sx-line);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.05);
-}
-.sxtile__t {
-  flex: 1 1 auto;
-  font-family: var(--font-read);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--sx-fg);
-}
-.sxtile__go {
-  flex: none;
-  font-size: 13px;
-  color: var(--sx-fg-3);
-}
-.sxtile:hover .sxtile__go { color: var(--panel-edge); }
-
-/* ---- chips ---- */
-.sxchips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.sxchips li,
-.sxchips span {
-  padding: 4px 9px;
-  border: 1px solid var(--sx-line);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  font-family: var(--font-read);
-  font-size: 12px;
-  color: var(--sx-fg-2);
-}
-
-/* ---- projects ----
-   Two columns of cards, each a plate, a body, and a footer split off
-   by a rule. Rendered by work.js from the WORK array. */
-.sxprj {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  margin: 0 var(--sx-in);
-  padding: 0;
-  list-style: none;
-}
-.sxcard { display: flex; }
-.sxcard__a {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  border: 1px solid var(--sx-line);
-  border-radius: 10px;
-  overflow: hidden;
-  text-decoration: none;
-  background: rgba(255, 255, 255, 0.028);
-  transition: background 0.15s, border-color 0.15s;
-}
-.sxcard__a:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(62, 240, 255, 0.35);
-}
-.sxcard__a:focus-visible {
-  outline: 3px solid var(--panel-edge);
-  outline-offset: 3px;
-}
-.sxcard__plate {
-  display: block;
-  aspect-ratio: 16 / 10;
-  border-bottom: 1px solid var(--sx-line);
-  background-color: rgba(255, 255, 255, 0.03);
-  background-image:
-    repeating-linear-gradient(to right, var(--sx-line-2) 0 1px, rgba(0, 0, 0, 0) 1px 8px),
-    repeating-linear-gradient(to bottom, var(--sx-line-2) 0 1px, rgba(0, 0, 0, 0) 1px 8px);
-}
-.sxcard__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  image-rendering: pixelated;
-}
-.sxcard__body {
-  display: block;
-  flex: 1 1 auto;
-  padding: 13px 14px 14px;
-}
-.sxcard__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.sxcard__t {
-  font-family: var(--font-read);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--sx-fg);
-}
-.sxcard__yr {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-  font-family: var(--font-read);
-  font-size: 12px;
-  color: var(--sx-fg-3);
-}
-.sxcard__yr i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--panel-accent);
-}
-.sxcard__sub {
-  display: block;
-  margin: 3px 0 9px;
-  font-family: var(--font-read);
-  font-size: 12px;
-  color: var(--sx-fg-3);
-}
-.sxcard__d {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin: 0 0 11px;
-  font-family: var(--font-read);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--sx-fg-2);
-}
-.sxcard__foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 11px 14px;
-  border-top: 1px solid var(--sx-line);
-}
-.sxcard__go {
-  font-family: var(--font-read);
-  font-size: 13px;
-  color: var(--sx-fg-2);
-}
-.sxcard__a:hover .sxcard__go { color: var(--panel-edge); }
-.sxcard__n {
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--sx-fg-3);
-}
-
-/* ---- writing ---- */
-.sxpost {
-  margin: 0 var(--sx-in);
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--sx-line);
-}
-.sxpost li { border-bottom: 1px solid var(--sx-line); }
-.sxpost a {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: baseline;
-  gap: 3px 14px;
-  padding: 14px var(--sx-pad);
-  text-decoration: none;
-  transition: background 0.15s;
-}
-.sxpost a:hover { background: rgba(255, 255, 255, 0.05); }
-.sxpost__t {
-  font-family: var(--font-read);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--sx-fg);
-}
-.sxpost__d {
-  grid-column: 1;
-  font-family: var(--font-read);
-  font-size: 13px;
-  color: var(--sx-fg-3);
-}
-.sxpost__go {
-  grid-row: 1 / span 2;
-  grid-column: 2;
-  align-self: center;
-  font-size: 13px;
-  color: var(--sx-fg-3);
-}
-.sxpost a:hover .sxpost__go { color: var(--panel-edge); }
-
-.sxfoot {
-  margin: 18px 0 0;
-  padding: 0 var(--sx-in);
-  font-family: var(--font-display);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--sx-fg-3);
-}
-
-/* ---- narrow ----
-   Below the measure the three-up and two-up racks fold, the counter
-   leaves the hero row, and the gutters close up so the sheet keeps as
-   much width as a phone can give it. */
-@media (max-width: 720px) {
-  :root { --sx-gut: 0px; --sx-pad: 0px; }
-  .sxgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sxprj { grid-template-columns: minmax(0, 1fr); }
-  .sxh { font-size: 17px; }
-}
-
-/* The home page forces the reading face onto every element inside the
-   column (see .page--home .col b, i, a, span above). The sheet keeps
-   that for prose, but these three are furniture and stay on the pixel
-   face — so they need the same specificity to win it back. */
-.page--home .col .sxcard__n,
-.page--home .col .sxfoot { font-family: var(--font-display); }
-
-/* ---- the glass panel ----
-   One panel, and it is glass: a translucent ground over a heavy blur,
-   a hairline lit edge, and a 20px radius so the corners read as a card
-   rather than as a cut. The city stays visible through it, which is
-   the whole point of putting it over a city.
-
-   The side padding scales with the viewport: enough air at full width
-   that the measure is not pressed against its own border, closing up
-   on a phone where there is none to spare. */
 .page--home .col--sheet {
-  /* The reference measures 715px. This runs wider, inherited from the
-     old home column (.page--home .col, further up). Left as it is
-     because it is what the sheet has been reviewed at — drop it to
-     715px here if the lines start reading long. */
-  width: min(94vw, 1000px);
-  padding: 0 clamp(20px, 4.4vw, 52px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  background:
-    linear-gradient(158deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 42%),
-    rgba(9, 6, 20, 0.62);
-  backdrop-filter: blur(28px) saturate(1.6) brightness(0.86);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6) brightness(0.86);
+  /* The ladder is 812 and it is the widest thing in here, so the card
+     is the ladder plus --sx-air either side and nothing more. At full
+     width the padding box IS the drawing: 34 + 812 + 34. It used to
+     run to 1000, which left ~94px of dead ground down both sides and
+     read as a page with a document lost in the middle of it rather
+     than as a sheet with a document on it.
+
+     100%, not 94vw: the page is a fixed, overflow-scrolling container,
+     so it owns a scrollbar that vw does not know about — at a narrow
+     desktop width 94vw came out ~9px wider than the box it sits in,
+     the auto margins went overconstrained, and overflow-x:hidden ate
+     the right edge of the sheet. */
+  /* + 2px for this element own left and right border: the box is
+     border-box, so without it the padding box comes out 810 and the
+     ladder — the one measurement this whole file exists to land — is
+     two pixels short of the frame at full width. */
+  /* The reference rectangle, verbatim: the measure plus 60 a side,
+     plus 2px for this element's own left and right border, which
+     border-box would otherwise take out of the measure. 806 at full
+     width, against 882 before — the card lost the 64px gutter the
+     rails used to need. */
+  width: min(100%, calc(var(--sx-mes) + var(--sx-air) * 2 + 2px));
+  padding: var(--sx-air);
+  border: 1px solid var(--sx-edge);
+  /* Confirmed 18px on node 2028:556, whose stroke is a 2px OUTSIDE
+     linear gradient at 20%. Outside is why the width formula adds 2px
+     for the border rather than absorbing it — 804 is the fill box, not
+     the border box. The 1px flat edge below approximates the gradient
+     stroke; it is the one value here that is not literal. */
+  border-radius: var(--sx-r-lg);
+  /* A whole background, not a colour — dark paints a gradient here. */
+  background: var(--sx-ground);
   box-shadow:
-    0 28px 70px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    0 28px 70px var(--sx-cast),
+    inset 0 1px 0 var(--sx-glint);
 }
 .page--home .col--sheet::before { content: none; }
 
-/* ---- nav ----
-   A row of ways in, ranged right at the head of the panel. No ground
-   and no border: the section headings already carry the rules, and a
-   second horizontal line this close to the first one would read as a
-   title bar. */
-.sxnav {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 6px 22px;
-  padding: 26px 0 4px;
-}
-.sxnav__l {
-  font-family: var(--font-read);
-  font-size: 14px;
-  white-space: nowrap;
-  color: var(--sx-fg-3);
-  text-decoration: none;
-  transition: color 0.15s;
-}
-.sxnav__l:hover,
-.sxnav__l:focus-visible { color: var(--sx-fg); }
+/* The column forces the reading face onto everything inside it (see
+   "THE MODAL READS IN GEIST", further up). The sheet keeps that, and
+   takes the ink back — those rules were written for a dark panel.
 
-/* Connect lost its heading, so it also loses the gap the heading used
-   to sit in — the tiles come straight up under the About bullets. */
-.sxsec--tight { margin-top: -16px; }
+   One declaration, on the panel, inherited down. It is tempting to
+   spell out p/a/li/span here as well, but nothing under .col sets a
+   colour on any element the sheet actually uses (the rules that do
+   are .shelf, .role and .sect__k, none of which are in here) — and an
+   element-level reset outranks the component rules below it, which is
+   how the bio lost its 50% black the first time. */
+.page--home .col--sheet { color: var(--sx-ink); }
 
-@media (max-width: 720px) {
-  .sxnav { gap: 6px 16px; padding: 20px 0 2px; }
-  .sxnav__l { font-size: 13px; }
-  .page--home .col--sheet { padding: 0 16px; }
+/* ==================================================================
+   THE MEASURE
+
+   All .sx does now is hold the column to 684 and centre it.
+
+   It used to be the frame itself — two rails, a rung between every
+   section, a closing rule under the last one — and it carried 64px of
+   horizontal padding so those rules could break back out past the
+   text. The design dropped every one of them, so the padding went
+   with them. The only air around the column is the modal's own 60.
+   ================================================================== */
+.sx {
+  position: relative;
+  max-width: var(--sx-mes);
+  margin: 0 auto;
 }
 
-/* ---- masthead ----
-   Structure lifted from the Figma frame, node 2012:70. Every number
-   below is the design's, measured off that frame:
-
-     avatar    82 x 82, round
-     gap       23px  (avatar bottom 214 -> wordmark top 237)
-     wordmark  48px, lowercase, 55px box
-     bio       18px / 28px, capped at the frame's 684px column
-     gap       45px  (bio bottom 376 -> next section top 421)
-
-   What is NOT the design's is colour. The frame is black on white; this
-   panel is dark glass, so the wordmark takes the sheet's primary ink and
-   the bio takes the muted one — the design's black-at-50% reads as the
-   same relationship against the opposite ground. The modal itself is
-   untouched. */
-.sxmast { padding: 24px 0 45px; }
+/* ==================================================================
+   MASTHEAD
+   ava 68px @ r10, 22px, wordmark 48px, bio 16/28 one step back.
+   ================================================================== */
+/* No padding at the top: the modal's own 60 is the gap the design
+   draws there (rect top 116 -> avatar 176). 31px at the bottom, down
+   to the calls — the frame tightened this from 51 (bio bottom 461 ->
+   button top, now 492). */
+.sxmast { padding: 0 0 31px; }
 
 .sxmast__ava {
   display: block;
-  width: 82px;
-  height: 82px;
-  margin: 0 0 23px;
-  border: 1px solid var(--sx-line);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  width: 68px;
+  height: 68px;
+  margin: 0 0 22px;
+  border-radius: var(--sx-r-md);
+  background: var(--sx-ava);
 }
 
-/* Same face as the section headings — Geist, regular weight, the same
-   negative tracking — just set much larger. The designed face was
-   Kalipixel, which is not a Google font and is not loaded here; the mono
-   it was falling back to read as a different voice from everything under
-   it, so the wordmark now sits on the page's own heading font and the
-   type reads as one family throughout. */
-.sxmast__wm {
+/* Kalipixel, at the frame's 48px. The face has no case distinction
+   worth fighting, so the text is set lowercase and left alone. */
+.page--home .col .sxmast__wm {
+  /* Nothing under it. The wordmark box is 266 -> 321 and the bio
+     starts at 321, so the design sets them flush and lets the line
+     boxes do the spacing. */
   margin: 0;
-  font-family: var(--font-read);
+  font-family: 'Kalipixel', var(--font-display), monospace;
   font-size: 48px;
   font-weight: 400;
   line-height: 55px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   text-transform: lowercase;
-  color: var(--sx-fg);
+  color: var(--sx-ink);
 }
 
-@media (max-width: 720px) {
-  .sxmast { padding: 18px 0 32px; }
-  .sxmast__ava { width: 64px; height: 64px; margin-bottom: 18px; }
-  .sxmast__wm { font-size: 36px; line-height: 42px; }
+/* The full stop, which in the frame is a 5px square sitting 4px above
+   the baseline rather than a glyph. */
+.sxmast__dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 2px;
+  vertical-align: 4px;
+  background: var(--sx-ink);
+}
+
+.sxmast__bio {
+  margin: 0 0 28px;
+  max-width: var(--sx-mes);
+  font-family: var(--font-read);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 28px;
+  color: var(--sx-ink-3);
+  text-wrap: pretty;
+}
+.sxmast__bio:last-child { margin-bottom: 0; }
+
+/* ==================================================================
+   THE TWO CALLS
+   161 x 46, 12px apart, 18px labels.
+   ================================================================== */
+.sxcta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  /* 60px down to "Recent projects" (button bottom 538 -> heading 598).
+     One figure for every section gap now — it used to be 63 here and
+     60 elsewhere. */
+  padding: 0 0 60px;
+}
+.page--home .col .sxbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 161px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: var(--sx-r-sm);   /* 8px, both buttons */
+  font-family: var(--font-read);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  text-decoration: none;
+  color: var(--sx-ink);
+  background: var(--sx-fill);
+  transition: background 0.15s, color 0.15s;
+}
+.page--home .col .sxbtn--fill { color: var(--sx-on-fill); background: var(--sx-ink); }
+.page--home .col .sxbtn:hover,
+.page--home .col .sxbtn:focus-visible { background: var(--sx-press); }
+.page--home .col .sxbtn--fill:hover,
+.page--home .col .sxbtn--fill:focus-visible {
+  background: var(--sx-press-fill);
+  color: var(--sx-on-fill);
+}
+
+/* ==================================================================
+   A SECTION
+
+   Heading 18/28 medium, and — on Recent projects — a "See all" ranged
+   right against it. No rule under a heading: the ladder above it is
+   already the divider, and a second line 40px under the first would
+   read as a title bar.
+   ================================================================== */
+/* 60px between sections, and it is now the frame's figure everywhere:
+   cards bottom 1322 -> Playground 1382, playground bottom 1890 ->
+   Articles 1950, and the calls above obey it too. The last section
+   adds nothing — the rule that used to follow it is gone, so the
+   modal's own 60px of padding closes the document. */
+.sxsec { padding: 0 0 60px; }
+.sxsec--end { padding-bottom: 0; }
+
+.sxsec__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page--home .col .sxh {
+  margin: 0 0 16px;
+  padding: 0;
+  font-family: var(--font-read);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  letter-spacing: 0;
+  color: var(--sx-ink);
+  border: 0;
+}
+.page--home .col .sxh::after { content: none; }
+
+/* The frame does not use one gap under every heading: Recent projects
+   drops 16 to its cards (626 -> 642), Playground drops 20 to its first
+   plate (1410 -> 1430), and Articles drops nothing at all, because the
+   22px belongs to the first row's own top padding (1978 -> 2000). The
+   16 above is the default; these two are the exceptions. */
+#playground > .sxh { margin-bottom: 20px; }
+#writing > .sxh { margin-bottom: 0; }
+
+.page--home .col .sxall {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-read);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  color: var(--sx-ink-4);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.page--home .col .sxall:hover,
+.page--home .col .sxall:focus-visible { color: var(--sx-ink); }
+.sxall__go { font-size: 16px; }
+
+/* ==================================================================
+   RECENT PROJECTS
+
+   A 2x2 rack. Card 331 x 329 with a 1px rule, a 299 x 201 plate inset
+   16px, then the title and the project's one-line subject. The 22px
+   gap is the frame's; so is the fixed card height, which is why the
+   body sits up against the plate and the slack falls to the bottom.
+   ================================================================== */
+.sxprj {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sxcard { margin: 0; }
+.page--home .col .sxcard__a {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 329px;
+  padding: 16px 16px 21px;
+  /* Node 2028:581: 10px, stroke D9D9D9 at 13% inside, and its FILL is
+     switched off — the hairline is genuinely all there is. */
+  border-radius: var(--sx-r-md);
+  border: 1px solid var(--sx-card);
+  text-decoration: none;
+  color: var(--sx-ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+.page--home .col .sxcard__a:hover,
+.page--home .col .sxcard__a:focus-visible {
+  border-color: var(--sx-card-hi);
+  background: var(--sx-wash);
+}
+
+/* The plate. The design's 299 x 201, held as a ratio so it keeps its
+   proportion as the column narrows. Empty it is the frame's own grey;
+   give a WORK entry a `cover` and the image takes it verbatim. */
+.sxcard__plate {
+  display: block;
+  aspect-ratio: 299 / 201;
+  width: 100%;
+  overflow: hidden;
+  /* 8px — verified on node 2028:585, not the 6 I had inferred. */
+  border-radius: var(--sx-r-sm);
+  background: var(--sx-cover);
+}
+.sxcard__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sxcard__body { display: block; padding-top: 16px; }
+.page--home .col .sxcard__t {
+  display: block;
+  font-family: var(--font-read);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 28px;
+  color: var(--sx-ink);
+}
+.page--home .col .sxcard__d {
+  display: block;
+  margin-top: 1px;
+  font-family: var(--font-read);
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 23px;
+  color: var(--sx-ink-2);
+  text-wrap: pretty;
+}
+
+/* ==================================================================
+   PLAYGROUND
+
+   One full-measure plate, then a wide/narrow pair: 682, then 422 +
+   245 with a 15px gutter, all 222 tall. The pair is carried as
+   fractions so it keeps its proportion at any width.
+   ================================================================== */
+.sxplay {
+  display: grid;
+  grid-template-columns: 422fr 245fr;
+  gap: 16px 15px;
+}
+.sxplay__b {
+  height: 222px;
+  border-radius: var(--sx-r-sm);
+  background: var(--sx-plate);
+}
+.sxplay__b--wide { grid-column: 1 / -1; }
+
+/* ==================================================================
+   ARTICLES
+
+   A numeral, a title and a line, with a hairline between rows. The
+   numeral is Kalipixel at 48px, barely inked: a ghosted figure the
+   row sits beside, not a marker it hangs off — so it takes a fixed
+   47px column of its own and no part in the text flow.
+   ================================================================== */
+.sxart {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sxart li + li { border-top: 1px solid var(--sx-line); }
+
+.page--home .col .sxart a {
+  display: grid;
+  grid-template-columns: 47px minmax(0, 1fr);
+  align-items: start;
+  /* Asymmetric, and the frame is explicit about it: 22px above the
+     title, 26px below the description to the divider (title 2000,
+     description ends 2051, divider 2077), then 22 again to the next
+     title at 2099. */
+  padding: 22px 0 26px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.page--home .col .sxart a:hover,
+.page--home .col .sxart a:focus-visible { background: var(--sx-wash); }
+
+.page--home .col .sxart__n {
+  font-family: 'Kalipixel', var(--font-display), monospace;
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 28px;
+  color: var(--sx-ghost);
+}
+.sxart__b { display: block; max-width: 455px; }
+.page--home .col .sxart__t {
+  display: block;
+  font-family: var(--font-read);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 28px;
+  color: var(--sx-ink);
+}
+.page--home .col .sxart__d {
+  display: block;
+  font-family: var(--font-read);
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 23px;
+  color: var(--sx-ink-2);
+  text-wrap: pretty;
+}
+
+/* ==================================================================
+   NARROW
+
+   The padding goes before the measure does. 60px a side is right at
+   full width and is most of a phone, so --sx-air steps 60 -> 40 -> 20
+   and the card follows it down on its own, being derived from it. The
+   section gaps come in with it, because 60px of air between sections
+   reads as generous on a desktop and as a hole on a handset.
+
+   Under 600 the card rack and the playground pair both go to one
+   column, because 331px halved is not a card.
+   ================================================================== */
+@media (max-width: 900px) {
+  :root { --sx-air: 40px; }
+  .sxsec { padding: 0 0 44px; }
+  .sxcta { padding: 0 0 44px; }
+}
+
+@media (max-width: 600px) {
+  :root { --sx-air: 20px; }
+
+  .sxmast { padding: 0 0 24px; }
+  .sxmast__ava { width: 56px; height: 56px; margin-bottom: 18px; }
+  .page--home .col .sxmast__wm { font-size: 36px; line-height: 42px; }
+  .sxmast__dot { width: 4px; height: 4px; vertical-align: 3px; }
+  .sxmast__bio { font-size: 15px; line-height: 26px; }
+
+  .page--home .col .sxbtn { min-width: 0; flex: 1 1 140px; font-size: 16px; }
+
+  .sxsec { padding: 0 0 36px; }
+  .sxcta { padding: 0 0 36px; }
+  .page--home .col .sxh,
+  .page--home .col .sxall { font-size: 17px; }
+
+  .sxprj { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .page--home .col .sxcard__a { min-height: 0; }
+
+  .sxplay { grid-template-columns: minmax(0, 1fr); }
+  .sxplay__b { height: 160px; }
+
+  .page--home .col .sxart a { grid-template-columns: 34px minmax(0, 1fr); padding: 18px 0; }
+  .page--home .col .sxart__n { font-size: 34px; }
+}
+
+/* ==================================================================
+   THE BOTTOM BAR
+
+   Modelled on muratalpay.me: one pill floating on the bottom edge,
+   holding four icon stops and a call to action in the same bar. The
+   active stop takes a filled chip rather than a colour change, which
+   is what makes a bar of same-sized icons legible at a glance.
+
+   It is the same pill in both schemes. It is chrome floating over the
+   document rather than part of it, so it does not follow the paper —
+   in light it is a dark pill over a white sheet, in dark it is a pill
+   one step up from a #171717 ground. Either way it separates, which is
+   the only thing a floating control has to do.
+   ================================================================== */
+:root {
+  --bnav-bg: rgba(38, 38, 38, 0.86);
+  --bnav-edge: rgba(255, 255, 255, 0.09);
+  --bnav-ink: rgba(255, 255, 255, 0.52);
+  --bnav-ink-on: rgba(255, 255, 255, 0.96);
+  --bnav-chip: rgba(255, 255, 255, 0.11);
+  --bnav-cta: #ececf0;
+  --bnav-cta-ink: #171717;
+}
+
+.bnav {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(14px, 2.4vh, 26px);
+  transform: translateX(-50%);
+  z-index: 5;
+
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  /* Padding is what lets the CTA sit INSIDE the bar rather than next to
+     it — the pill is inset by exactly this much on the right. Every
+     figure in this block is the original times 1.3. */
+  padding: 7px;
+  border-radius: 999px;
+  border: 1px solid var(--bnav-edge);
+  background: var(--bnav-bg);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.page--home .col .bnav__i,
+.bnav__i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 49px;
+  height: 49px;
+  border-radius: 50%;
+  color: var(--bnav-ink);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.bnav__i svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bnav__i:hover,
+.bnav__i:focus-visible { color: var(--bnav-ink-on); background: var(--bnav-chip); }
+.bnav__i--on { color: var(--bnav-ink-on); background: var(--bnav-chip); }
+
+.page--home .col .bnav__cta,
+.bnav__cta {
+  display: inline-flex;
+  align-items: center;
+  height: 49px;
+  margin-left: 8px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-family: var(--font-read);
+  font-size: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--bnav-cta-ink);
+  background: var(--bnav-cta);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.bnav__cta:hover,
+.bnav__cta:focus-visible { opacity: 0.86; }
+
+/* The bar floats over the foot of the document, so the document needs
+   somewhere to end that is not underneath it. */
+.page--home { padding-bottom: 108px; }
+
+@media (max-width: 600px) {
+  .bnav { gap: 1px; padding: 5px; }
+  .bnav__i { width: 44px; height: 44px; }
+  .bnav__i svg { width: 23px; height: 23px; }
+  .bnav__cta { height: 44px; margin-left: 5px; padding: 0 17px; font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bnav__i, .bnav__cta { transition: none; }
 }

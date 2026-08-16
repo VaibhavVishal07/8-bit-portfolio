@@ -427,132 +427,34 @@
     },
   ]
 
-  /* ==================================================================
-     RENDER
-     ================================================================== */
+  /* ---- the case study pages are scrapped ----
+     studyPage() built one L2 page per WORK entry and the wiring below
+     appended all four to <main>. Both are gone, pending a rebuild.
 
-  const P = (arr) => arr.map((t) => '<p>' + t + '</p>').join('')
-
-  const BLOCK = {
-    section: (b) =>
-      '<section class="cs__sec"><h3 class="cs__h">' + b.h + '</h3>' +
-      '<div class="prose">' + P(b.p) + '</div></section>',
-
-    diag: (b) =>
-      '<figure class="cs__fig"><div class="cs__fig__scroll">' + b.fig + '</div>' +
-      '<figcaption><b>' + b.cap + '</b>' + (b.note ? ' ' + b.note : '') + '</figcaption></figure>',
-
-    split: (b) =>
-      '<h3 class="cs__h cs__h--fig">' + b.h + '</h3>' +
-      '<figure class="cs__fig cs__fig--split"><div class="cs__fig__scroll">' +
-      '<div class="cs__split">' + b.a + b.b + '</div></div>' +
-      '<figcaption><b>' + b.cap + '</b>' + (b.note ? ' ' + b.note : '') + '</figcaption></figure>',
-
-    decision: (b) =>
-      '<section class="cs__sec cs__dec">' +
-      '<h3 class="cs__h cs__h--q">' + b.q + '</h3>' +
-      '<ol class="dec">' + b.opts.map((o) =>
-        '<li class="dec__o' + (o.chosen ? ' is-taken' : '') + '">' +
-        '<span class="dec__mark" aria-hidden="true"></span>' +
-        '<div class="dec__body"><h4 class="dec__l">' + o.label +
-        (o.chosen ? ' <span class="dec__badge">TAKEN</span>' : '') + '</h4>' +
-        '<p>' + o.why + '</p></div></li>').join('') +
-      '</ol>' +
-      '<p class="dec__call"><span class="dec__call__k">THE CALL</span>' + b.call + '</p>' +
-      '</section>',
-
-    tradeoff: (b) =>
-      '<section class="cs__sec cs__to">' +
-      '<div class="to"><div class="to__side"><h4>' + b.a.h + '</h4><p>' + b.a.p + '</p></div>' +
-      '<div class="to__vs" aria-hidden="true"></div>' +
-      '<div class="to__side to__side--b"><h4>' + b.b.h + '</h4><p>' + b.b.p + '</p></div></div>' +
-      (b.note ? '<p class="to__note">' + b.note + '</p>' : '') +
-      '</section>',
-
-    principles: (b) =>
-      '<section class="cs__sec"><h3 class="cs__h">' + b.h + '</h3>' +
-      '<ol class="prin">' + b.items.map((it, i) =>
-        '<li><span class="prin__n" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span>' +
-        '<div><h4>' + it[0] + '</h4><p>' + it[1] + '</p></div></li>').join('') +
-      '</ol></section>',
-
-    seams: (b) =>
-      '<section class="cs__sec"><h3 class="cs__h">' + b.h + '</h3>' +
-      '<ul class="seams">' + b.items.map((it) =>
-        '<li><h4>' + it[0] + '</h4><p>' + it[1] + '</p></li>').join('') +
-      '</ul></section>',
-
-    outcome: (b) =>
-      '<section class="cs__sec cs__out"><h3 class="cs__h">' + b.h + '</h3>' +
-      '<ul class="out">' + b.items.map((t) => '<li>' + t + '</li>').join('') + '</ul>' +
-      (b.note ? '<p class="out__note">' + b.note + '</p>' : '') +
-      '</section>',
-  }
-
-  function studyPage(w, next) {
-    const metaHTML = w.meta.map((m) =>
-      '<div><dt>' + m[0] + '</dt><dd>' + m[1] + '</dd></div>').join('')
-
-    const html =
-      '<article class="col col--doc cs">' +
-      '<nav class="l2nav"><a class="cta cta--ghost" href="#home">' +
-        '<span aria-hidden="true">&#8592;</span> Home</a></nav>' +
-
-      '<header class="cs__head">' +
-      '<p class="cs__eyebrow"><span class="cs__n">' + w.n + '</span>' +
-        '<span>' + w.kicker + '</span>' +
-        '<span class="cs__sep" aria-hidden="true"></span>' +
-        '<span>' + w.year + '</span></p>' +
-      '<h1 class="cs__title">' + w.title + '</h1>' +
-      '<p class="cs__subject">' + w.subject + '</p>' +
-      '<p class="cs__lede">' + w.lede + '</p>' +
-      '<dl class="cs__meta">' + metaHTML + '</dl>' +
-      '<p class="cs__note"><span class="cs__note__ico" aria-hidden="true"></span>' + NDA + '</p>' +
-      '</header>' +
-
-      w.blocks.map((b) => (BLOCK[b.t] ? BLOCK[b.t](b) : '')).join('') +
-
-      '<footer class="cs__foot">' +
-      '<p class="cs__cta"><a class="cta cta--primary" href="mailto:vaibhavvishalece@gmail.com?subject=' +
-        encodeURIComponent(w.title + ' — walkthrough') + '">Ask me to walk through this one ' +
-        '<span aria-hidden="true">&rarr;</span></a></p>' +
-      (next
-        ? '<a class="cs__next" href="#' + next.id + '">' +
-          '<span class="cs__next__k">NEXT PROJECT ' + next.n + '</span>' +
-          '<span class="cs__next__t">' + next.title + '</span>' +
-          '<span class="cs__next__s">' + next.subject + '</span></a>'
-        : '<a class="cs__next" href="#home">' +
-          '<span class="cs__next__k">BACK TO</span>' +
-          '<span class="cs__next__t">Home</span>' +
-          '<span class="cs__next__s">The rest of the work, and how to reach me</span></a>') +
-      '</footer>' +
-      '</article>'
-
-    const s = document.createElement('section')
-    s.className = 'page'
-    s.dataset.page = w.id
-    s.dataset.kind = 'case'
-    s.hidden = true
-    s.innerHTML = html
-    return s
-  }
+     WORK itself is deliberately untouched. Every study is still here in
+     full — the meta, the sections, the figures — so nothing had to be
+     rewritten to bring the pages back; only the renderer did. */
 
   /* ---- the four cards on the home page ----
-     A 2x2 rack of covers. The index that was here carried the subject and
-     three domain tags per row, which is the whole case study restated on
-     the way to it — read the four and you have read the section twice.
+     Rebuilt to the Figma card (frame 2022:127): a plate, a title, and
+     one line under it. Nothing else.
 
-     A card is a number, a plate and a title. The plate is a placeholder:
-     a fine dither with the project number sitting in it, so an empty slot
-     reads as a slot rather than a hole. Give an entry a `cover` and the
-     image takes the plate verbatim — that is the only change needed once
-     the real cover art exists.
+     What came off was the year, the three domain tags and the
+     "Read the case study" foot — a card that restates the case study
+     on the way to it, read four times over, is the section twice. The
+     line that stayed is the subject, because it is the one sentence
+     that says what the project actually was.
 
-     What the card drops, the link keeps: the subject rides on aria-label,
-     so it is still announced and still indexed. */
+     The plate is still a placeholder: empty it is the frame’s own
+     grey. Give an entry a cover and the image takes it verbatim — that is
+     the only change needed once the real cover art exists.
+
+     What the card drops, the link keeps: the full title and subject
+     ride on aria-label, so both are still announced and still
+     indexed. */
   function cardsHTML() {
     return WORK.map((w) =>
-      '<li class="sxcard"><a class="sxcard__a" href="#' + w.id + '" ' +
+      '<li class="sxcard"><a class="sxcard__a" href="#" data-todo ' +
       'aria-label="' + esc(w.title + ' — ' + w.subject) + '">' +
 
       '<span class="sxcard__plate">' +
@@ -562,33 +464,14 @@
       '</span>' +
 
       '<span class="sxcard__body">' +
-        '<span class="sxcard__head">' +
-          '<span class="sxcard__t">' + esc(w.title) + '</span>' +
-          '<span class="sxcard__yr"><i aria-hidden="true"></i>' + esc(w.year) + '</span>' +
-        '</span>' +
-        '<span class="sxcard__sub">' + esc(w.subject) + '</span>' +
-        '<span class="sxcard__d">' + esc(w.lede) + '</span>' +
-        '<span class="sxchips sxchips--card">' +
-          w.tags.map((t) => '<span>' + esc(t) + '</span>').join('') +
-        '</span>' +
-      '</span>' +
-
-      '<span class="sxcard__foot">' +
-        '<span class="sxcard__go">Read the case study</span>' +
-        '<span class="sxcard__n">' + esc(w.n) + '</span>' +
+        '<span class="sxcard__t">' + esc(w.title) + '</span>' +
+        '<span class="sxcard__d">' + esc(w.subject) + '</span>' +
       '</span>' +
 
       '</a></li>').join('')
   }
 
   // ---- wire it up ----
-  const main = document.querySelector('main.app')
-  if (main) {
-    const frag = document.createDocumentFragment()
-    WORK.forEach((w, i) => frag.appendChild(studyPage(w, WORK[i + 1])))
-    main.appendChild(frag)
-  }
-
   const host = document.getElementById('workList')
   if (host) host.innerHTML = cardsHTML()
 
