@@ -31,31 +31,45 @@
 
 <a class="skip" href="#work">Skip to the work</a>
 
-<!-- ==================================================================
-     THE BACKDROP SLOT
+<!-- The whole background is one 960x540 pixel canvas, drawn in
+     scene.js and upscaled nearest-neighbour to fill the viewport.
+     Tokyo is the skyline it opens on; scene.js carries the others. -->
+<canvas id="scene" aria-hidden="true"></canvas>
 
-     The generated pixel city that used to live here is gone, and with
-     it the loading screen that covered its first paint, the weather
-     canvas, and the two controls that drove it — which city you stood
-     over and whether it was raining on it.
-
-     What is left is the slot itself: one fixed layer behind everything,
-     filling the viewport, painted from CSS. Drop a replacement in here
-     and it inherits the position, the sizing and the stacking the
-     canvases had, so nothing in front of it has to move.
-     ================================================================== -->
-<div class="backdrop" aria-hidden="true"></div>
+<!-- Weather draws on its own canvas *above* the panel, so rain and snow
+     pass in front of it and can land on its top edge. -->
+<canvas id="weather" aria-hidden="true"></canvas>
 
 <!-- A solid, still reading surface behind the case studies and the about
      page. Long-form reading gets a calm dark ground with nothing moving
      behind it. -->
 <div class="reading-surface" aria-hidden="true"></div>
 
+<!-- Two controls: which city you are standing over, and whether it is
+     raining on it. The city list is built at runtime from
+     __scene.cities(), so the skylines are declared in exactly one place. -->
+<div class="controls">
+  <div class="picker" id="cityPicker">
+    <button class="btn" id="cityToggle" type="button"
+            aria-haspopup="true" aria-expanded="false" aria-controls="cityMenu">
+      <span class="btn__glyph btn__glyph--city" aria-hidden="true"></span>
+      <span class="btn__label">TOKYO</span>
+      <span class="btn__caret" aria-hidden="true"></span>
+    </button>
+    <ul class="picker__menu" id="cityMenu" role="menu" aria-label="Skyline" hidden></ul>
+  </div>
+
+  <button class="btn" id="rainToggle" type="button" aria-pressed="false">
+    <span class="btn__glyph btn__glyph--rain" aria-hidden="true"></span>
+    <span class="btn__label">RAIN OFF</span>
+  </button>
+</div>
+
 <!-- ==================================================================
      ONE PANEL, AND CARDS OVER IT
 
      The home sheet, and every deeper page — the case studies, the
-     about — opening as a card over the same backdrop, dimmed behind a
+     about — opening as a card over the page, dimmed behind a
      scrim.
      ================================================================== -->
 <main class="app">
@@ -239,6 +253,7 @@
 
 <div class="wipe" aria-hidden="true"></div>
 
+<script src="scene.js"></script>
 <script src="work.js"></script>
 <script src="script.js"></script>
 </body>

@@ -830,10 +830,10 @@
          violet, into a magenta glow sitting on the rooftops. The red
          is gone entirely; nothing in this sky is warmer than pink. */
       sky: [
-        '#08080f', '#0c0d18', '#121223', '#19182e', '#211e3a',
-        '#2c2344', '#38274c', '#472c50', '#5b3254',
+        '#050509', '#08080f', '#0c0c17', '#111020', '#161428',
+        '#1d172e', '#251a33', '#2f1d37', '#3c213a',
       ],
-      haze: '#ab6696',
+      haze: '#7d4a6d',
       smog: '#48325a',
       fog: '#443563',
       fogAmt: [0.26, 0.11, 0.0],
@@ -904,20 +904,20 @@
          which is what makes a lit kitchen at 2am read as a lit
          kitchen instead of as the general weather. */
       cityFar: {
-        fill: '#2c2450', lit: '#3e3470', dark: '#1c1838', window: '#6e7cc4', warm: '#9a76c8',
+        fill: '#1c1736', lit: '#382e66', dark: '#0e0b1e', window: '#6e7cc4', warm: '#9a76c8',
         glass: ['#7c8ad4', '#7c8ad4', '#7c8ad4', '#8a7ccc', '#6e7cc4', '#a47cc8', '#7e94dc', '#7c8ad4'],
       },
       city: [
         {
-          fill: '#241a48', lit: '#3c2c6e', dark: '#160f30', window: '#6ad8ff', warm: '#ff8ad0',
+          fill: '#160f2e', lit: '#352663', dark: '#08051a', window: '#6ad8ff', warm: '#ff8ad0',
           glass: ['#6ad8ff', '#6ad8ff', '#8ae8ff', '#ffd88a', '#ff6ad0', '#b06aff', '#5a9ad8', '#e8f4ff'],
         },
         {
-          fill: '#170f3a', lit: '#2e1c5c', dark: '#0b0722', window: '#6ae4ff', warm: '#ffc46b',
+          fill: '#0d0824', lit: '#281853', dark: '#050313', window: '#6ae4ff', warm: '#ffc46b',
           glass: ['#6ae4ff', '#6ae4ff', '#9af0ff', '#ffc46b', '#ff5cc8', '#c26aff', '#4a86d8', '#fff0c0'],
         },
         {
-          fill: '#0c0828', lit: '#22144c', dark: '#030210', window: '#7aeaff', warm: '#ffd88a',
+          fill: '#070419', lit: '#1d1145', dark: '#020109', window: '#7aeaff', warm: '#ffd88a',
           glass: ['#7aeaff', '#7aeaff', '#aaf4ff', '#ffd88a', '#ff4ad0', '#d06aff', '#5a96e8', '#ffe0a8'],
         },
       ],
@@ -1426,10 +1426,16 @@
        the eye off the city, which is what you are meant to be looking
        at. A hard-edged disc on a dithered sky is also simply more of a
        piece with everything else here. */
-    if (!T.orbShine) {
-      drawOrbDisc(g)
-      return
-    }
+    /* No moon. The night sky is drawn without one: on a backdrop the
+       disc was the single brightest object in the frame and the only
+       hard circle in a picture made of rectangles, so the eye went to
+       it and stayed there. The sky keeps its stars, its haze and its
+       high pools, all of which read as night without a light source
+       having to be named.
+
+       The sun is untouched — at noon there genuinely is one, corona
+       and all, and `orbShine` is what tells the two apart. */
+    if (!T.orbShine) return
 
     /* A 22-degree halo. Haze throws a ring around a bright disc at a
        fixed angular distance from it, and drawing the ring *before* the
@@ -1519,8 +1525,9 @@
        is made before that decision, so the field thickens under weather
        instead of being swapped for a different one — which is what
        toggling the rain used to do to the sky. */
-    // Was 46. A calmer sky has room in it.
-    for (let k = 0; k < 20; k++) {
+    // Was 46, then 20. Fewer again: a dark sky wants to read as depth,
+    // and every slab in it is something the stars have to come through.
+    for (let k = 0; k < 8; k++) {
       const cx = Math.floor(rnd() * LOOP_W)
       const cy = 26 + Math.floor(rnd() * 244)
       const len = 26 + Math.floor(rnd() * 96)
@@ -4915,10 +4922,10 @@
       palette: {
         night: {
           sky: [
-            '#090810', '#0d0b15', '#130f1c', '#1c1527', '#271a31',
-            '#34213a', '#442742', '#5c3650', '#784d5e',
+            '#06050a', '#08070e', '#0c0913', '#120d1a', '#191021',
+            '#221528', '#2d1a2d', '#3c2337', '#4e2f3e',
           ],
-          haze: '#dea7be',
+          haze: '#a87b8f',
           smog: '#56344a',
           fog: '#4a2c47',
           rainSky: '#18121e',
@@ -4944,14 +4951,22 @@
          differently even before the colour arrives. The zakkyo
          building is a third of everything, so the mat is made of
          advertising, and every roof carries a hoarding on top of
-         that. Narrow plots, almost no gaps. */
+         that.
+
+         The plots used to be narrow with almost no gaps, which is
+         honest to Shinjuku and wrong for a backdrop: shoulder to
+         shoulder, the mat read as one serrated mass and none of the
+         structure on any single building — the mullions, the ledges,
+         the roof hoardings — had an edge to be seen against. The gaps
+         are roughly doubled and taken almost to certainty, so each
+         building is a building again with sky either side of it. */
       shape: { zakkyo: 0.30, ziggurat: -0.26, banded: 0.04, needle: 0.02, slab: 0.03 },
       roofKit: 'billboard',
       stock: [
-        { gapChance: 0.80, gap: 15, minW: 17, maxW: 31, minH: 46, maxH: 88 },
-        { gapChance: 0.80, gap: 17, minW: 20, maxW: 37, minH: 56, maxH: 108 },
-        { gapChance: 0.80, gap: 19, minW: 24, maxW: 44, minH: 66, maxH: 132 },
-        { gapChance: 0.80, gap: 22, minW: 28, maxW: 54, minH: 46, maxH: 98 },
+        { gapChance: 0.94, gap: 30, minW: 17, maxW: 31, minH: 46, maxH: 88 },
+        { gapChance: 0.94, gap: 34, minW: 20, maxW: 37, minH: 56, maxH: 108 },
+        { gapChance: 0.94, gap: 38, minW: 24, maxW: 44, minH: 66, maxH: 132 },
+        { gapChance: 0.94, gap: 44, minW: 28, maxW: 54, minH: 46, maxH: 98 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 380)

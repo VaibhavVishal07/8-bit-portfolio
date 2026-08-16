@@ -312,6 +312,44 @@ svg { display: block; image-rendering: pixelated; }
   display: block;
 }
 
+/* ==================================================================
+   THE SCENE CANVAS
+
+   Nearest-neighbour upscale is the whole point — the design is 960x540
+   and every pixel is blown up as a hard square.
+
+   Without these rules the canvas lays itself out at its own backing
+   store, which scene.js renders at 6x the design: a 5760x3240 element
+   on a 2400px viewport, i.e. the top-left sixth of Tokyo at six times
+   life size. That is not a zoom setting, it is an unsized replaced
+   element. width/height put the box back on the viewport and let
+   object-fit do the scaling.
+
+   ---- how far the city sits below the fold ----
+   The bottom fifth of the authored frame is the rooftop foreground,
+   and at night it is very nearly black. On a full-bleed hero it reads
+   as a dead shelf between the skyline and the reading ground, so the
+   element is a fifth taller than the viewport (--scene-drop) and
+   anchored at the TOP: everything cropped comes off the bottom, which
+   is the rooftop.
+   ================================================================== */
+#scene,
+#weather {
+  position: fixed;
+  inset: 0 0 auto 0;
+  width: 100%;
+  height: calc(100% * var(--scene-drop));
+  object-fit: cover;
+  object-position: 50% 0%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#scene { z-index: 0; }
+
+/* Above the panel, so weather falls in front of it. */
+#weather { z-index: 5; pointer-events: none; }
+
 /* The iris wipe. A full-frame canvas above EVERYTHING, drawn only while
    a navigation is in flight (see the iris in script.js). */
 .iris { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 60; pointer-events: none; display: none; image-rendering: pixelated; }
@@ -1084,7 +1122,6 @@ html[data-city='dubai']:not([data-mode='day']) .col {
    own subject will want to say where the crop falls; the centre is the
    safe default until there is something in there to frame. */
 @media (orientation: portrait) {
-  .backdrop > * { object-position: 50% 0%; }
 }
 
 /* Touch devices get the simplified world regardless of width — a phone
@@ -3699,8 +3736,10 @@ html[data-l2] .col--doc .dg__cap { font-family: var(--font-body); }
 :root {
   /* ---- the frame's palette, verbatim ---- */
   --sx-paper: #ffffff;
-  --sx-ground: #ffffff;              /* what the modal actually paints */
-  --sx-page: transparent;            /* the backdrop keeps its own gradient */
+  /* Glass. The ground is translucent and the blur behind it does the
+     rest — see the backdrop-filter on the panel. */
+  --sx-ground: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.72));
+  --sx-page: #ececed;                /* the page behind the sheet */
   --sx-ink: #000000;
   --sx-ink-2: rgba(0, 0, 0, 0.6);    /* card + article descriptions */
   --sx-ink-3: rgba(0, 0, 0, 0.5);    /* the bio */
@@ -3814,9 +3853,14 @@ html[data-l2] .col--doc .dg__cap { font-family: var(--font-body); }
        things asked for by hand a moment ago (square corners, one flat
        colour shared with the page); the frame is the newer instruction
        and it wins, but it is worth knowing it was a reversal. */
-    --sx-ground: linear-gradient(180deg, #171717 0%, #000000 100%);
+    /* The same head-to-foot gradient the frame specifies, but no longer
+       opaque: the city has to come through it. Held fairly high — .72 at
+       the head — because the scene behind is a pixel city with hard neon
+       in it, and any thinner the text starts fighting a window edge for
+       contrast. */
+    --sx-ground: linear-gradient(180deg, rgba(23,23,23,0.72) 0%, rgba(0,0,0,0.84) 100%);
     --sx-paper: #171717;               /* the head of that gradient */
-    --sx-page: #000000;                /* the backdrop, behind the card */
+    --sx-page: #000000;                /* flat black, as the frame draws it */
 
     --sx-ink: #ffffff;
     --sx-ink-2: #969696;               /* card + article descriptions */
@@ -3856,9 +3900,14 @@ html[data-l2] .col--doc .dg__cap { font-family: var(--font-body); }
     --sx-ava: rgba(217, 217, 217, 0.1);      /* 2028:564 */
     --sx-on-fill: #000000;             /* label on the white button */
 
-    --sx-edge: rgba(255, 255, 255, 0.1);
-    --sx-glint: transparent;
-    --sx-cast: transparent;
+    /* Glass needs its edge back. A translucent panel with no lit rim
+       reads as a hole cut in the page rather than a pane laid over it,
+       and the inset highlight along the top is what sells its
+       thickness. The cast shadow returns for the same reason: the panel
+       is above the city now, not flush into it. */
+    --sx-edge: rgba(255, 255, 255, 0.14);
+    --sx-glint: rgba(255, 255, 255, 0.10);
+    --sx-cast: rgba(0, 0, 0, 0.5);
     --sx-wash: rgba(255, 255, 255, 0.045);
     --sx-press: rgba(255, 255, 255, 0.16);
     --sx-press-fill: rgba(255, 255, 255, 0.86);
@@ -3915,8 +3964,24 @@ html[data-l2] .col--doc .dg__cap { font-family: var(--font-body); }
      the border box. The 1px flat edge below approximates the gradient
      stroke; it is the one value here that is not literal. */
   border-radius: var(--sx-r-lg);
-  /* A whole background, not a colour — dark paints a gradient here. */
+  /* A whole background, not a colour — both schemes paint a gradient. */
   background: var(--sx-ground);
+
+  /* The blur is the actual glassmorphism; the translucent ground above
+     only lets it show. saturate() pulls the neon under the panel back
+     up, because blurring alone leaves it washed and grey.
+
+     The -webkit- prefix is kept: Safari still wants it, and without it
+     the panel there degrades to a flat translucent sheet with the city
+     legible straight through the type. */
+  /* 14px, not 26. The panel is 806 x 2293 — nearly two megapixels — and
+     a backdrop-filter over a canvas that repaints has to re-blur all of
+     it every time the canvas changes. At 26 that was the single most
+     expensive thing on the page; at 14 it looks all but the same and
+     costs about a third. If the scene behind ever goes static again,
+     this can go back up. */
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
   box-shadow:
     0 28px 70px var(--sx-cast),
     inset 0 1px 0 var(--sx-glint);
