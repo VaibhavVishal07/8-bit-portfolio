@@ -40,6 +40,8 @@
   /* Shared by the static prop in buildRoof and the per-frame occupant
      shared with the prop below it. */
   const PIPE_X = 636
+  const VIA_Y = 360 // top of the elevated deck
+  const VIA_H = 11
   const LOOP_W = W * 2
 
   /* ---- how tall a layer buffer has to be ----
@@ -52,6 +54,7 @@
      Generous margins on both: a landmark that grows past its buffer is
      silently cropped, which is a horrible thing to debug. */
   const CITY_H = 452
+  const VIA_BUF_H = 420
 
   /* ==================================================================
      SUPERSAMPLING
@@ -86,21 +89,7 @@
      should never be asked for. */
   const S = (() => {
     const up = Math.max(window.innerWidth / W, window.innerHeight / H)
-    /* Render the city at up to SIX times the authored pixels — four times
-       the density it used to carry — wherever the display and the device
-       can take it. This is where the detail lives: not more buildings, but
-       every gradient, glow and dithered edge resolving to smooth tone
-       instead of stepping, so the artwork reads sharp and clean.
-
-       The buffers grow with S^2 (the two looping city planes alone are
-       11520x3240 at S=6, ~300MB), so memory sets the ceiling: an 8GB-class
-       machine gets the full six, mid devices four, and a low-memory phone
-       is held at three — and a viewport too small to show the extra pixels
-       does not pay for them. */
-    const mem = navigator.deviceMemory || 8
-    const cap = mem <= 4 ? 3 : mem <= 6 ? 4 : 6
-    const want = up >= 1.3 ? 6 : up >= 0.9 ? 4 : 2
-    return Math.min(want, cap)
+    return up >= 2.6 ? 3 : up >= 1.7 ? 2 : 1
   })()
 
   // authored units -> device pixels, for anything compositing whole buffers
@@ -209,51 +198,19 @@
      into one is what made the snow land already-settled. */
   const SETTLE_MS = 26000
 
-  /* The canvas is `object-fit: cover` inside a box the stylesheet owns —
-     full width, a fifth taller than the viewport, anchored at the top so
-     the dark rooftop foreground is cropped off the bottom. Anything that
-     maps between page coordinates and canvas coordinates has to undo
-     exactly that.
-
-     It used to be undone from two constants copied out of the CSS, which
-     is a fact stated in two places and therefore a fact that goes wrong:
-     the portrait rule already moved the horizontal anchor to 72% and this
-     was still saying 50%, so every firework on a phone landed off to one
-     side. It reads the element instead — its real box, and its real
-     computed object-position — so the stylesheet stays the only place any
-     of this is decided.
-
-     Cached, because a `getComputedStyle` per frame is a style recalc per
-     frame, and the answer only changes when the viewport does. */
-  let fitCache = null
-
-  function fit() {
-    if (fitCache) return fitCache
-    const r = cv.getBoundingClientRect()
-    const op = getComputedStyle(cv).objectPosition.split(/\s+/)
-    // authored as percentages; a browser that hands back pixels is read
-    // against the box it was resolved in, which comes to the same place
-    const frac = (v, box, img) => {
-      if (v.endsWith('%')) return parseFloat(v) / 100
-      const px = parseFloat(v) || 0
-      return box === img ? 0 : px / (box - img)
-    }
-    fitCache = { r, op, frac }
-    return fitCache
-  }
-
-  window.addEventListener('resize', () => { fitCache = null })
+  /* The canvases are `object-fit: cover` with `object-position: 50% 72%`
+     — anchored low, so the crop on a wide viewport comes out of the sky
+     rather than off the rooftop. Anything that maps between page
+     coordinates and canvas coordinates has to undo exactly that, so the
+     numbers live here once and everything else reads them. */
+  const FIT_X = 0.5
+  const FIT_Y = 0.72
 
   function viewMap() {
-    const { r, op, frac } = fit()
-    const scale = Math.max(r.width / W, r.height / H)
-    const iw = W * scale
-    const ih = H * scale
-    return {
-      scale,
-      ox: r.left + (r.width - iw) * frac(op[0], r.width, iw),
-      oy: r.top + (r.height - ih) * frac(op[1] || op[0], r.height, ih),
-    }
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const scale = Math.max(vw / W, vh / H)
+    return { scale, ox: (vw - W * scale) * FIT_X, oy: (vh - H * scale) * FIT_Y }
   }
 
   /* Where the HUD panel sits, in canvas pixels. There is more than one
@@ -389,71 +346,6 @@
     g.fillStyle = grd
     g.fillRect(-R, -R, R * 2, R * 2)
     g.restore()
-  }
-
-  /* ---- bloom ----
-
-     Every light in this city was drawn at its own size and stopped
-     there. A window is one lit pixel; a hundred lit windows are a
-     hundred lit pixels, and the air between them stays perfectly
-     clear. That is the single biggest thing separating this from the
-     reference art: not the buildings, the AIR. In a real night city
-     the light does not stay where it was emitted — it scatters off
-     haze, dust and damp all the way to the eye, so a bright thing is
-     always sitting in a soft pool of its own colour and a dense field
-     of small bright things reads as a glow with structure in it.
-
-     Doing that per source is hopeless here: there are several thousand
-     lit cells per layer and glow() spends a gradient on each one.
-
-     So it is done once, on the whole plane, the way a compositor does
-     it. Take the finished layer, throw it down to an eighth scale —
-     which IS a box blur, done by the sampler for free — square it so
-     the darks fall away and only genuine light survives, then add it
-     back over the top at full size with smoothing on. One downscale
-     and one upscale per layer, and every window, sign, tube and
-     beacon in it is suddenly sitting in air.
-
-     Squaring is what keeps this from being a haze filter. Multiplying
-     the small copy by itself sends a mid-grey wall to a quarter of its
-     value and a near-black one to nothing, while a saturated neon at
-     full brightness comes through almost untouched — so the bloom is
-     carried by the lights and not by the buildings they are bolted to. */
-  function bloom(buf, amt, div) {
-    if (!(amt > 0)) return
-    const d = div || 8
-    const dw = Math.max(1, Math.round(buf.c.width / d))
-    const dh = Math.max(1, Math.round(buf.c.height / d))
-
-    const small = document.createElement('canvas')
-    small.width = dw
-    small.height = dh
-    const sx = small.getContext('2d')
-    sx.imageSmoothingEnabled = true
-    sx.drawImage(buf.c, 0, 0, dw, dh)
-
-    /* Crush the darks. Two multiplies is x^3 — enough that the body of
-       a building contributes nothing and a lit window contributes
-       nearly all of itself. */
-    sx.globalCompositeOperation = 'multiply'
-    sx.drawImage(small, 0, 0)
-    sx.drawImage(small, 0, 0)
-    sx.globalCompositeOperation = 'source-over'
-
-    const g = buf.x
-    g.save()
-    /* The buffer context is pixel-snapped and carries the S transform.
-       The bloom is the one thing in it that must be resampled smoothly
-       — a nearest-neighbour upscale of an eighth-scale image is a grid
-       of squares, which is the lattice problem all over again. */
-    g.setTransform(1, 0, 0, 1, 0, 0)
-    g.imageSmoothingEnabled = true
-    g.globalCompositeOperation = 'lighter'
-    g.globalAlpha = amt
-    g.drawImage(small, 0, 0, buf.c.width, buf.c.height)
-    g.restore()
-    g.imageSmoothingEnabled = false
-    g.setTransform(S, 0, 0, S, 0, 0)
   }
 
   /* A cone of light thrown from a point — a searchlight under a drone,
@@ -626,13 +518,13 @@
       ],
       tall: ['SAKE', 'BAR', 'RAMEN', 'SUSHI', 'UDON', 'HOTEL', 'SENTO', 'KOBAN'],
     },
-    delhi: {
+    mexico: {
       wide: [
-        'CHAI', 'DHABA', 'MITHAI', 'SAMOSA', 'BIRYANI', 'CHAAT',
-        'TIFFIN', 'DOSA', 'KIRANA', 'PAKORA', 'LASSI', 'TANDOOR',
-        'SWEETS', 'MEDICAL', 'SAREES', 'JALEBI', 'STUDIO',
+        'TACOS', 'CANTINA', 'MEZCAL', 'FONDA', 'MERCADO', 'TORTAS',
+        'ELOTES', 'CHURROS', 'BARBACOA', 'FARMACIA', 'HORCHATA', 'CAFE',
+        'PANADERIA', 'LUCHA', 'ABARROTES', 'TAMALES', 'SALON',
       ],
-      tall: ['CHAI', 'PAAN', 'HOTEL', 'DHABA', 'CAFE', 'SWEETS', 'STUDIO', 'RADIO'],
+      tall: ['BAR', 'HOTEL', 'CAFE', 'TACOS', 'FONDA', 'CINE', 'SALON', 'RADIO'],
     },
     paris: {
       wide: [
@@ -830,27 +722,27 @@
          violet, into a magenta glow sitting on the rooftops. The red
          is gone entirely; nothing in this sky is warmer than pink. */
       sky: [
-        '#050509', '#08080f', '#0c0c17', '#111020', '#161428',
-        '#1d172e', '#251a33', '#2f1d37', '#3c213a',
+        '#04041c', '#07082c', '#0b0b40', '#120e56', '#1d116c',
+        '#31147f', '#4e188c', '#761f92', '#a52590',
       ],
-      haze: '#7d4a6d',
-      smog: '#48325a',
-      fog: '#443563',
+      haze: '#d63ba6',
+      smog: '#4a1a72',
+      fog: '#3a1880',
       fogAmt: [0.26, 0.11, 0.0],
-      rainSky: '#100c19',
-      snowSky: '#2c283c',
+      rainSky: '#0d0520',
+      snowSky: '#241c48',
       snowWash: [0.06, 0.16], blanket: [0.85, 0.15], fogSnowBoost: 0.09,
       lightning: '#c9b6ff', boltCore: '#ffffff',
 
-      orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#674582',
+      orb: '#ecd8ff', orbShade: '#b58ce0', orbGlow: '#6b1fa8',
       craters: true, orbShine: false,
       /* Cloud is lit from BELOW here. There is no moon doing this work
          — the city is, and a city throws magenta up at its own weather.
          The underside was the same violet as the body, which made every
          cloud a flat cut-out. */
-      cloud: '#322544', cloudLit: '#63457b', cloudDark: '#1c1429',
+      cloud: '#2e1257', cloudLit: '#66259b', cloudDark: '#180835',
       // cold teal, deep indigo, one thin violet — see the high pools
-      high: ['#283c52', '#37325a', '#53396d'],
+      high: ['#0f3a6b', '#241a72', '#521a8c'],
       /* Four tiers, not three. A sky of white dots and a few amber ones
          is a texture; adding a blue-white tier between them is what
          makes it read as stars at different temperatures. No extra
@@ -904,20 +796,20 @@
          which is what makes a lit kitchen at 2am read as a lit
          kitchen instead of as the general weather. */
       cityFar: {
-        fill: '#1c1736', lit: '#382e66', dark: '#0e0b1e', window: '#6e7cc4', warm: '#9a76c8',
+        fill: '#2c2450', lit: '#3e3470', dark: '#1c1838', window: '#6e7cc4', warm: '#9a76c8',
         glass: ['#7c8ad4', '#7c8ad4', '#7c8ad4', '#8a7ccc', '#6e7cc4', '#a47cc8', '#7e94dc', '#7c8ad4'],
       },
       city: [
         {
-          fill: '#160f2e', lit: '#352663', dark: '#08051a', window: '#6ad8ff', warm: '#ff8ad0',
+          fill: '#241a48', lit: '#3c2c6e', dark: '#160f30', window: '#6ad8ff', warm: '#ff8ad0',
           glass: ['#6ad8ff', '#6ad8ff', '#8ae8ff', '#ffd88a', '#ff6ad0', '#b06aff', '#5a9ad8', '#e8f4ff'],
         },
         {
-          fill: '#0d0824', lit: '#281853', dark: '#050313', window: '#6ae4ff', warm: '#ffc46b',
+          fill: '#170f3a', lit: '#2e1c5c', dark: '#0b0722', window: '#6ae4ff', warm: '#ffc46b',
           glass: ['#6ae4ff', '#6ae4ff', '#9af0ff', '#ffc46b', '#ff5cc8', '#c26aff', '#4a86d8', '#fff0c0'],
         },
         {
-          fill: '#070419', lit: '#1d1145', dark: '#020109', window: '#7aeaff', warm: '#ffd88a',
+          fill: '#0c0828', lit: '#22144c', dark: '#030210', window: '#7aeaff', warm: '#ffd88a',
           glass: ['#7aeaff', '#7aeaff', '#aaf4ff', '#ffd88a', '#ff4ad0', '#d06aff', '#5a96e8', '#ffe0a8'],
         },
       ],
@@ -972,8 +864,8 @@
          pollution band sitting on the skyline. That amber is what makes
          it read as a poisoned afternoon rather than a nice one. */
       sky: [
-        '#103b62', '#18476f', '#215178', '#346084', '#4a6786',
-        '#656b87', '#7d7386', '#94797e', '#ac8767',
+        '#17558c', '#22659e', '#2f74ac', '#4a89bd', '#6a93c0',
+        '#9099c1', '#b3a4bf', '#d3adb4', '#f6c193',
       ],
       haze: '#ffbc7a',
       smog: '#e8a878',
@@ -1084,7 +976,7 @@
   /* ==================================================================
      STATIC LAYERS
      ================================================================== */
-  let sky, clouds, roof
+  let sky, clouds, roof, viaduct
   let city = []
   let ridge = null
   /* ---- the camera ----
@@ -1198,53 +1090,7 @@
   let focus = 0
   let focusTo = 0
 
-  /* The stage wash: half strength, and it never stops the clock. The
-     city keeps crossing behind an open L2 page, just at half the
-     brightness so it reads as a backdrop rather than the subject. */
-  /* Raised from a half. At half strength the city behind an open page
-     was still the brightest thing in the frame — a moving skyline in
-     full colour either side of a column of body text is a competition
-     the text loses. It still moves, it is still the same city, it is
-     just clearly behind the glass now. */
-  const STAGE_DIM = 0.78
-  let stage = 0
-  let stageTo = 0
-
-  /* ---- smooth parallax ----
-
-     The layers used to advance only on the 12fps content tick, in whole
-     logical pixels: `drift = -floor(frame / DIV)`. That is at most twelve
-     scroll positions a second, and for the slow layers a single-pixel
-     jump every half second — which is what read as choppy, however clean
-     each individual step was.
-
-     Motion is on its own clock now. `scrollT` is seconds of city motion
-     elapsed (it advances in loop(), stops in reading mode, and banks
-     across a wipe), and each layer's offset comes off that continuously.
-     The old per-frame speeds are preserved exactly — a layer that moved
-     one pixel every DIV frames at 12fps moves 12/DIV pixels a second — so
-     nothing travels faster or slower than before; it just updates far
-     more often.
-
-     The offset is still SNAPPED to the device-pixel grid (`* S` then
-     round, then back), because a fractional source rect with smoothing
-     off would shimmer. So the finest step is one device pixel — three
-     times finer than a logical pixel at S=3 — and the compositor repaints
-     the instant that step changes rather than waiting for the tick. The
-     content on the layers (window flicker, signage, the fire, the cat)
-     still steps at 12fps off `frame`: smooth scroll, stepped sprites. */
-  const SPEED = DIV.map((d) => (d ? 12 / d : 0)) // logical px/sec, = old 12/DIV
-  let scrollT = 0
-  const drift = (i) => (SPEED[i] ? -Math.round(scrollT * SPEED[i] * S) / S : 0)
-  // signature of every layer's device offset — changes the moment any
-  // layer crosses a whole device pixel, which is exactly when a repaint
-  // is worth doing
-  const driftSig = () => {
-    let s = 0
-    for (let i = 0; i < SPEED.length; i++) s = (s * 131 + Math.round(scrollT * SPEED[i] * S)) | 0
-    return s
-  }
-  let lastDriftSig = 0
+  const drift = (i) => (DIV[i] ? -Math.floor(frame / DIV[i]) : 0)
 
   let roofLights = []
   let puddles = []
@@ -1426,16 +1272,10 @@
        the eye off the city, which is what you are meant to be looking
        at. A hard-edged disc on a dithered sky is also simply more of a
        piece with everything else here. */
-    /* No moon. The night sky is drawn without one: on a backdrop the
-       disc was the single brightest object in the frame and the only
-       hard circle in a picture made of rectangles, so the eye went to
-       it and stayed there. The sky keeps its stars, its haze and its
-       high pools, all of which read as night without a light source
-       having to be named.
-
-       The sun is untouched — at noon there genuinely is one, corona
-       and all, and `orbShine` is what tells the two apart. */
-    if (!T.orbShine) return
+    if (!T.orbShine) {
+      drawOrbDisc(g)
+      return
+    }
 
     /* A 22-degree halo. Haze throws a ring around a bright disc at a
        fixed angular distance from it, and drawing the ring *before* the
@@ -1525,9 +1365,7 @@
        is made before that decision, so the field thickens under weather
        instead of being swapped for a different one — which is what
        toggling the rain used to do to the sky. */
-    // Was 46, then 20. Fewer again: a dark sky wants to read as depth,
-    // and every slab in it is something the stars have to come through.
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < 46; k++) {
       const cx = Math.floor(rnd() * LOOP_W)
       const cy = 26 + Math.floor(rnd() * 244)
       const len = 26 + Math.floor(rnd() * 96)
@@ -2165,9 +2003,9 @@
          the few pieces of vernacular that is legible at eight pixels.
          New York has timber water tanks on legs, on a third of the
          island. Tokyo has a billboard on everything. Paris has ranks
-         of chimney pots. Delhi has black plastic water tanks on frames,
-         a dish on every parapet. Dubai has satellite dishes and
-         chillers.
+         of chimney pots. Mexico City has tanks too, but plastic ones
+         on a frame, plus the odd bell cote. Dubai has satellite dishes
+         and chillers.
 
          Cheap, small, and repeated — which is exactly how vernacular
          works. `roofKit` picks which. */
@@ -2616,54 +2454,6 @@
        squaring the ramp puts it there: near nothing up high, full
        strength along the skyline. That is what lets a building have a
        readable silhouette and still sit back in the distance. */
-    /* ---- the street you cannot see ----
-
-       In the reference art the single brightest band in the whole
-       picture is the one at the bottom of the buildings, and none of
-       the light in it has a visible source: it is shopfronts, signage
-       and headlights, all of it below the sightline, throwing light UP
-       into the air between the towers. That upward wash is most of
-       what makes a drawn city look inhabited rather than modelled,
-       because it is the only cue that says there are people down
-       there.
-
-       There is no street in this frame — the camera is on a roof and
-       the near plane cuts the city off at its feet. So the street is
-       drawn as the only part of itself that would actually be visible
-       from up here, which is its glow on the air.
-
-       'lighter' and source-atop in two passes: the wash goes into the
-       air between the towers AND onto the towers' own lower storeys,
-       because light bouncing off a street lands on both. Warm, always,
-       whatever the layer's neon is doing — sodium and headlights are
-       warm, and a warm base under a cool sky is the oldest depth cue
-       in night painting. */
-    if (o.street > 0) {
-      /* Kept SHORT and kept weak. The first pass ran this to nearly
-         half the frame height at three times this strength, and it did
-         exactly what a full-width warm wash always does: it turned a
-         purple night into a brown evening, pulled every tower to the
-         same tan value, and left the neon with nothing to be brighter
-         than. Street light does not fill a city — it pools at the
-         bottom of it and is gone within a few storeys. */
-      const rise = Math.round(SKYLINE * 0.15)
-      g.save()
-      g.globalCompositeOperation = 'lighter'
-      const grd = g.createLinearGradient(0, SKYLINE - rise, 0, SKYLINE + 6)
-      grd.addColorStop(0, rgba(o.streetCol || '#ff9a4a', 0))
-      grd.addColorStop(0.6, rgba(o.streetCol || '#ff9a4a', 0.022 * o.street))
-      grd.addColorStop(1, rgba(o.streetCol || '#ff9a4a', 0.11 * o.street))
-      g.fillStyle = grd
-      g.fillRect(0, SKYLINE - rise, LOOP_W, rise + 6)
-      g.restore()
-    }
-
-    /* Bloom BEFORE the wash, so the haze sits over the light rather
-       than under it. A distant plane's glow should read as already
-       having travelled through the air between here and there, which
-       means the fog has to be the last thing that touches it. */
-    bloom(buf, o.bloom === undefined ? 0.5 : o.bloom)
-
     const amt = Math.min(FOG_CAP, o.fog + fogBoost() * (o.fog > 0.15 ? 1.2 : 0.7))
     if (amt > 0.01) {
       const col = fogColour()
@@ -3148,10 +2938,9 @@
     // feed horn on its tripod
     g.fillStyle = o.window
     g.fillRect(x - 2, cy - 17, 5, 7)
-    g.fillStyle = o.dark
-    for (let k = 0; k < 8; k++) {
-      g.fillRect(x - Math.round(k * 0.9), cy - 17 + k, 1, 1)
-      g.fillRect(x + Math.round(k * 0.9), cy - 17 + k, 1, 1)
+    for (let k = 0; k < 17; k++) {
+      g.fillRect(x - Math.round(k * 1.1), cy - 17 + k, 1, 1)
+      g.fillRect(x + Math.round(k * 1.1), cy - 17 + k, 1, 1)
     }
   }
 
@@ -3663,7 +3452,7 @@
     g.fillRect(x - 26, dy, 52, 16)
     g.fillStyle = white
     g.fillRect(x - 26, dy, 52, 1)
-    g.fillRect(x - 26, dy + 4, 52, 2)
+    g.fillRect(x - 28, dy + 4, 56, 2)
     g.fillStyle = '#ffd88a'
     for (let k = 0; k < 12; k++) g.fillRect(x - 23 + k * 4, dy + 8, 2, 4)
 
@@ -3715,13 +3504,7 @@
       g.fillRect(x - dw, dy, dw * 2, 1)
       g.fillRect(x - dw, dy + dh - 1, dw * 2, 1)
       g.fillStyle = '#e8ddff'
-      /* dw is the deck's HALF width, and the mullions step three
-         pixels at a time — so looping dw times ran the last one out to
-         x + 2*dw, about a deck's width past the right hand edge and
-         into open sky. Two decks, two lines coming out of the tower.
-         Count the slots the deck actually has room for. */
-      const slots = Math.floor((dw * 2 - 4) / 3)
-      for (let k = 0; k < slots; k++) g.fillRect(x - dw + 2 + k * 3, dy + 2, 1, dh - 4)
+      for (let k = 0; k < dw; k++) g.fillRect(x - dw + 2 + k * 3, dy + 2, 1, dh - 4)
     }
     deck(top + 96, 19, 14)
     deck(top + 40, 12, 10)
@@ -3784,147 +3567,40 @@
      pink pixels are noise. What works is clumps: three or four dense
      clusters with dark gaps between them, each one lit on its upper
      left, so the canopy reads as mass with light coming through it. */
-  /* ---- the cherry tree ----
-     It was five filled circles round a fork: a blob, and at this size
-     a blob of pink is a bush, a cloud or a smudge depending on what
-     you were expecting.
-
-     A tree reads as a tree because of its BRANCHING — a trunk that
-     divides, divides again, and thins as it goes — and blossom reads
-     as blossom because it is made of separate flowers with gaps of
-     sky between them, not a continuous field of pink.
-
-     So this draws the structure first: a tapering trunk, then limbs
-     recursed three deep with a deterministic wobble on each, and the
-     tips collected as it goes. Then every tip gets a handful of
-     florets, and a floret is an actual five-petal flower — four petals
-     round a hot centre — rather than a pixel of pink. A few leaves go
-     in among them, because a cherry in full flower still has some.
-
-     Nothing here rolls a die: the wobble and the scatter are both
-     functions of position, so the same tree comes back every build. */
   function sakuraTree(g, o, x, y, scale) {
     const s = scale || 1
-    const bark = '#43293f'
-    const barkLit = '#63415c'
-    const barkDark = '#251529'
+    const trunk = '#3a2438'
     const pink = '#f2a8c8'
-    const pinkLit = '#ffe0ee'
-    const pinkDark = '#bf6690'
-    const heart = '#ff6fa6'
-    const leaf = '#5f8a55'
-    const leafDark = '#3c5c38'
+    const pinkLit = '#ffd6e6'
+    const pinkDark = '#c06a94'
 
-    const tips = []
+    const th = Math.round(26 * s)
+    g.fillStyle = trunk
+    g.fillRect(x - Math.max(1, Math.round(2 * s)), y - th, Math.max(2, Math.round(4 * s)), th)
+    // two branches out of the fork
+    for (let k = 0; k < Math.round(10 * s); k++) {
+      g.fillRect(x - 2 - k, y - th - Math.round(k * 0.8), 1, 1)
+      g.fillRect(x + 2 + k, y - th - Math.round(k * 0.7), 1, 1)
+    }
 
-    /* One limb, walked a pixel at a time so it can taper and bend.
-       The bend is a hash of how far along it is, which keeps it
-       deterministic and stops every branch being a straight ruled
-       line. */
-    function limb(bx, by, ang, len, th, depth) {
-      let cx = bx
-      let cy = by
-      let a = ang
-      for (let k = 0; k < len; k++) {
-        const t = k / len
-        const w = Math.max(1, Math.round(th * (1 - t * 0.75)))
-        a += ((((k * 13 + depth * 29 + Math.round(bx)) % 7) - 3) * 0.016)
-        cx += Math.cos(a)
-        cy += Math.sin(a)
-        const px = Math.round(cx)
-        const py = Math.round(cy)
-        g.fillStyle = bark
-        g.fillRect(px, py, w, 1)
-        g.fillStyle = w > 1 ? barkLit : bark
-        g.fillRect(px, py, 1, 1)
-        if (w > 2) {
-          g.fillStyle = barkDark
-          g.fillRect(px + w - 1, py, 1, 1)
+    // the canopy: five clumps around the fork
+    const cl = [
+      [0, -14, 13], [-11, -8, 9], [11, -9, 9], [-5, -19, 8], [6, -18, 8],
+    ]
+    for (const [cx, cy, cr] of cl) {
+      const px = x + Math.round(cx * s)
+      const py = y - th + Math.round(cy * s)
+      const r = Math.max(2, Math.round(cr * s))
+      for (let dy = -r; dy <= r; dy++) {
+        const span = Math.floor(Math.sqrt(Math.max(0, r * r - dy * dy)))
+        for (let dx = -span; dx <= span; dx++) {
+          // a ragged edge — blossom has no outline
+          if (dx * dx + dy * dy > (r - 1) * (r - 1) && ((px + dx + py + dy) & 1)) continue
+          g.fillStyle = dy < -r * 0.3 && dx < 0 ? pinkLit : dy > r * 0.35 ? pinkDark : pink
+          g.fillRect(px + dx, py + dy, 1, 1)
         }
       }
-      if (depth > 0) {
-        limb(cx, cy, a - 0.42 - depth * 0.06, len * 0.66, th * 0.62, depth - 1)
-        limb(cx, cy, a + 0.38 + depth * 0.07, len * 0.62, th * 0.62, depth - 1)
-        // a third, shorter shoot on the bigger forks, so it is not a Y
-        if (depth > 1) limb(cx, cy, a - 0.05, len * 0.5, th * 0.5, depth - 1)
-      } else {
-        tips.push([cx, cy])
-      }
     }
-
-    /* A single flower: four petals round a lit centre. At s=1 that is
-       three pixels across, which is the smallest thing that still
-       reads as a flower rather than as a dot. */
-    function floret(px, py, tone, big) {
-      g.fillStyle = tone
-      g.fillRect(px, py - 1, 1, 1)
-      g.fillRect(px - 1, py, 1, 1)
-      g.fillRect(px + 1, py, 1, 1)
-      g.fillRect(px, py + 1, 1, 1)
-      if (big) {
-        g.fillRect(px - 1, py - 1, 1, 1)
-        g.fillRect(px + 1, py + 1, 1, 1)
-      }
-      g.fillStyle = heart
-      g.fillRect(px, py, 1, 1)
-    }
-
-    // the trunk, tapering, with a lit side
-    const th = Math.round(30 * s)
-    const tw = Math.max(2, Math.round(5 * s))
-    for (let k = 0; k < th; k++) {
-      const w = Math.max(2, Math.round(tw * (1 - (k / th) * 0.45)))
-      const px = x - Math.round(w / 2) + Math.round(Math.sin(k * 0.12) * s)
-      g.fillStyle = bark
-      g.fillRect(px, y - k, w, 1)
-      g.fillStyle = barkLit
-      g.fillRect(px, y - k, 1, 1)
-      g.fillStyle = barkDark
-      g.fillRect(px + w - 1, y - k, 1, 1)
-    }
-    // roots flaring into the ground
-    g.fillStyle = barkDark
-    g.fillRect(x - Math.round(5 * s), y - 1, Math.round(10 * s), 1)
-
-    // three main limbs out of the fork, recursed
-    const fy = y - th
-    limb(x, fy, -Math.PI / 2 - 0.55, 13 * s, 3.2 * s, 2)
-    limb(x, fy, -Math.PI / 2 + 0.5, 12 * s, 3.2 * s, 2)
-    limb(x, fy, -Math.PI / 2 - 0.02, 15 * s, 3.4 * s, 2)
-
-    /* Blossom on the tips. Each tip carries a small cloud of florets
-       scattered around it — offset by a hash of the tip's own position
-       so the clusters differ from each other — and the tone steps with
-       height, lit at the crown and deeper underneath. */
-    for (let i = 0; i < tips.length; i++) {
-      const [tx, ty] = tips[i]
-      const n = 7 + (i % 3) * 2
-      for (let k = 0; k < n; k++) {
-        const h = (i * 37 + k * 61) % 100
-        const h2 = (i * 53 + k * 29) % 100
-        const dx = Math.round(((h / 100) * 2 - 1) * 5.5 * s)
-        const dy = Math.round(((h2 / 100) * 2 - 1) * 5 * s)
-        const px = Math.round(tx) + dx
-        const py = Math.round(ty) + dy
-        // a few leaves in among the flowers
-        if (h % 11 === 0) {
-          g.fillStyle = h2 % 2 ? leaf : leafDark
-          g.fillRect(px, py, 2, 1)
-          g.fillRect(px + 1, py - 1, 1, 1)
-          continue
-        }
-        const tone = dy < -2 ? pinkLit : dy > 2 ? pinkDark : pink
-        floret(px, py, tone, s >= 1 && h % 3 === 0)
-      }
-    }
-
-    /* A couple of petals already off the tree, falling. The blossom
-       only reads as blossom if it is visibly losing. */
-    g.fillStyle = pinkLit
-    g.fillRect(x + Math.round(9 * s), y - Math.round(12 * s), 1, 1)
-    g.fillRect(x - Math.round(12 * s), y - Math.round(7 * s), 1, 1)
-    g.fillStyle = pink
-    g.fillRect(x + Math.round(4 * s), y - Math.round(4 * s), 1, 1)
   }
 
   /* ---- the precinct ----
@@ -3993,462 +3669,197 @@
   }
 
   /* ==================================================================
-     NEW DELHI
+     MEXICO CITY
      ================================================================== */
 
-  /* ---- India Gate ----
-     One great archway of sandstone, taller than it is wide, with a heavy
-     cornice and a shallow saucer where the never-built cupola would have
-     gone. The flame beneath the arch is the Amar Jawan Jyoti. */
-
-  /* ==================================================================
-     TOKYO, UP CLOSE
-
-     The monuments were never the problem. Tokyo Tower and the Skytree
-     were already standing in layer 2, and you could still fail to name
-     the city, because a landmark is one building and the other four
-     hundred were the same generic mat every other city here is made
-     of.
-
-     What actually makes a Tokyo street read as Tokyo is the clutter on
-     it: the overhead cable, strung pole to pole because almost nothing
-     is buried; the steel water tank up on legs on every mid-rise roof;
-     the external stair bolted to the outside of the building because
-     the plot was too narrow to put one inside. None of those are
-     landmarks. All of them are unmistakable.
-
-     So this section is furniture, and it is drawn ACROSS the layers
-     rather than at one spot — which is the point. A landmark you look
-     at; furniture you read the city through.
-     ================================================================== */
-
-  /* ---- the water tank ----
-     A steel box up on four legs with a ladder bolted up one side. It
-     is the single most common object on a Japanese roofline and the
-     cheapest way to say which country a rooftop is in. */
-  function waterTank(g, o, x, y, s) {
-    const w = Math.round(16 * s)
-    const h = Math.round(11 * s)
-    const leg = Math.round(7 * s)
-    const hw = Math.round(w / 2)
-
-    // the legs, and the shadow between them
+  /* ---- the Torre Latinoamericana ----
+     The one that survived the earthquake. A plain slab with a glazed
+     observation cage and a lattice mast, and it is the mast that puts
+     it on the postcards. */
+  function torreLatino(g, o, x, windows) {
+    const b = SKYLINE
+    mBox(g, o, x - 17, b - 176, 34, 176)
+    // horizontal floor bands — this tower is read by its stripes
     g.fillStyle = o.dark
-    g.fillRect(x - hw + 1, y - leg, 2, leg)
-    g.fillRect(x + hw - 3, y - leg, 2, leg)
-    g.fillRect(x - 1, y - leg, 2, leg)
+    for (let y = b - 170; y < b - 6; y += 5) g.fillRect(x - 16, y, 32, 1)
+    g.fillStyle = o.glass ? o.glass[0] : o.window
+    for (let y = b - 168; y < b - 8; y += 5) g.fillRect(x - 14, y, 28, 2)
 
-    // the tank
-    const top = y - leg - h
-    g.fillStyle = o.fill
-    g.fillRect(x - hw, top, w, h)
-    g.fillStyle = o.lit
-    g.fillRect(x - hw, top, w, 1)
-    g.fillRect(x - hw, top, 1, h)
-    g.fillStyle = o.dark
-    g.fillRect(x + hw - 1, top, 1, h)
-    g.fillRect(x - hw, top + h - 1, w, 1)
-    // the seam round its middle, and the hatch on top
-    g.fillStyle = o.dark
-    g.fillRect(x - hw, top + Math.round(h / 2), w, 1)
-    g.fillRect(x - 2, top - 2, 5, 2)
-
-    // the ladder
-    g.fillStyle = o.dark
-    for (let k = 1; k < h + leg; k += 3) g.fillRect(x + hw, y - k, 3, 1)
-    g.fillRect(x + hw + 2, top, 1, h + leg)
-  }
-
-
-
-  /* ---- the stair on the outside ----
-     Put the stair outside and the whole floorplate is rentable. Half
-     the mid-rise in this city is built that way, and the zigzag it
-     leaves on the flank is as good as a label. */
-  function stairRun(g, o, x, base, h, dir) {
-    const runH = 9
-    let y = base
-    let flip = 0
-    while (y > base - h + runH) {
-      const x0 = dir > 0 ? x : x - 12
-      // the flight, stepped
-      g.fillStyle = o.dark
-      for (let k = 0; k < 6; k++) {
-        const sx = flip ? x0 + 10 - k * 2 : x0 + k * 2
-        g.fillRect(sx, y - k * 1.5 | 0, 3, 1)
-      }
-      // the landing
-      g.fillStyle = o.dark
-      g.fillRect(x0, y - runH, 13, 2)
-      g.fillStyle = o.lit
-      g.fillRect(x0, y - runH, 13, 1)
-      // the rail
-      g.fillStyle = o.dark
-      g.fillRect(dir > 0 ? x0 + 12 : x0, y - runH - 5, 1, 5)
-      y -= runH
-      flip ^= 1
-    }
-  }
-
-  /* ---- the vending machine ----
-     Lit, always on, and standing on its own in the dark at the mouth
-     of an alley. There are five and a half million of them out there;
-     one of them may as well be in shot. */
-  function vending(g, o, x, base) {
-    const w = 9
-    const h = 15
-    g.fillStyle = o.dark
-    g.fillRect(x - 1, base - h - 1, w + 2, h + 1)
-    // the lit face
-    g.fillStyle = o.window
-    g.fillRect(x, base - h, w, h - 4)
-    // rows of cans, read as dark notches in the light
-    g.fillStyle = o.dark
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        g.fillRect(x + 1 + c * 3, base - h + 2 + r * 4, 2, 2)
-      }
-    }
-    // the tray at the foot, and the light it throws on the pavement
-    g.fillStyle = o.dark
-    g.fillRect(x, base - 4, w, 3)
-    glow(g, x - 4, base - h - 2, w + 8, h + 6, 14, o.window, 0.5)
-  }
-
-  /* ---- the twin towers at Shinjuku ----
-     The Metropolitan Government Building. A broad plinth that splits
-     into two square towers with a lattice of window banding right up
-     both of them — and the split is the whole recognition. Nothing
-     else on this skyline forks. */
-  function metroGov(g, o, x, windows) {
-    const H = 232
-    const base = SKYLINE
-    const plinthH = 96
-    const pw = 76
-
-    // the plinth
-    g.fillStyle = o.fill
-    g.fillRect(x - pw / 2, base - plinthH, pw, plinthH)
-    g.fillStyle = o.lit
-    g.fillRect(x - pw / 2, base - plinthH, 2, plinthH)
-    g.fillStyle = o.dark
-    g.fillRect(x + pw / 2 - 2, base - plinthH, 2, plinthH)
-
-    // the two shafts
-    const tw = 30
-    const gap = 12
-    for (const side of [-1, 1]) {
-      const tx = x + side * (gap / 2 + tw / 2) - tw / 2
-      const top = base - H
-      g.fillStyle = o.fill
-      g.fillRect(tx, top, tw, H - plinthH + 4)
-      g.fillStyle = o.lit
-      g.fillRect(tx, top, 2, H - plinthH + 4)
-      g.fillStyle = o.dark
-      g.fillRect(tx + tw - 2, top, 2, H - plinthH + 4)
-      // the lattice: paired vertical piers with lit slots between them
-      for (let cx = tx + 4; cx < tx + tw - 4; cx += 7) {
-        g.fillStyle = o.dark
-        g.fillRect(cx, top + 4, 2, H - plinthH - 6)
-      }
-      for (let cy = top + 8; cy < base - plinthH; cy += 6) {
-        g.fillStyle = o.dark
-        g.fillRect(tx + 3, cy, tw - 6, 1)
-        if (windows && ((cy + tx) % 17) < 6) {
-          g.fillStyle = o.window
-          g.fillRect(tx + 4, cy + 2, 4, 3)
-        }
-      }
-      // the aerial masts
-      g.fillStyle = o.dark
-      g.fillRect(tx + tw / 2 - 1, top - 12, 2, 12)
-      g.fillStyle = o.warm
-      g.fillRect(tx + tw / 2 - 1, top - 13, 2, 2)
-    }
-  }
-
-  /* ---- the cocoon ----
-     Mode Gakuen at Nishi-Shinjuku: an egg standing on end, wrapped in
-     a diagonal lattice with three vertical cuts let into it. Drawn as
-     a true ellipse rather than a tapered box, because the taper IS the
-     building. */
-  function cocoon(g, o, x, windows) {
-    const H = 168
-    const RW = 21
-    const base = SKYLINE
-    const top = base - H
-    for (let y = 0; y < H; y++) {
-      const t = y / H
-      // fat in the middle, drawn in at both ends, flat where it meets
-      // the ground
-      const w = Math.round(RW * Math.sin(Math.PI * Math.pow(t, 0.86)) + 5)
-      const yy = top + y
-      g.fillStyle = o.fill
-      g.fillRect(x - w, yy, w * 2, 1)
-      g.fillStyle = o.lit
-      g.fillRect(x - w, yy, 2, 1)
-      g.fillStyle = o.dark
-      g.fillRect(x + w - 2, yy, 2, 1)
-      // the diagonal lattice, both ways
-      if ((yy + x) % 5 === 0) {
-        g.fillStyle = o.dark
-        for (let k = -w; k < w; k += 5) g.fillRect(x + k, yy, 2, 1)
-      }
-      // and the three vertical cuts
-      if (windows && y > 10 && y < H - 14 && yy % 3 === 0) {
-        g.fillStyle = o.window
-        g.fillRect(x - 1, yy, 2, 1)
-        if (w > 12) {
-          g.fillRect(x - w + 5, yy, 2, 1)
-          g.fillRect(x + w - 7, yy, 2, 1)
-        }
-      }
-    }
-  }
-
-  /* ---- the one in the bay ----
-     A shape rising out of the water between two far towers, lit from
-     below by the city it is looking at. Never explained, never
-     animated, and gone the moment you change city. */
-  function kaiju(g, o, x, base) {
-    const H = 54
-    const top = base - H
-    g.fillStyle = o.dark
-    // tail into the water, then the back
-    g.fillRect(x - 34, base - 6, 22, 3)
-    g.fillRect(x - 20, base - 10, 16, 5)
-    g.fillRect(x - 10, base - 26, 18, 20)
-    // the neck and head
-    g.fillRect(x + 2, top + 8, 9, 20)
-    g.fillRect(x + 4, top, 14, 10)
-    g.fillRect(x + 16, top + 3, 4, 4)
-    // dorsal plates
-    for (let k = 0; k < 5; k++) {
-      g.fillRect(x - 10 + k * 4, base - 30 - k, 3, 5)
-    }
-    // the eye, and the light coming up off the water
+    // the setback and the observation cage
+    mBox(g, o, x - 12, b - 196, 24, 22)
     g.fillStyle = o.warm
-    g.fillRect(x + 13, top + 4, 2, 2)
-    glow(g, x - 30, base - 12, 60, 10, 16, o.neon || o.warm, 0.30)
+    g.fillRect(x - 10, b - 192, 20, 6)
+    mBox(g, o, x - 8, b - 208, 16, 14)
+    g.fillStyle = o.window
+    g.fillRect(x - 8, b - 208, 16, 1)
+
+    // the mast
+    g.fillStyle = o.window
+    g.fillRect(x - 1, b - 262, 2, 56)
+    g.fillStyle = o.lit
+    for (let k = 0; k < 7; k++) g.fillRect(x - 3, b - 256 + k * 8, 6, 1)
+    if (windows) windows.push({ x: x - 1, y: b - 264, w: 2, h: 2, beacon: true })
   }
 
-  function indiaGate(g, o, x) {
+  /* ---- El Ángel de la Independencia ----
+     A column with a gold winged victory on it. At this scale the
+     figure is nine pixels tall and the gold is doing all the work,
+     which is fine — gold on a column is the memory people have. */
+  function angelColumn(g, o, x) {
+    const b = SKYLINE
+    const gold = '#f2c14e'
+    const goldLit = '#ffeaa8'
+
+    // the stepped plinth
+    g.fillStyle = o.fill
+    g.fillRect(x - 22, b - 10, 44, 10)
+    g.fillRect(x - 16, b - 18, 32, 8)
+    g.fillStyle = o.lit
+    g.fillRect(x - 22, b - 10, 44, 1)
+    g.fillRect(x - 16, b - 18, 32, 1)
+
+    // the shaft, fluted
+    mBox(g, o, x - 7, b - 96, 14, 78)
+    g.fillStyle = o.dark
+    for (let k = 0; k < 4; k++) g.fillRect(x - 5 + k * 3, b - 92, 1, 72)
+    // capital
+    g.fillStyle = o.lit
+    g.fillRect(x - 10, b - 102, 20, 6)
+    g.fillStyle = o.fill
+    g.fillRect(x - 8, b - 106, 16, 4)
+
+    // Victoria, with the wings open behind her
+    g.fillStyle = gold
+    g.fillRect(x - 2, b - 118, 4, 12)
+    g.fillRect(x - 1, b - 122, 3, 4)
+    g.fillStyle = goldLit
+    g.fillRect(x - 2, b - 118, 1, 12)
+    // wings
+    g.fillStyle = gold
+    for (let k = 0; k < 9; k++) {
+      g.fillRect(x - 3 - k, b - 120 + Math.round(k * 0.7), 1, Math.max(1, 5 - Math.floor(k / 2)))
+      g.fillRect(x + 3 + k, b - 120 + Math.round(k * 0.7), 1, Math.max(1, 5 - Math.floor(k / 2)))
+    }
+    // the laurel wreath, held out
+    g.fillStyle = goldLit
+    g.fillRect(x + 3, b - 124, 4, 1)
+    g.fillRect(x + 6, b - 126, 1, 4)
+    glow(g, x - 12, b - 128, 24, 24, 16, gold, 1.2)
+  }
+
+  /* ---- the Monumento a la Revolución ----
+     Four colossal legs, four arches between them, one copper dome. It
+     was meant to be a parliament and it ended up as the biggest
+     triumphal arch on earth, which is a very Mexico City story. */
+  function revolutionDome(g, o, x) {
+    const b = SKYLINE
+    const copper = '#6f9c86'
+    const copperLit = '#a2cbb4'
+
+    /* Four legs and the three voids between them. The voids are cut
+       FIRST and the legs drawn over them, because an arch is the hole
+       and the pier is what is left — doing it the other way round is
+       what put an arch through the middle of a leg. */
+    mArch(g, x - 32, b - 62, 14, 62, o.dark)
+    mArch(g, x - 8, b - 62, 18, 62, o.dark)
+    mArch(g, x + 20, b - 62, 12, 62, o.dark)
+    for (const dx of [-42, -18, 10, 32]) {
+      g.fillStyle = o.fill
+      g.fillRect(x + dx, b - 62, 10, 62)
+      g.fillStyle = o.lit
+      g.fillRect(x + dx, b - 62, 1, 62)
+      g.fillStyle = o.dark
+      g.fillRect(x + dx + 9, b - 62, 1, 62)
+    }
+
+    // the entablature, then the drum
+    g.fillStyle = o.fill
+    g.fillRect(x - 42, b - 74, 84, 12)
+    g.fillStyle = o.lit
+    g.fillRect(x - 42, b - 74, 84, 1)
+    g.fillStyle = o.dark
+    for (let k = 0; k < 10; k++) g.fillRect(x - 38 + k * 9, b - 70, 2, 6)
+    g.fillStyle = o.fill
+    g.fillRect(x - 28, b - 88, 56, 14)
+    g.fillStyle = o.warm
+    for (let k = 0; k < 7; k++) g.fillRect(x - 24 + k * 7, b - 85, 3, 8)
+
+    // the dome and its lantern
+    mDome(g, o, x - 28, b - 88, 56, 30, copper)
+    g.fillStyle = copperLit
+    g.fillRect(x - 5, b - 124, 10, 6)
+    g.fillStyle = copper
+    g.fillRect(x - 2, b - 132, 4, 8)
+    g.fillStyle = '#ffd27a'
+    g.fillRect(x - 1, b - 136, 2, 4)
+  }
+
+  /* ---- the pyramid ----
+     Teotihuacán, up the road and a couple of thousand years older than
+     everything else in frame. Five hard steps and one staircase — the
+     staircase is what stops it reading as a ziggurat. */
+  function stepPyramid(g, o, x) {
     const b = SKYLINE
     o = mStone(o)
-    const w = 62
-    const h = 94
-    // the pylon
-    mBox(g, o, x - w / 2, b - h, w, h)
-    // the one great arch, tall and narrow
-    mArch(g, x - 16, b - 76, 32, 76, o.dark)
-    // string courses across the piers
-    g.fillStyle = o.lit
-    g.fillRect(x - w / 2, b - 76, w, 1)
-    g.fillStyle = o.dark
-    g.fillRect(x - w / 2, b - 40, w, 1)
-    // the deep cornice
-    g.fillStyle = o.fill
-    g.fillRect(x - w / 2 - 4, b - h - 9, w + 8, 9)
-    g.fillStyle = o.lit
-    g.fillRect(x - w / 2 - 4, b - h - 9, w + 8, 1)
-    g.fillStyle = o.dark
-    for (let k = 0; k < 9; k++) g.fillRect(x - 27 + k * 7, b - h - 6, 3, 5)
-    // the shallow saucer where the cupola never went
-    mDome(g, o, x - 12, b - h - 9, 24, 8, o.lit)
-    // the eternal flame under the arch
-    g.fillStyle = '#ffb03c'
-    g.fillRect(x - 1, b - 6, 3, 5)
-    g.fillStyle = '#ffd27a'
-    g.fillRect(x - 1, b - 9, 2, 3)
-    glow(g, x - 4, b - 12, 8, 10, 14, '#ffb03c', 1.2)
-  }
-
-  /* ---- the Qutub Minar ----
-     The tallest brick minaret in the world: five storeys that taper as
-     they climb, each ending in a corbelled balcony that throws a ring of
-     shadow, the lower shafts fluted. A small cupola sits on the summit. */
-  function qutubMinar(g, o, x, windows) {
-    const b = SKYLINE
-    o = mStone(o, 0.42)
-    const heights = [56, 46, 38, 30, 24]
-    const total = heights.reduce((a, c) => a + c, 0)
-    const baseHW = 17
-    const topHW = 5
-    const hwAt = (yUp) => baseHW - (baseHW - topHW) * (yUp / total)
-    let cy = b
-    for (let s = 0; s < heights.length; s++) {
-      const hs = heights[s]
-      // the tapering shaft of this storey
-      for (let k = 0; k < hs; k++) {
-        const hw = Math.round(hwAt(b - cy + k))
-        const yr = cy - k
-        g.fillStyle = o.fill
-        g.fillRect(x - hw, yr, hw * 2, 1)
-        g.fillStyle = o.lit
-        g.fillRect(x - hw, yr, 1, 1)
-        g.fillStyle = o.dark
-        g.fillRect(x + hw - 1, yr, 1, 1)
-      }
-      // fluting on the lower three storeys
-      if (s < 3) {
-        const hwBot = Math.round(hwAt(b - cy))
-        g.fillStyle = o.dark
-        for (let fx = -hwBot + 3; fx < hwBot - 3; fx += 3) g.fillRect(x + fx, cy - hs, 1, hs)
-      }
-      // the corbelled balcony ring at the top of the storey
-      const hwBal = Math.round(hwAt(b - cy + hs)) + 3
-      g.fillStyle = o.dark
-      for (let k = 0; k < hwBal * 2; k += 2) g.fillRect(x - hwBal + k, cy - hs - 1, 1, 1)
+    const stone = o.fill
+    /* Big, because the real one is and because a 70px pyramid at
+       SKYLINE is a pyramid entirely behind the elevated line. At 110
+       it stands most of its height clear of the deck, which is the
+       only height that matters here. */
+    let w = 170
+    let y = b
+    for (let t = 0; t < 5; t++) {
+      const h = 26 - t * 2
+      const hw = Math.round(w / 2)
+      g.fillStyle = stone
+      g.fillRect(x - hw, y - h, w, h)
       g.fillStyle = o.lit
-      g.fillRect(x - hwBal, cy - hs, hwBal * 2, 2)
+      g.fillRect(x - hw, y - h, w, 1)
       g.fillStyle = o.dark
-      g.fillRect(x - hwBal, cy - hs + 2, hwBal * 2, 1)
-      cy -= hs
-    }
-    // the cupola on the summit
-    mDome(g, o, x - 5, cy, 10, 6, o.lit)
-    g.fillStyle = o.window
-    g.fillRect(x - 1, cy - 12, 2, 6)
-    if (windows) windows.push({ x: x - 1, y: cy - 13, w: 2, h: 2, beacon: true })
-  }
-
-  /* ---- Humayun's Tomb ----
-     The first of the great Mughal garden-tombs and the rehearsal for the
-     Taj: an arcaded red-sandstone plinth, a cubic tomb with one tall
-     central iwan, and a bulbous white-marble dome on a drum under a
-     gilded finial, with a pair of chhatris on the roof. */
-  function mughalTomb(g, o, x, windows) {
-    const b = SKYLINE
-    o = mStone(o, 0.36)
-    const marble = '#e8e2d4'
-    const mo = { fill: marble, lit: '#fbf6ea', dark: '#b6ab98', warm: o.warm }
-
-    // the arcaded plinth
-    const pw = 128
-    const ph = 20
-    mBox(g, o, x - pw / 2, b - ph, pw, ph)
-    for (let k = -2; k <= 2; k++) mArch(g, x + k * 25 - 7, b - ph + 4, 14, ph - 4, o.dark)
-
-    // the tomb cube, with the great central iwan
-    const cw = 84
-    const chh = 52
-    mBox(g, o, x - cw / 2, b - ph - chh, cw, chh)
-    mArch(g, x - 15, b - ph - chh + 10, 30, chh - 10, o.dark)
-    // a pointed tip breaking up over the iwan
-    g.fillStyle = o.dark
-    for (let k = 0; k < 7; k++) {
-      g.fillRect(x - 7 + k, b - ph - chh + 10 - (7 - k), 1, 7 - k)
-      g.fillRect(x + 7 - k, b - ph - chh + 10 - (7 - k), 1, 7 - k)
-    }
-    // recessed arches either side
-    mArch(g, x - cw / 2 + 6, b - ph - 24, 12, 22, o.dark)
-    mArch(g, x + cw / 2 - 18, b - ph - 24, 12, 22, o.dark)
-    // a marble cornice on the cube
-    g.fillStyle = marble
-    g.fillRect(x - cw / 2, b - ph - chh, cw, 2)
-
-    // the drum
-    const drumTop = b - ph - chh - 14
-    g.fillStyle = marble
-    g.fillRect(x - 28, drumTop, 56, 14)
-    g.fillStyle = mo.lit
-    g.fillRect(x - 28, drumTop, 56, 1)
-    g.fillStyle = mo.dark
-    for (let k = 0; k < 7; k++) g.fillRect(x - 24 + k * 7, drumTop + 3, 2, 9)
-
-    // the bulbous dome and its pinched collar
-    const domeW = 60
-    mDome(g, mo, x - domeW / 2, drumTop, domeW, 44, marble)
-    g.fillStyle = mo.dark
-    g.fillRect(x - domeW / 2 + 3, drumTop - 2, domeW - 6, 2)
-
-    // the gilded finial
-    const dtop = drumTop - 44
-    g.fillStyle = marble
-    g.fillRect(x - 3, dtop - 5, 6, 5)
-    g.fillStyle = '#ffd27a'
-    g.fillRect(x - 1, dtop - 16, 2, 11)
-    g.fillRect(x - 3, dtop - 13, 6, 1)
-    glow(g, x - 4, dtop - 18, 8, 9, 12, '#ffd27a', 0.9)
-
-    // the two roof chhatris
-    for (const dx of [-38, 38]) {
-      g.fillStyle = marble
-      g.fillRect(x + dx - 6, b - ph - chh - 11, 2, 11)
-      g.fillRect(x + dx + 4, b - ph - chh - 11, 2, 11)
-      g.fillStyle = mo.dark
-      g.fillRect(x + dx - 7, b - ph - chh - 12, 14, 1)
-      mDome(g, mo, x + dx - 7, b - ph - chh - 11, 14, 9, marble)
-      g.fillStyle = '#ffd27a'
-      g.fillRect(x + dx - 1, b - ph - chh - 23, 2, 4)
-    }
-    if (windows) windows.push({ x: x - 1, y: dtop - 17, w: 2, h: 2, beacon: true })
-  }
-
-  /* ---- the Lotus Temple ----
-     The Bahai House of Worship: twenty-seven marble petals in three
-     tiers, which at this size is a fan of white points opening off a
-     low podium. Floodlit, so it carries its own cool halo. */
-  function lotusTemple(g, o, x) {
-    const b = SKYLINE
-    const marble = '#e6e6de'
-    const marbleLit = '#fbfbf4'
-    const marbleDark = '#aeaea4'
-    // the podium
-    o = mStone(o, 0.3)
-    mBox(g, o, x - 46, b - 12, 92, 12)
-    g.fillStyle = o.lit
-    g.fillRect(x - 46, b - 12, 92, 1)
-    // a petal: a pointed marble shard that tapers to a point and leans
-    const petal = (px, ph, lean, wmax) => {
-      for (let k = 0; k < ph; k++) {
-        const f = k / ph
-        const hw = Math.max(0, Math.round(wmax * (1 - f) * (1 - f * 0.35)))
-        const cx = px + Math.round(lean * f)
-        const yy = b - 10 - k
-        g.fillStyle = marble
-        g.fillRect(cx - hw, yy, hw * 2 + 1, 1)
-        g.fillStyle = marbleLit
-        g.fillRect(cx - hw, yy, 1, 1)
-        g.fillStyle = marbleDark
-        g.fillRect(cx + hw, yy, 1, 1)
+      g.fillRect(x - hw, y - 1, w, 1)
+      // the battered face — a talud, sloping in
+      for (let k = 0; k < h; k++) {
+        g.fillStyle = o.dark
+        g.fillRect(x + hw - 1 - Math.round(k * 0.4), y - h + k, 1, 1)
       }
+      y -= h
+      w -= 30
     }
-    // back to front: the outer, leaning petals first
-    petal(x - 30, 30, -16, 9)
-    petal(x + 30, 30, 16, 9)
-    petal(x - 17, 42, -11, 9)
-    petal(x + 17, 42, 11, 9)
-    petal(x - 8, 52, -5, 8)
-    petal(x + 8, 52, 5, 8)
-    petal(x, 60, 0, 8)
-    glow(g, x - 34, b - 70, 68, 62, 26, '#dfeaff', 0.5)
+    // the staircase, dead centre, running the whole way up
+    const sw = 28
+    g.fillStyle = o.dark
+    g.fillRect(x - sw / 2, y, sw, b - y)
+    g.fillStyle = o.lit
+    for (let k = 0; k < b - y; k += 3) g.fillRect(x - sw / 2, y + k, sw, 1)
+    // and a fire on the platform, because there always was one
+    g.fillStyle = '#ff9a3c'
+    g.fillRect(x - 3, y - 6, 6, 6)
+    g.fillStyle = '#ffd27a'
+    g.fillRect(x - 1, y - 8, 3, 5)
+    glow(g, x - 4, y - 9, 8, 10, 14, '#ff9a3c', 1.3)
   }
 
-  /* Marigold torans — the strung garlands of marigold flowers and mango
-     leaf that go up over every door and balcony for a festival. Same
-     draped-string idea as the papel picado they replace. */
-  function marigoldString(g, o, x, y, n) {
-    const span = n * 13
+  /* Papel picado — perforated paper flags on a string, the thing that
+     is over every street in the city for half the year. */
+  function papelPicado(g, o, x, y, n) {
+    const cols = ['#ff5c8a', '#4ad2c8', '#ffd24a', '#8a6cff', '#5fd66f']
     g.fillStyle = o.dark
-    for (let k = 0; k < span; k++) g.fillRect(x + k, y + Math.round(Math.sin((k / span) * Math.PI) * 8), 1, 1)
-    const orange = '#ff9a2a'
-    const orangeLit = '#ffc75a'
-    const leaf = '#3f9a4a'
+    const span = n * 13
+    for (let k = 0; k < span; k++) {
+      g.fillRect(x + k, y + Math.round(Math.sin((k / span) * Math.PI) * 7), 1, 1)
+    }
     for (let k = 0; k < n; k++) {
       const fx = x + 2 + k * 13
-      const fy = y + Math.round(Math.sin(((k * 13 + 6) / span) * Math.PI) * 8) + 2
-      // a mango leaf tucked between the blooms
-      g.fillStyle = leaf
-      g.fillRect(fx + 5, fy, 2, 6)
-      // the marigold bloom — a small stacked puff
-      g.fillStyle = orange
-      g.fillRect(fx + 1, fy + 5, 8, 6)
-      g.fillRect(fx + 2, fy + 4, 6, 8)
-      g.fillStyle = orangeLit
-      g.fillRect(fx + 3, fy + 6, 2, 2)
+      const fy = y + Math.round(Math.sin(((k * 13 + 6) / span) * Math.PI) * 7) + 1
+      g.fillStyle = cols[k % cols.length]
+      g.fillRect(fx, fy, 10, 12)
+      // punched out — that is the whole craft
       g.fillStyle = o.dark
-      g.fillRect(fx + 4, fy + 8, 1, 1)
+      g.fillRect(fx + 4, fy + 3, 2, 2)
+      g.fillRect(fx + 2, fy + 7, 2, 2)
+      g.fillRect(fx + 6, fy + 7, 2, 2)
+      g.fillRect(fx + 3, fy + 11, 1, 1)
+      g.fillRect(fx + 6, fy + 11, 1, 1)
     }
   }
 
@@ -4768,49 +4179,6 @@
     return out
   }
 
-  /* Extrapolate `col` away from `anchor` by factor `f`. f = 1 returns
-     `col` unchanged; f > 1 pushes it further in the direction it already
-     leans, clamped per channel. This is how a colour is made "more
-     itself" without inventing a new hue. */
-  const spreadCache = new Map()
-  function spread(anchor, col, f) {
-    const key = anchor + '|' + col + '|' + f
-    let out = spreadCache.get(key)
-    if (out) return out
-    const na = parseInt(anchor.slice(1), 16)
-    const nc = parseInt(col.slice(1), 16)
-    const ch = (sh) => {
-      const a = (na >> sh) & 255
-      return clamp255(a + Math.round((((nc >> sh) & 255) - a) * f))
-    }
-    const r = ch(16), g = ch(8), b = ch(0)
-    out = '#' + (((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1))
-    spreadCache.set(key, out)
-    return out
-  }
-
-  /* ---- depth contrast ----
-     Every building draws its body in `fill`, its lit top-left edge in
-     `lit` and its shadowed right edge in `dark`, and the window grid
-     shades between the three. When those three sit close together the
-     tower has no internal relief and, worse, its lit edge cannot
-     separate from the shadowed edge of the tower it abuts — so a row of
-     same-material towers reads as one dark wall rather than as buildings.
-
-     `depthen` widens the fill→lit and fill→dark intervals along their
-     own hue, so the silhouette edges and the window shading both gain
-     definition. It runs BEFORE the aerial wash, and its strength scales
-     with depth: the near planes are near-black and mush hardest, so they
-     get the most; the far planes stay soft because that softness is the
-     distance cue. */
-  function depthen(pal, k) {
-    if (!(k > 0) || !pal.fill) return pal
-    const out = { ...pal }
-    if (out.lit) out.lit = spread(out.fill, out.lit, 1 + 0.75 * k)
-    if (out.dark) out.dark = spread(out.fill, out.dark, 1 + 1.05 * k)
-    return out
-  }
-
   /* The skyline is built as five independent steps rather than one
      call, so a rebuild can be spread across frames instead of landing
      as a single stall. Each city buffer is 5760x1620 at S=3 and takes
@@ -4851,7 +4219,7 @@
        loop that one or two are in frame at a time.
 
        ITS LIGHT. Manhattan is magenta and cyan; Tokyo in April is
-       rose; New Delhi is sodium through smog; Paris is gold; Dubai
+       rose; Mexico City is sodium and warm dust; Paris is gold; Dubai
        is gold over a hot teal. Each city overrides a handful of
        palette entries — the sky ramp, the haze, the neon set — and
        inherits everything else from the theme.
@@ -4878,10 +4246,10 @@
       shape: { ziggurat: 0.14, needle: 0.03, slab: -0.04 },
       roofKit: 'tank',
       stock: [
-        { gapChance: 0.67, gap: 10, minH: 58, maxH: 128 },
-        { gapChance: 0.67, gap: 10, minH: 76, maxH: 160 },
-        { gapChance: 0.64, gap: 12, minH: 88, maxH: 188 },
-        { gapChance: 0.70, gap: 14, minH: 54, maxH: 122 },
+        { gapChance: 0.34, gap: 4, minH: 62, maxH: 150 },
+        { gapChance: 0.34, gap: 4, minH: 84, maxH: 190 },
+        { gapChance: 0.32, gap: 5, minH: 100, maxH: 224 },
+        { gapChance: 0.36, gap: 6, minH: 58, maxH: 142 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 420)
@@ -4891,16 +4259,25 @@
       layer1: (g, o, windows) => {
         clockTower(g, o, 430)
         rooftopPool(g, o, 950, SKYLINE - 126)
+        rocket(g, o, 1480)
       },
       layer2: (g, o, windows) => {
         empireState(g, o, 260, windows)
+        crane(g, o, 700, windows)
         chrysler(g, o, 1130, windows)
+        ferrisWheel(g, o, 1580, windows)
+        triforceSign(g, 1450, SKYLINE - 196)
+        windowWashers(g, o, 960, SKYLINE - 190, SKYLINE - 96)
         rooftopPool(g, o, 500, SKYLINE - 152)
       },
       layer3: (g, o, windows, beams) => {
         liberty(g, o, 200)
+        driveIn(g, o, 640, windows)
+        dinosaur(g, o, 1080)
         observatory(g, o, 1520)
         lighthouse(g, o, 1780, beams)
+        gargoyle(g, o, 940, SKYLINE - 118)
+        windowCat(g, o, 1666, SKYLINE - 74)
       },
     },
 
@@ -4922,25 +4299,21 @@
       palette: {
         night: {
           sky: [
-            '#06050a', '#08070e', '#0c0913', '#120d1a', '#191021',
-            '#221528', '#2d1a2d', '#3c2337', '#4e2f3e',
+            '#08051c', '#0e0726', '#160a34', '#241046', '#3a1358',
+            '#57186a', '#7a1f74', '#a52d7e', '#d1497f',
           ],
-          haze: '#a87b8f',
-          smog: '#56344a',
-          fog: '#4a2c47',
-          rainSky: '#18121e',
-          orb: '#ffeaf4', orbShade: '#e0aecc', orbGlow: '#8f5976',
-          cloud: '#312034', cloudLit: '#714864', cloudDark: '#1a101c',
-          high: ['#342d4b', '#442e50', '#61385a'],
+          haze: '#ff86b8',
+          smog: '#6a2050',
+          fog: '#5c1a56',
+          rainSky: '#180a26',
+          orb: '#ffeaf4', orbShade: '#e0aecc', orbGlow: '#b03878',
+          cloud: '#3a1440', cloudLit: '#8a2f6e', cloudDark: '#1e0824',
+          high: ['#2a1a5e', '#4a1a64', '#7a1f6a'],
           starDim: '#f0a8d0',
           neon: ['#ff3d7a', '#ff8ac0', '#ffffff', '#ff2b2b', '#ffd0e4', '#c04aff', '#ff7a3a'],
           sep: '#a83a86', sepDark: '#2a0e22',
           bounce: ['#ff3d7a', '#ffd0e4', '#c04aff'],
           wet: ['#ff3d7a', '#ffd0e4', '#c04aff'],
-          /* The Yamanote line: stainless-steel car with the lime-green
-             band running its length. */
-          train: '#c2c8d0', trainLit: '#e8edf2', trainDark: '#6a7079',
-          trainWin: '#eaf6ff', trainHead: '#fff8d8', trainStripe: '#9acd32',
         },
       },
       glow: ['#ff9ac8', 0.22],
@@ -4951,141 +4324,84 @@
          differently even before the colour arrives. The zakkyo
          building is a third of everything, so the mat is made of
          advertising, and every roof carries a hoarding on top of
-         that.
-
-         The plots used to be narrow with almost no gaps, which is
-         honest to Shinjuku and wrong for a backdrop: shoulder to
-         shoulder, the mat read as one serrated mass and none of the
-         structure on any single building — the mullions, the ledges,
-         the roof hoardings — had an edge to be seen against. The gaps
-         are roughly doubled and taken almost to certainty, so each
-         building is a building again with sky either side of it. */
+         that. Narrow plots, almost no gaps. */
       shape: { zakkyo: 0.30, ziggurat: -0.26, banded: 0.04, needle: 0.02, slab: 0.03 },
       roofKit: 'billboard',
       stock: [
-        { gapChance: 0.94, gap: 30, minW: 17, maxW: 31, minH: 46, maxH: 88 },
-        { gapChance: 0.94, gap: 34, minW: 20, maxW: 37, minH: 56, maxH: 108 },
-        { gapChance: 0.94, gap: 38, minW: 24, maxW: 44, minH: 66, maxH: 132 },
-        { gapChance: 0.94, gap: 44, minW: 28, maxW: 54, minH: 46, maxH: 98 },
+        { gapChance: 0.28, gap: 3, minW: 11, maxW: 22, minH: 54, maxH: 112 },
+        { gapChance: 0.28, gap: 3, minW: 13, maxW: 27, minH: 68, maxH: 140 },
+        { gapChance: 0.30, gap: 4, minW: 16, maxW: 33, minH: 82, maxH: 178 },
+        { gapChance: 0.32, gap: 5, minW: 21, maxW: 43, minH: 54, maxH: 128 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 380)
         bridge(g, o, 1060)
         radioDish(g, o, 1660)
-        // something in the bay, a long way out
-        kaiju(g, o, 1420, SKYLINE)
       },
       layer1: (g, o, windows) => {
         pagoda(g, o, 470)
         lanterns(g, o, 880, SKYLINE - 118, 5, 6)
         observatory(g, o, 1480)
-        // Shinjuku's two, standing well back
-        metroGov(g, o, 1180, windows)
-        cocoon(g, o, 1300, windows)
       },
       layer2: (g, o, windows) => {
         tokyoTower(g, o, 300, windows)
         skytree(g, o, 920, windows)
-        /* Tanks on the roofline. Spread across the plane rather than
-           clustered, because the point of them is that they are
-           everywhere. */
-        for (const [tx, ty, ts] of [
-          [180, 96, 1], [420, 74, 0.8], [620, 110, 1], [760, 88, 0.9],
-          [1080, 102, 1], [1240, 80, 0.85], [1520, 94, 1], [1720, 86, 0.9],
-        ]) waterTank(g, o, tx, SKYLINE - ty, ts)
+        ferrisWheel(g, o, 1440, windows)
+        crane(g, o, 1720, windows)
+        windowWashers(g, o, 640, SKYLINE - 190, SKYLINE - 96)
+        triforceSign(g, 1180, SKYLINE - 200)
       },
       layer3: (g, o, windows) => {
         pagoda(g, o, 240)
         precinct(g, o, 600, 132)
+        driveIn(g, o, 1000, windows)
         precinct(g, o, 1420, 104)
         sakuraTree(g, o, 860, SKYLINE, 1)
         sakuraTree(g, o, 1180, SKYLINE, 0.85)
-
-        /* ---- the street, and what is strung over it ----
-           Poles first, then the cable between each pair, then the
-           stairs and the machines that stand under it all. Drawn in
-           the near plane so the clutter is the thing closest to the
-           viewer, which is exactly where it is when you stand in it. */
-/* The cable is gone. Strung pole to pole at roof height it was
-           four slack lines crossing the full width of open sky, and a
-           skyline read through four horizontals is a skyline cut into
-           strips — every tower behind it arrived pre-sliced. It was
-           the most Tokyo thing in the frame and the least restful, and
-           when those two fight in a backdrop the backdrop loses.
-
-           The poles stay, shorter, standing among the low-rise rather
-           than over it: they still read as poles, they just no longer
-           rule lines across the picture. */
-        /* The poles are gone. One stood at 300 and so does Tokyo
-           Tower, so its crossarms ran straight across both observatory
-           decks and read as lines coming out of the tower. Moving it
-           would have fixed that one collision and left the rest of the
-           clutter; the brief was calm, so they all go. */
-        for (const [sx, sh, sd] of [[400, 46, 1], [960, 38, -1], [1620, 42, 1]]) {
-          stairRun(g, o, sx, SKYLINE, sh, sd)
-        }
-        vending(g, o, 640, SKYLINE)
-        vending(g, o, 1340, SKYLINE)
+        windowCat(g, o, 1760, SKYLINE - 74)
       },
     },
 
-    delhi: {
-      label: 'NEW DELHI',
-      /* Sodium through smog. Delhi's winter air is the whole palette —
-         the horizon never goes black, it holds a warm amber the colour
-         of a million street lamps seen through haze, and the sky above
-         it stays a dusty violet rather than a clean blue. */
+    mexico: {
+      label: 'MEXICO CITY',
+      /* Sodium and dust. The valley traps everything, so even at night
+         the horizon carries a warm haze the colour of street lighting
+         seen through it, and the sky above that goes a hard cobalt
+         rather than violet. */
       palette: {
         night: {
           sky: [
-            '#0e0f19', '#141623', '#1d1f33', '#272b41', '#35354f',
-            '#42384e', '#5d4751', '#7f6253', '#9e7d58',
+            '#050a24', '#07102f', '#0a1840', '#102252', '#1c2d63',
+            '#33356e', '#5a3a6c', '#8c4460', '#c26a44',
           ],
-          haze: '#cdaa7c',
-          smog: '#6e5642',
-          fog: '#634c3d',
-          rainSky: '#16131b',
-          orb: '#ffe9c2', orbShade: '#dcc090', orbGlow: '#8d7553',
-          cloud: '#32292e', cloudLit: '#766054', cloudDark: '#191316',
-          high: ['#2b3b4e', '#3e374e', '#684c52'],
-          starDim: '#f0cc96',
-          /* Saffron, India-green and white lead — the flag colours are
-             the loudest neon on the street — with gold, rose and a
-             cool signboard cyan behind them. */
-          neon: ['#ff8a1e', '#2fae52', '#ffd24a', '#ff3d7a', '#ffffff', '#4ad2e0', '#ff2d3a'],
-          sep: '#c27a3a', sepDark: '#241408',
-          bounce: ['#ffd24a', '#ff8a1e', '#2fae52'],
-          wet: ['#ffd24a', '#ff8a1e', '#4ad2e0'],
-          /* Delhi Metro: stainless-steel silver body, cool LED-white
-             windows against the warm city, and the Red Line stripe. */
-          train: '#aab2c0', trainLit: '#d8e0ea', trainDark: '#5a626e',
-          trainWin: '#eef4ff', trainHead: '#fff3c0', trainStripe: '#e23b2e',
+          haze: '#ffa14a',
+          smog: '#8a4a2c',
+          fog: '#7a3a2e',
+          rainSky: '#160f22',
+          orb: '#fff0d2', orbShade: '#e0c090', orbGlow: '#b06830',
+          cloud: '#3a2038', cloudLit: '#8a4a44', cloudDark: '#1e1020',
+          high: ['#123a68', '#3a2a62', '#7a3a50'],
+          starDim: '#f0c090',
+          neon: ['#ff5c8a', '#4ad2c8', '#ffd24a', '#5fd66f', '#ff7a1a', '#ffffff', '#ff2d55'],
+          sep: '#c2683a', sepDark: '#2a1410',
+          bounce: ['#ffd24a', '#4ad2c8', '#ff5c8a'],
+          wet: ['#ffd24a', '#4ad2c8', '#ff5c8a'],
         },
       },
-      glow: ['#ffbe5c', 0.24],
-      /* ---- New Delhi ----
-         Low, flat and packed. This is NOT a tower city: old Delhi and
-         the residential colonies are masonry blocks of two to eight
-         storeys with flat parapeted roofs, water tanks and dishes on
-         top, and it is the Mughal domes rising out of that mat that the
-         eye catches. So the build is grid and slab ONLY — flat-topped
-         blocks, wide and low — with domes for the tombs and mosques.
-         Every tall archetype the other cities lean on (the deco
-         setback, the glazed office slab, the spire, the chamfered and
-         notched crowns, the round hotel drum) is switched off, and the
-         heights come right down: nothing generic here is a skyscraper,
-         so the Qutub and the tombs stand clear above the roofline. */
-      shape: {
-        grid: 0.30, slab: 0.22, dome: 0.10,
-        ziggurat: -0.28, banded: -0.11, needle: -0.09,
-        chamfer: -0.08, notch: -0.07, twin: -0.06, taper: -0.06, drum: -0.06,
-      },
+      glow: ['#ffb45a', 0.24],
+      /* ---- Mexico City ----
+         Low and enormous. It sprawls rather than stacks: wide slabs,
+         a lot of domes and bell cotes, very few towers, and the whole
+         profile sits about half the height of Manhattan's — which is
+         what makes the three or four things that DO stand up read as
+         landmarks instead of as neighbours. */
+      shape: { slab: 0.20, dome: 0.10, ziggurat: -0.24, needle: -0.05, drum: 0.03 },
       roofKit: 'cistern',
       stock: [
-        { gapChance: 0.72, gap: 12, minW: 26, maxW: 52, minH: 36, maxH: 68 },
-        { gapChance: 0.72, gap: 12, minW: 31, maxW: 61, minH: 42, maxH: 82 },
-        { gapChance: 0.75, gap: 14, minW: 35, maxW: 73, minH: 48, maxH: 96 },
-        { gapChance: 0.78, gap: 15, minW: 45, maxW: 92, minH: 40, maxH: 84 },
+        { gapChance: 0.46, gap: 6, minW: 18, maxW: 36, minH: 46, maxH: 104 },
+        { gapChance: 0.46, gap: 6, minW: 22, maxW: 44, minH: 56, maxH: 126 },
+        { gapChance: 0.48, gap: 7, minW: 26, maxW: 54, minH: 66, maxH: 158 },
+        { gapChance: 0.50, gap: 8, minW: 33, maxW: 66, minH: 52, maxH: 122 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 400)
@@ -5094,19 +4410,24 @@
       },
       layer1: (g, o, windows) => {
         clockTower(g, o, 450)
-        marigoldString(g, o, 910, SKYLINE - 124, 6)
+        papelPicado(g, o, 930, SKYLINE - 124, 5)
         observatory(g, o, 1490)
       },
       layer2: (g, o, windows) => {
-        qutubMinar(g, o, 320, windows)
-        mughalTomb(g, o, 860, windows)
-        rooftopPool(g, o, 1180, SKYLINE - 152)
+        torreLatino(g, o, 320, windows)
+        angelColumn(g, o, 800)
+        revolutionDome(g, o, 1200)
+        crane(g, o, 1620, windows)
+        rooftopPool(g, o, 1000, SKYLINE - 152)
+        windowWashers(g, o, 560, SKYLINE - 180, SKYLINE - 96)
       },
       layer3: (g, o, windows) => {
-        indiaGate(g, o, 300)
-        lotusTemple(g, o, 760)
-        marigoldString(g, o, 1080, SKYLINE - 104, 6)
-        marigoldString(g, o, 1440, SKYLINE - 88, 5)
+        stepPyramid(g, o, 300)
+        papelPicado(g, o, 620, SKYLINE - 104, 6)
+        driveIn(g, o, 1120, windows)
+        papelPicado(g, o, 1420, SKYLINE - 88, 5)
+        gargoyle(g, o, 900, SKYLINE - 112)
+        windowCat(g, o, 1700, SKYLINE - 74)
       },
     },
 
@@ -5120,25 +4441,21 @@
       palette: {
         night: {
           sky: [
-            '#0a0b13', '#10121e', '#181b2b', '#23263b', '#30334d',
-            '#3f3d5b', '#504564', '#634d66', '#8a6c71',
+            '#050718', '#080c26', '#0d1236', '#141a4a', '#1f245e',
+            '#302a6e', '#4a3178', '#6e3d76', '#9c5a64',
           ],
-          haze: '#dfc9aa',
-          smog: '#68534c',
-          fog: '#5c4946',
-          rainSky: '#14111b',
-          orb: '#fff6e0', orbShade: '#d8c49c', orbGlow: '#756651',
-          cloud: '#2c2735', cloudLit: '#716365', cloudDark: '#17141c',
-          high: ['#253345', '#3a3650', '#514054'],
+          haze: '#ffcf8a',
+          smog: '#7a4a3a',
+          fog: '#6a4038',
+          rainSky: '#120c20',
+          orb: '#fff6e0', orbShade: '#d8c49c', orbGlow: '#8a6a3c',
+          cloud: '#2a1e3e', cloudLit: '#7a5a5e', cloudDark: '#160e22',
+          high: ['#123058', '#2e2660', '#5a3460'],
           starDim: '#e8d0a8',
           neon: ['#ffd88a', '#fff0c8', '#e8a04a', '#7fc4d8', '#ff8ab0', '#ffffff', '#c04a3a'],
           sep: '#c29a5a', sepDark: '#241a14',
           bounce: ['#ffd88a', '#fff0c8', '#7fc4d8'],
           wet: ['#ffd88a', '#fff0c8', '#7fc4d8'],
-          /* The Paris Metro: a cream car with the RATP wagon-green band,
-             warm interior light. */
-          train: '#d6d0c2', trainLit: '#f0ebde', trainDark: '#78705f',
-          trainWin: '#fff0d0', trainHead: '#fff6d0', trainStripe: '#2f9e5c',
         },
       },
       glow: ['#ffd88a', 0.26],
@@ -5159,10 +4476,10 @@
       },
       roofKit: 'pots',
       stock: [
-        { gapChance: 0.64, gap: 10, minW: 25, maxW: 50, minH: 48, maxH: 86 },
-        { gapChance: 0.64, gap: 10, minW: 28, maxW: 57, minH: 56, maxH: 102 },
-        { gapChance: 0.67, gap: 12, minW: 32, maxW: 66, minH: 66, maxH: 128 },
-        { gapChance: 0.70, gap: 14, minW: 42, maxW: 85, minH: 52, maxH: 110 },
+        { gapChance: 0.34, gap: 4, minW: 21, maxW: 42, minH: 52, maxH: 96 },
+        { gapChance: 0.34, gap: 4, minW: 24, maxW: 48, minH: 62, maxH: 116 },
+        { gapChance: 0.36, gap: 5, minW: 27, maxW: 56, minH: 74, maxH: 148 },
+        { gapChance: 0.38, gap: 6, minW: 36, maxW: 72, minH: 58, maxH: 126 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 430)
@@ -5170,6 +4487,7 @@
         radioDish(g, o, 1650)
       },
       layer1: (g, o, windows) => {
+        ferrisWheel(g, o, 450, windows)
         rooftopPool(g, o, 980, SKYLINE - 122)
         radioDish(g, o, 1500)
       },
@@ -5177,12 +4495,18 @@
         eiffel(g, o, 320, windows)
         sacreCoeur(g, o, 880)
         clockTower(g, o, 1260)
+        crane(g, o, 1640, windows)
         rooftopPool(g, o, 640, SKYLINE - 148)
+        windowWashers(g, o, 1480, SKYLINE - 170, SKYLINE - 96)
       },
       layer3: (g, o, windows, beams) => {
         arcDeTriomphe(g, o, 260)
+        driveIn(g, o, 700, windows)
         observatory(g, o, 1120)
         lighthouse(g, o, 1760, beams)
+        gargoyle(g, o, 900, SKYLINE - 118)
+        gargoyle(g, o, 930, SKYLINE - 104)
+        windowCat(g, o, 1480, SKYLINE - 74)
       },
     },
 
@@ -5195,25 +4519,21 @@
       palette: {
         night: {
           sky: [
-            '#06070b', '#0a0d15', '#0f1521', '#151f2f', '#1d2f3e',
-            '#25404b', '#3d5959', '#767d69', '#b29c72',
+            '#02060f', '#030b1c', '#04122c', '#061c3e', '#093052',
+            '#0e4a62', '#2c6a6a', '#7a8a5c', '#d8a84c',
           ],
-          haze: '#d6c193',
-          smog: '#706246',
-          fog: '#584d3a',
-          rainSky: '#10151a',
-          orb: '#fff4d0', orbShade: '#dcc898', orbGlow: '#837655',
-          cloud: '#242c34', cloudLit: '#6b7264', cloudDark: '#11161b',
-          high: ['#223c48', '#2f5057', '#627060'],
+          haze: '#ffd06a',
+          smog: '#8a6a2c',
+          fog: '#6a5228',
+          rainSky: '#0a1420',
+          orb: '#fff4d0', orbShade: '#dcc898', orbGlow: '#a08238',
+          cloud: '#1a2c3e', cloudLit: '#6a7a5c', cloudDark: '#0c1620',
+          high: ['#0a4460', '#166070', '#5a7a56'],
           starDim: '#c8e0d0',
           neon: ['#ffd24a', '#4adce8', '#ffffff', '#8affd0', '#ff9a3c', '#c8a8ff', '#ff5c7a'],
           sep: '#c2a04a', sepDark: '#141a14',
           bounce: ['#ffd24a', '#4adce8', '#ffffff'],
           wet: ['#ffd24a', '#4adce8', '#ffffff'],
-          /* Dubai Metro: driverless silver car with the Gold Class
-             band along it. */
-          train: '#b4bcc6', trainLit: '#dee6ef', trainDark: '#5c626e',
-          trainWin: '#eef6ff', trainHead: '#fff3c8', trainStripe: '#e0b24a',
         },
       },
       glow: ['#ffe4aa', 0.20],
@@ -5226,10 +4546,10 @@
       shape: { needle: 0.26, drum: 0.10, ziggurat: -0.22, slab: -0.05, banded: 0.04 },
       roofKit: 'dish',
       stock: [
-        { gapChance: 0.80, gap: 26, minW: 13, maxW: 27, minH: 60, maxH: 146 },
-        { gapChance: 0.80, gap: 27, minW: 15, maxW: 33, minH: 78, maxH: 178 },
-        { gapChance: 0.80, gap: 31, minW: 19, maxW: 40, minH: 92, maxH: 210 },
-        { gapChance: 0.80, gap: 29, minW: 25, maxW: 53, minH: 52, maxH: 132 },
+        { gapChance: 0.68, gap: 13, minW: 11, maxW: 23, minH: 66, maxH: 168 },
+        { gapChance: 0.68, gap: 14, minW: 13, maxW: 28, minH: 88, maxH: 208 },
+        { gapChance: 0.66, gap: 16, minW: 16, maxW: 34, minH: 104, maxH: 246 },
+        { gapChance: 0.64, gap: 15, minW: 21, maxW: 45, minH: 58, maxH: 150 },
       ],
       layer0: (g, o) => {
         stadium(g, o, 400)
@@ -5244,11 +4564,17 @@
       layer2: (g, o, windows) => {
         burjKhalifa(g, o, 340, windows)
         dubaiFrame(g, o, 900)
+        crane(g, o, 1320, windows)
+        ferrisWheel(g, o, 1680, windows)
+        windowWashers(g, o, 620, SKYLINE - 200, SKYLINE - 96)
         rooftopPool(g, o, 1120, SKYLINE - 158)
       },
       layer3: (g, o, windows) => {
         burjAlArab(g, o, 320)
+        driveIn(g, o, 780, windows)
         observatory(g, o, 1200)
+        rocket(g, o, 1560)
+        windowCat(g, o, 1720, SKYLINE - 74)
       },
     },
   }
@@ -5277,13 +4603,11 @@
     return out
   }
 
-  const CITY_ORDER = ['newyork', 'tokyo', 'delhi', 'paris', 'dubai']
+  const CITY_ORDER = ['newyork', 'tokyo', 'mexico', 'paris', 'dubai']
 
-  /* Tokyo is the shot the page opens on — a sakura night, and the
-     interface themes to it (see the per-city blocks in the CSS). New
-     York remains the authored palette that the others are departures
-     from; it is one pick away in the skyline menu. */
-  let cityKey = 'tokyo'
+  /* New York is the shot the page was composed against, so it is what
+     every load opens on. */
+  let cityKey = 'newyork'
   const cityDef = () => CITIES[cityKey] || CITIES.newyork
 
   /* A landmark callback that survives a city not defining that layer. */
@@ -5295,38 +4619,36 @@
   /* ==================================================================
      DENSITY
 
-     Down four times, and the reduction is all in `step`.
+     Doubled, and the doubling is nearly all in `step`.
 
      Total windows across a layer works out as (building height) over
      (step squared) — the building WIDTH cancels, because a narrower
      tower has fewer windows on it and there are proportionally more
-     towers. So the only lever that actually moves the pixel count in a
-     skyline is the window pitch, and it moves it as the SQUARE. Double
-     the pitch and you get a quarter of the windows, a quarter of the
-     mullions and a quarter of the floor ledges on every face in the
-     frame. Every layer's step doubles here: 3 to 6 across the ridge and
-     the first three planes, 4 to 8 on the near one.
+     towers. So the only lever that actually multiplies the pixel count
+     in a skyline is the window pitch, and it multiplies it as the
+     square: every layer's step comes down by about a third, which is
+     twice the windows, twice the mullions and twice the floor ledges
+     on every face in the frame.
 
-     Widths are untouched. Reducing detail is not the same as reducing
-     buildings, and the silhouette — the crowns, the setbacks, the
-     staggered heights — is the part of a skyline worth keeping. What
-     opens it up instead is air BETWEEN the towers: every layer's gap
-     grows by about half and its gapChance goes up eight points, so
-     there is more sky visible through the city than city.
+     Widths come down alongside it, by a quarter rather than a half.
+     That is worth a third again as many buildings — more silhouette,
+     more crowns, more setbacks against the sky — without turning the
+     near layer into a row of posts, which is what halving them did.
 
-     The window CELLS stay small. A 1px window on a 6px pitch is a lit
-     room seen from a long way off, which is the correct reading; the
-     old 3px pitch had them close enough to merge into a lit wall. */
+     The window CELLS shrink to match, because a 2px window on a 3px
+     pitch is a solid lit wall. Near layer 3x3 to 2x3, mid 2x3 to 2x2,
+     far 2x2 to 1x2. Smaller cells and twice as many of them is exactly
+     the trade a higher-resolution skyline is. */
   function buildRidge() {
     /* The far ridge: low, wide, nearly featureless towers one step off
        the haze colour. No neon, almost no windows, no flicker — at that
        distance a city is a shape, not an event. It drifts slowest of
        all, which is what tells the eye it is furthest away. */
     ridge = buildCity(7777, {
-      minW: 35, maxW: 80, minH: 16, maxH: 54, gapChance: 0.80, gap: 22,
-      step: 6, ww: 1, wh: 1, litChance: 0.028, bloom: 0.22,
-      neon: T.neon, neonChance: 0.0000, halo: 0, fog: 0.21, street: 0.32,
-      ...localGlass(recede(depthen(T.cityFar, 0.2), 0.5)),
+      minW: 30, maxW: 68, minH: 18, maxH: 64, gapChance: 0.4, gap: 6,
+      step: 3, ww: 1, wh: 1, litChance: 0.1,
+      neon: T.neon, neonChance: 0, halo: 0, fog: 0.11,
+      ...localGlass(recede(T.cityFar, 0.5)),
     })
   }
 
@@ -5362,21 +4684,21 @@
      it had and the whole skyline stops reading as texture at any
      distance you look at it. */
   const LAYERS = [
-    { key: 'layer0', seed: 4411, recede: 0.40, fog: 0.165, pan: 0.16,
-      minW: 15, maxW: 32, minH: 54, maxH: 134, gapChance: 0.69, gap: 15,
-      step: 6, ww: 1, wh: 1, litChance: 0.033, neonChance: 0.0050, bloom: 0.34, street: 0.55 },
+    { key: 'layer0', seed: 4411, recede: 0.40, fog: 0.085, pan: 0.16,
+      minW: 13, maxW: 27, minH: 54, maxH: 134, gapChance: 0.42, gap: 5,
+      step: 3, ww: 1, wh: 1, litChance: 0.28, neonChance: 0.09 },
 
-    { key: 'layer1', seed: 5273, recede: 0.25, fog: 0.115, pan: 0.26,
-      minW: 19, maxW: 39, minH: 74, maxH: 172, gapChance: 0.69, gap: 16,
-      step: 6, ww: 1, wh: 2, litChance: 0.037, neonChance: 0.0075, bloom: 0.42, street: 0.75 },
+    { key: 'layer1', seed: 5273, recede: 0.25, fog: 0.062, pan: 0.26,
+      minW: 16, maxW: 33, minH: 74, maxH: 172, gapChance: 0.42, gap: 6,
+      step: 3, ww: 1, wh: 2, litChance: 0.31, neonChance: 0.15 },
 
-    { key: 'layer2', seed: 881, recede: 0.11, fog: 0.058, pan: 0.42,
-      minW: 22, maxW: 47, minH: 90, maxH: 205, gapChance: 0.72, gap: 19,
-      step: 6, ww: 1, wh: 2, litChance: 0.045, neonChance: 0.0125, escapes: true, bloom: 0.52, street: 0.95 },
+    { key: 'layer2', seed: 881, recede: 0.11, fog: 0.032, pan: 0.42,
+      minW: 19, maxW: 40, minH: 90, maxH: 205, gapChance: 0.44, gap: 7,
+      step: 3, ww: 1, wh: 2, litChance: 0.34, neonChance: 0.21, escapes: true },
 
     { key: 'layer3', seed: 2266, recede: 0, fog: 0, pan: 0.68,
-      minW: 31, maxW: 64, minH: 50, maxH: 130, gapChance: 0.75, gap: 22,
-      step: 8, ww: 2, wh: 2, litChance: 0.043, neonChance: 0.0125, escapes: true, bloom: 0.64, street: 1 },
+      minW: 26, maxW: 54, minH: 50, maxH: 130, gapChance: 0.46, gap: 8,
+      step: 4, ww: 2, wh: 2, litChance: 0.30, neonChance: 0.25, escapes: true },
   ]
 
   /* Four planes off a three-stop authored ramp. The stops are the
@@ -5415,13 +4737,142 @@
       ...st,
       neon: T.neon,
       halo: T.halo,
-      ...localGlass(recede(depthen(cityPal(i), 0.45 + 0.3 * i), L.recede)),
+      ...localGlass(recede(cityPal(i), L.recede)),
       /* Spread across the loop so that at any moment one or two are
          in frame and the rest are on their way round. */
       landmarks: marks(L.key),
     })
   }
 
+  /* ==================================================================
+     ELEVATED LINE
+
+     A viaduct across the middle distance, between the near buildings
+     and the rooftop. It carries the scene's third depth plane, and
+     every so often a train crosses it.
+
+     The deck is a lattice girder rather than a plain band, and there is
+     a catenary strung above it — the train's pantographs reach up to
+     that wire, which is what stops a fast train reading as a sticker
+     sliding along a shelf.
+     ================================================================== */
+  const WIRE_Y = VIA_Y - 46
+
+  function buildViaduct() {
+    viaduct = makeBuffer(LOOP_W, VIA_BUF_H)
+    const g = viaduct.x
+    const snowy = weather === 'snow'
+
+    // Piers, dropping out of frame behind the parapet.
+    for (let x = 30; x < LOOP_W; x += 104) {
+      const pierH = ROOF_TOP - VIA_Y
+      g.fillStyle = T.viaduct
+      g.fillRect(x, VIA_Y + VIA_H, 15, pierH)
+      g.fillStyle = T.viaductLit
+      g.fillRect(x, VIA_Y + VIA_H, 2, pierH)
+      g.fillStyle = T.viaductDark
+      g.fillRect(x + 13, VIA_Y + VIA_H, 2, pierH)
+      // haunch where the pier meets the deck
+      g.fillStyle = T.viaduct
+      g.fillRect(x - 5, VIA_Y + VIA_H, 25, 4)
+      g.fillStyle = T.viaductLit
+      g.fillRect(x - 5, VIA_Y + VIA_H, 25, 1)
+      // grime running down from the deck joint
+      g.fillStyle = T.viaductDark
+      for (let k = 0; k < 4; k++) {
+        g.fillRect(x + 3 + k * 3, VIA_Y + VIA_H + 5, 1, 6 + ((k * 5) % 11))
+      }
+    }
+
+    /* Lattice girder under the deck: a top and bottom chord with
+       alternating diagonals between them. Stepping each diagonal one
+       pixel across per row is how a diagonal is drawn on a grid. */
+    const gT = VIA_Y + VIA_H
+    const gB = VIA_Y + VIA_H + 9
+    g.fillStyle = T.viaductDark
+    g.fillRect(0, gB - 1, LOOP_W, 2)
+    for (let x = 0; x < LOOP_W; x += 14) {
+      g.fillStyle = T.viaduct
+      for (let k = 0; k < 9; k++) {
+        g.fillRect(x + Math.round((k / 9) * 13), gT + k, 1, 1)
+        g.fillRect(x + 13 - Math.round((k / 9) * 13), gT + k, 1, 1)
+      }
+      g.fillStyle = T.viaductLit
+      g.fillRect(x, gT, 1, 9)
+    }
+
+    // Deck.
+    g.fillStyle = T.viaductDark
+    g.fillRect(0, VIA_Y - 1, LOOP_W, 1)
+    g.fillStyle = T.viaductLit
+    g.fillRect(0, VIA_Y, LOOP_W, 2)
+    g.fillStyle = T.viaduct
+    g.fillRect(0, VIA_Y + 2, LOOP_W, VIA_H - 4)
+    g.fillStyle = T.viaductDark
+    g.fillRect(0, VIA_Y + VIA_H - 2, LOOP_W, 2)
+
+    // Sleepers and the two running rails.
+    g.fillStyle = T.viaductDark
+    for (let x = 0; x < LOOP_W; x += 4) g.fillRect(x, VIA_Y + 2, 2, 3)
+    g.fillStyle = T.viaductLit
+    g.fillRect(0, VIA_Y + 2, LOOP_W, 1)
+    g.fillRect(0, VIA_Y + 5, LOOP_W, 1)
+
+    // A neon strip along the deck edge — the line advertising itself.
+    g.fillStyle = T.trainStripe
+    g.fillRect(0, VIA_Y + VIA_H - 4, LOOP_W, 1)
+    for (let x = 0; x < LOOP_W; x++) {
+      dot(g, x, VIA_Y + VIA_H - 5, 0.5, T.trainStripe)
+      dot(g, x, VIA_Y + VIA_H - 3, 0.5, T.trainStripe)
+    }
+
+    // Guard posts, and a lamp every fifth one.
+    for (let x = 8, i = 0; x < LOOP_W; x += 16, i++) {
+      g.fillStyle = T.viaductLit
+      g.fillRect(x, VIA_Y - 6, 1, 6)
+      if (i % 5) continue
+      g.fillStyle = T.viaductLit
+      g.fillRect(x - 1, VIA_Y - 14, 1, 8)
+      g.fillRect(x - 3, VIA_Y - 14, 3, 1)
+      g.fillStyle = T.trainWin
+      g.fillRect(x - 4, VIA_Y - 13, 3, 2)
+      // dithered pool of lamplight on the deck
+      for (let dy = 0; dy < 6; dy++) {
+        for (let dx = -8; dx <= 8; dx++) {
+          const xx = x + dx
+          if (xx < 0 || xx >= LOOP_W) continue
+          dot(g, xx, VIA_Y - 1 + dy, (1 - Math.abs(dx) / 9) * (1 - dy / 6) * 0.55, T.trainWin)
+        }
+      }
+    }
+
+    /* Catenary. Masts every 104px with a cantilever arm, and the
+       contact wire the pantographs run under. */
+    for (let x = 82; x < LOOP_W; x += 104) {
+      g.fillStyle = T.viaductDark
+      g.fillRect(x, WIRE_Y - 8, 2, VIA_Y - WIRE_Y + 8)
+      g.fillStyle = T.viaductLit
+      g.fillRect(x, WIRE_Y - 8, 1, VIA_Y - WIRE_Y + 8)
+      g.fillRect(x - 12, WIRE_Y - 8, 14, 1)
+      g.fillStyle = T.viaductDark
+      g.fillRect(x - 12, WIRE_Y - 7, 1, 7)
+    }
+    g.fillStyle = T.viaductDark
+    g.fillRect(0, WIRE_Y, LOOP_W, 1)
+
+    // Snow lying on every horizontal the line offers.
+    if (snowy) {
+      const rnd = mulberry32(5150)
+      for (let x = 0; x < LOOP_W; x++) {
+        const d = Math.round((1 + Math.floor(rnd() * 2)) * snowLevel)
+        if (d < 1) continue
+        g.fillStyle = T.snowLie
+        g.fillRect(x, VIA_Y - d, 1, d)
+        g.fillStyle = T.snowLit
+        g.fillRect(x, VIA_Y - d, 1, 1)
+      }
+    }
+  }
 
   /* ==================================================================
      THE ROOFTOP
@@ -5929,6 +5380,7 @@
     buildSky()
     buildSkyline()
     buildClouds()
+    buildViaduct()
     buildRoof()
   }
 
@@ -5967,6 +5419,7 @@
       buildSky,
       ...skylineSteps(),
       buildClouds,
+      buildViaduct,
       buildRoof,
     ]
   }
@@ -6571,13 +6024,6 @@
      ================================================================== */
   let frame = 0
   let last = 0
-  /* Held while a full-screen wipe is covering the city. The wipe runs its
-     own rAF, and the scene's render is the heaviest thing on the main
-     thread — letting it keep painting behind an opaque cover just steals
-     frames from the wipe and makes it stutter. The city moves at most a
-     few pixels a second, so freezing it for the ~half-second of a
-     transition is invisible and hands the whole thread to the wipe. */
-  let paused = false
 
   function blit(buf, offset, lift) {
     const o = ((offset % W) + W) % W
@@ -7024,15 +6470,10 @@
          which means it holds steady for a long while and then STUTTERS
          — out, back, out, caught — in a fast burst. So signs run their
          own cycle: mostly nothing, and a couple of frames of trouble
-         every so often, at a period unique to each sign so no two ever
-         gutter together.
-
-         Four times longer than it was. One sign stuttering is a detail;
-         forty signs stuttering on twelve-second cycles is a city that
-         will not sit still, and it was the loudest moving thing in the
-         frame. */
+         every few seconds, at a period unique to each sign so no two
+         ever gutter together. */
       if (wnd.sign) {
-        const period = 600 + ((i * 37) % 520)
+        const period = 150 + ((i * 37) % 130)
         const beat = (frame + i * 13) % period
         // the stutter: three flicks in the last handful of frames
         if (beat < period - 7) continue
@@ -7049,7 +6490,7 @@
          is what reads as the wheel's lights chasing round it. */
       const on = wnd.cabin
         ? (frame + i * 2) % 26 < 9
-        : ((frame + i * 7) % (beacon ? 32 : 384)) < (beacon ? 3 : 4)
+        : ((frame + i * 7) % (beacon ? 8 : 96)) < (beacon ? 3 : 4)
       if (!on) continue
       const sx = wnd.x - o
       if (sx < -8 || sx >= W) continue
@@ -7061,6 +6502,128 @@
     }
   }
 
+  /* ==================================================================
+     THE TRAIN
+
+     An event, not a loop: it crosses, then the line is empty for a
+     while. Eleven cars at 76px is longer than the canvas is wide, and
+     it clears the frame in about four seconds, so it reads as an
+     express rather than as a shuttle.
+
+     Drawn in screen space rather than into the viaduct buffer, so it
+     runs along the deck at its own speed instead of being carried by
+     the parallax.
+     ================================================================== */
+  const TRAIN_CYCLE = 340
+  const TRAIN_RUN = 132
+  const CAR_W = 76
+  const CARS = 11
+  const CAR_H = 30
+
+  function drawTrain() {
+    const t = frame % TRAIN_CYCLE
+    if (t >= TRAIN_RUN) return
+
+    const len = CARS * CAR_W
+    const x0 = Math.round(-len - 30 + (t / TRAIN_RUN) * (W + len * 2 + 60))
+    const top = VIA_Y - CAR_H
+    const body = CAR_W - 6
+
+    /* Speed streaks. Drawn first so the cars sit on top of them: a
+       smear of window light left behind along the whole train, which is
+       most of what makes 20 pixels a frame feel fast rather than
+       merely quick. */
+    for (let k = 0; k < 12; k++) {
+      const sx = x0 - k * 4
+      if (sx + len < 0) break
+      const fade = 1 - k / 12
+      for (let s = 0; s < 2; s++) {
+        const y = top + 11 + s * 6
+        for (let x = Math.max(0, sx); x < Math.min(W, sx + len); x += 1) {
+          dot(ctx, x, y, fade * 0.11, T.trainWin)
+        }
+      }
+    }
+
+    for (let i = 0; i < CARS; i++) {
+      const cx = x0 + i * CAR_W
+      if (cx > W || cx + CAR_W < 0) continue
+      const lead = i === CARS - 1
+
+      ctx.fillStyle = T.train
+      ctx.fillRect(cx, top, body, CAR_H)
+      ctx.fillStyle = T.trainLit
+      ctx.fillRect(cx, top, body, 2) // roof catches the sky
+      ctx.fillRect(cx, top, 1, CAR_H)
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(cx, top + CAR_H - 4, body, 4) // skirt
+      ctx.fillRect(cx + body - 1, top, 1, CAR_H)
+
+      // roof rib, and the ventilators along it
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(cx + 4, top + 2, body - 8, 1)
+      for (let k = 0; k < 4; k++) ctx.fillRect(cx + 8 + k * 16, top + 3, 6, 1)
+
+      // Windows. A few blink as passengers pass them.
+      for (let k = 0; k < 5; k++) {
+        const litWin = (frame * 3 + i * 7 + k * 13) % 47 > 5
+        ctx.fillStyle = litWin ? T.trainWin : T.trainDark
+        ctx.fillRect(cx + 5 + k * 13, top + 7, 10, 12)
+        if (litWin && (i + k) % 3 === 0) {
+          ctx.fillStyle = T.trainDark // a passenger at the glass
+          ctx.fillRect(cx + 8 + k * 13, top + 12, 4, 7)
+        }
+      }
+
+      // door seams, and the neon stripe running the length of the train
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(cx + 2, top + 5, 1, CAR_H - 9)
+      ctx.fillRect(cx + body - 3, top + 5, 1, CAR_H - 9)
+      ctx.fillStyle = T.trainStripe
+      ctx.fillRect(cx, top + CAR_H - 7, body, 2)
+
+      // bogies, tucked under the skirt
+      ctx.fillStyle = T.trainDark
+      ctx.fillRect(cx + 9, top + CAR_H, 14, 3)
+      ctx.fillRect(cx + body - 23, top + CAR_H, 14, 3)
+
+      // pantograph, reaching up to the contact wire
+      if (i % 5 === 2) {
+        const pxm = cx + Math.round(body / 2)
+        ctx.fillStyle = T.trainLit
+        for (let k = 0; k < top - WIRE_Y; k++) {
+          const dx = Math.round((k / (top - WIRE_Y)) * 7)
+          ctx.fillRect(pxm - dx, top - k, 1, 1)
+          ctx.fillRect(pxm + dx, top - k, 1, 1)
+        }
+        ctx.fillRect(pxm - 8, WIRE_Y, 17, 1)
+        // the arc where the shoe meets the wire
+        if ((frame + i) % 7 === 0) px(pxm + 4, WIRE_Y - 1, '#ffffff')
+      }
+
+      if (!lead) continue
+      // destination board and headlights
+      ctx.fillStyle = T.trainHead
+      ctx.fillRect(cx + body - 22, top + 4, 16, 2)
+      ctx.fillRect(cx + body - 5, top + 18, 4, 4)
+      ctx.fillRect(cx + body - 5, top + CAR_H - 12, 4, 3)
+      // beam thrown forward along the deck
+      for (let k = 0; k < 46; k++) {
+        const bx = cx + body + k
+        if (bx >= W) break
+        for (let dy = 0; dy < 7; dy++) {
+          dot(ctx, bx, top + 17 + dy, (1 - k / 46) * (1 - dy / 7) * 0.7, T.trainHead)
+        }
+      }
+    }
+
+    // Light spilling from the windows onto the deck below.
+    for (let x = Math.max(0, x0); x < Math.min(W, x0 + len); x++) {
+      for (let dy = 0; dy < 6; dy++) {
+        dot(ctx, x, VIA_Y + dy, (1 - dy / 6) * 0.5, T.trainWin)
+      }
+    }
+  }
 
   /* ---- The cat, sitting on the parapet ----
      Placed right of centre so it clears the window, and high enough
@@ -7491,18 +7054,18 @@
      direct manipulation that takes two seconds to answer does not read
      as a slow firework, it reads as a page that did not hear you.
 
-     Three frames now, and the shell starts a fixed short distance
+     Five frames now, and the shell starts a fixed short distance
      BELOW the burst point rather than at the horizon, so the wait is
-     the same wherever you tap and it is about a quarter second. There
-     is still one frame of tail going up — enough to read as a launch —
-     but the burst now lands almost on the tap rather than after a
-     noticeable fuse: a direct manipulation should feel immediate.
+     the same wherever you tap and it is under half a second. That is
+     still long enough to read as a launch — you see the tail go up —
+     and short enough that the burst feels like the answer to the tap
+     rather than a separate event.
 
-     The burst itself is untouched apart from a shorter tail.
+     The burst itself is untouched apart from a slightly shorter tail.
      The burst is the part you wanted; the fuse was never the point. */
-  const SHELL_RISE = 3
+  const SHELL_RISE = 5
   const SHELL_LIVE = 38
-  const SHELL_DROP = 28 // how far below the burst the shell starts
+  const SHELL_DROP = 46 // how far below the burst the shell starts
 
   /* Seven at once, and it used to DROP the eighth tap on the floor.
      A control that ignores you when you use it quickly is the same
@@ -7618,6 +7181,406 @@
     present(sceneCv)
   })
 
+  /* ---- Campfire on the roof ----
+     It used to be an oil drum: twenty-six pixels across, eighteen
+     tall, and a flame you could cover with a thumb. That was fine
+     while it was scenery, and wrong the moment it became something
+     that can go out — an event you cannot see is not an event.
+
+     So it is a campfire. Four logs stacked over a bed of embers with
+     a ring of stones round the front, and a flame half again as tall
+     over twice the footprint, which is enough that losing it is
+     obvious from across the frame.
+
+     Drawn back to front — back log, leaners, embers, flame, front log,
+     stones — so the flame comes out from *between* the logs instead of
+     standing in front of them. That order is the only reason a stack
+     of flat bars reads as a fire with depth in it.
+
+     The flame is still generated per frame rather than being a fixed
+     sprite: each row tapers toward the tip, is displaced by two
+     out-of-phase sines, and is filled in four bands from a dark red
+     rim to a near-white core. */
+  /* Moved in from 268. The brazier is sheltered by whatever window is
+     up — that is the whole reason it goes out when you drag one off it
+     — and the title screen is a good deal narrower than it used to be,
+     which left the fire standing out in the rain on first load. A
+     landing shot with a dead fire in it is not the landing shot.
+
+     460 sits inside the window's footprint at every viewport width the
+     clamp produces, and in the clear stretch of deck between the
+     crates and the pipe. */
+  const FIRE_X = 812
+  const FIRE_BASE = ROOF_TOP + 78
+  const FIRE_H = 44
+
+  const LOG_MID = '#4b3524'
+  const LOG_LIT = '#6f4d34'
+  const LOG_DARK = '#281a11'
+  const LOG_END = '#8d6a49'
+  const LOG_CHAR = '#1b1210'
+
+  /* One log. Walked along its long axis a pixel at a time with a run
+     laid across it, the leading edge catching light and the trailing
+     one falling into shadow — the two-tone rule every other surface on
+     this roof follows.
+
+     `char` is how much of it has burnt black. Burn is taken from the
+     middle outward and the ends stay sound, because that is both what
+     a log in a fire looks like and what keeps the stack readable once
+     the flame is over the top of it: four black bars would vanish. */
+  function fireLog(x0, y0, x1, y1, th, char, glow) {
+    const dx = x1 - x0
+    const dy = y1 - y0
+    const steps = Math.max(Math.abs(dx), Math.abs(dy), 1)
+    const flat = Math.abs(dx) >= Math.abs(dy)
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps
+      const x = Math.round(x0 + dx * t)
+      const y = Math.round(y0 + dy * t)
+      const burnt = char * (1 - Math.abs(t - 0.5) * 2.2) > 0.35
+      ctx.fillStyle = burnt ? LOG_CHAR : LOG_MID
+      if (flat) ctx.fillRect(x, y, 1, th)
+      else ctx.fillRect(x, y, th, 1)
+      ctx.fillStyle = burnt ? LOG_DARK : LOG_LIT
+      ctx.fillRect(x, y, 1, 1)
+      ctx.fillStyle = LOG_DARK
+      if (flat) ctx.fillRect(x, y + th - 1, 1, 1)
+      else ctx.fillRect(x + th - 1, y, 1, 1)
+      // a split still glowing somewhere in the charred stretch
+      if (burnt && glow > 0.04 && (s * 7 + frame * 3) % 17 < glow * 6) {
+        px(flat ? x : x + 1, flat ? y + 1 : y, frame % 3 ? '#8c2a0a' : '#d1560f')
+      }
+    }
+    // end grain, or a stack of logs is a pile of sticks
+    ctx.fillStyle = LOG_END
+    if (flat) ctx.fillRect(x1, y1 + 1, 1, Math.max(1, th - 2))
+    else ctx.fillRect(x1 + 1, y1, Math.max(1, th - 2), 1)
+  }
+
+  /* ---- whether it is under cover ----
+     The panel sits directly over the brazier, which is why the fire
+     has survived every rainstorm this scene has ever run: the rain
+     already treats the panel as a surface and lands on its lip rather
+     than on the roof underneath. The fire was the one object on the
+     roof still drawn as though none of that mattered.
+
+     So it depends on the window now. Take the panel out of the column
+     above the brazier — drag it aside, minimise it, close it — while
+     it is raining or snowing, and the flame drops, guts, and is out in
+     about two and a half seconds, leaving embers and a thread of
+     smoke. Put cover back and it catches again, but slower than it
+     went out, because nothing relights as fast as it dies.
+
+     The shelter test is the rain's own test with one clause dropped:
+     the rain requires the panel's lip to be on screen before a drop
+     will land on it, and a maximised window has its lip at or above
+     zero. Invisible either way — a maximised window covers the whole
+     roof — but a fire that quietly dies behind it and needs relighting
+     when you come back is a worse answer than one that was under cover
+     the whole time, which it was. */
+  const FIRE_DIE = 2.4 // seconds, lit to out
+  const FIRE_CATCH = 4.2 // seconds, out to lit
+  let fireLife = 1
+
+  const fireSheltered = (p) =>
+    !!p && FIRE_X >= p.x0 && FIRE_X <= p.x1 && p.y0 < FIRE_BASE - FIRE_H
+
+  /* ---- putting it out, and getting it lit again ----
+
+     Moving the window off the brazier used to relight it. The rain
+     stopped falling on the wood, so the wood simply caught: no spark,
+     no cause, a fire that reassembled itself because the geometry said
+     it could. It was the one event on the roof that happened for no
+     reason.
+
+     Going out is still physics and still gradual — rain reaches it,
+     it gutters, it dies. Coming back is now an EVENT. Wet wood sits
+     there dead until something ignites it, and the only thing on this
+     roof capable of that is the weather: a strike comes down on the
+     brazier, the frame goes white, and the wood catches from it.
+
+     `fireArmed` is the wood being ready to take a spark — exposed but
+     unlit. `igniteAt` is the frame the bolt lands on. */
+  let fireArmed = false
+  let igniteAt = -1
+  let igniteFrom = 0
+
+  function stepFire(dt, p) {
+    const sheltered = fireSheltered(p)
+    const wetted = weather !== 'none' && T.fire && !sheltered
+
+    if (wetted) {
+      // rain is getting to it: it dies, and stays dead
+      fireLife = Math.max(0, fireLife - dt / 1000 / FIRE_DIE)
+      if (fireLife <= 0) {
+        fireArmed = true
+        if (igniteAt < 0) {
+          // a strike is coming, but not immediately — the wait is what
+          // makes it read as weather rather than as a switch
+          igniteAt = frame + 90 + Math.floor(Math.random() * 170)
+        }
+      }
+      return
+    }
+
+    /* Sheltered, or clear weather. If it was already burning it
+       recovers; if the rain killed it, it needs the strike first. */
+    if (!fireArmed) {
+      fireLife = Math.min(1, fireLife + dt / 1000 / FIRE_CATCH)
+      return
+    }
+    /* Out of the rain with dead wood. The wood is dry now but it is
+       still dead, and dry wood does not light itself — so it waits for
+       the strike. The wait is a second or two, long enough that the
+       relight is clearly an event with a cause rather than a
+       consequence of having moved the window. */
+    if (igniteAt < 0) igniteAt = frame + 60 + Math.floor(Math.random() * 120)
+    if (frame >= igniteAt) {
+      fireArmed = false
+      igniteFrom = frame
+      igniteAt = -1
+    }
+  }
+
+  /* The strike itself. A single channel down onto the brazier, stepped
+     three pixels at a time with one kink in it, and a hard white flash
+     across the whole roof on the frame it lands. Six frames, total —
+     lightning is over before you have finished seeing it. */
+  function drawIgnition() {
+    const age = frame - igniteFrom
+    if (igniteFrom <= 0 || age > 6) return
+
+    if (age < 2) {
+      ctx.fillStyle = rgba(T.lightning, age === 0 ? 0.5 : 0.2)
+      ctx.fillRect(0, ROOF_TOP - 20, W, H - ROOF_TOP + 20)
+    }
+    if (age > 3) return
+
+    let bx = FIRE_X + 6
+    ctx.fillStyle = age === 0 ? T.boltCore : T.lightning
+    for (let y = 0; y < FIRE_BASE - FIRE_H - 2; y += 3) {
+      const swing = ((y >> 3) % 2 ? 1 : -1) * (1 + ((y >> 4) % 2))
+      bx += swing
+      ctx.fillRect(bx, y, age === 0 ? 2 : 1, 3)
+    }
+    // where it lands, a burst of embers
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2
+      ctx.fillStyle = k % 2 ? '#ffd21f' : '#ff7a1a'
+      ctx.fillRect(
+        Math.round(FIRE_X + Math.cos(a) * (4 + age * 4)),
+        Math.round(FIRE_BASE - 6 + Math.sin(a) * (3 + age * 2)),
+        2,
+        2
+      )
+    }
+  }
+
+  /* ---- how big the fire is ----
+
+     It is the only object left on the terrace, so it has to carry the
+     whole foreground on its own — and at its old size it was a
+     forty-four pixel brazier alone on a hundred-and-thirty pixel deck,
+     which read as abandoned rather than as quiet.
+
+     Five thirds, and the fraction is the point. At S = 3 every
+     authored pixel is backed by three device pixels, so a scale of
+     5/3 makes each one exactly five — a whole number. Any scale that
+     is not a multiple of 1/S puts the flame's edges on fractions of a
+     device pixel and the one object in the frame that is supposed to
+     be the sharpest thing in it comes out soft.
+
+     Anchored at the foot, so it grows upward out of the deck rather
+     than away from it. */
+  const FIRE_SCALE = 5 / 3
+
+  function drawFire() {
+    ctx.save()
+    ctx.translate(FIRE_X, FIRE_BASE)
+    ctx.scale(FIRE_SCALE, FIRE_SCALE)
+    ctx.translate(-FIRE_X, -FIRE_BASE)
+    drawFireAt()
+    ctx.restore()
+  }
+
+  function drawFireAt() {
+    /* The fire reads the weather harder than anything else on the roof,
+       because a fire is the one object whose whole purpose changes with
+       it. In snow it is banked right up and throwing twice the light —
+       somebody needs it. In rain it is guttering and barely holding on.
+       Same twenty-eight rows of flame; three numbers different.
+
+       And all of it now runs through L, which is how much fire there
+       still is. At 1 this is exactly the fire it always was. */
+    const snowy = weather === 'snow'
+    const wet = weather === 'rain'
+    const L = fireLife
+    const reach = (snowy ? 112 : wet ? 62 : 86) * L
+    const height = (snowy ? 1.25 : wet ? 0.7 : 1) * L
+    const flick = ((wet ? 0.5 : snowy ? 0.86 : 0.72) + (frame % 5 === 0 ? 0.1 : 0)) * L
+    if (reach > 1) {
+      for (let y = FIRE_BASE - FIRE_H - 24; y <= FIRE_BASE + 24; y++) {
+        if (y < 0 || y >= H) continue
+        for (let x = FIRE_X - reach; x <= FIRE_X + reach; x++) {
+          if (x < 0 || x >= W) continue
+          const d = Math.hypot((x - FIRE_X) / 1.25, y - (FIRE_BASE - FIRE_H * 0.35))
+          if (d > reach) continue
+          dot(ctx, x, y, (1 - d / reach) * (1 - d / reach) * flick, '#4a2a14')
+        }
+      }
+    }
+
+    /* The stack. One log laid across the back goes down here, behind
+       the flame; the two leaners and the front log go on afterwards,
+       in front of it.
+
+       The leaners were originally behind as well and were completely
+       invisible — a dark log inside a bright flame is nothing. In
+       front they are silhouettes crossing the light, which is both the
+       strongest read a campfire has and the thing that makes it
+       obvious there is fuel here rather than a jet.
+
+       Char does not track the fire. A stack that has burnt is black in
+       the middle whether or not it is burning right now, and having it
+       lighten as the fire died looked like the logs were healing. Burn
+       is taken from the middle outward so the ends stay wood-coloured,
+       which is the only reason four dark bars are still legible. What
+       does track the fire is `glow` — the splits still lit inside the
+       charred stretch, and they go out with everything else. */
+    const char = 0.55
+    fireLog(FIRE_X - 23, FIRE_BASE + 5, FIRE_X + 21, FIRE_BASE + 2, 6, char, L)
+
+    /* The ember bed, and the reason going out reads as going out
+       rather than as the fire being deleted. Coals stay hot long after
+       there is nothing burning above them — they are the last warm
+       thing on this roof, and they cool rather than switch off. */
+    for (let i = 0; i < 30; i++) {
+      const ex = FIRE_X - 16 + ((i * 7) % 33)
+      const ey = FIRE_BASE + 2 + ((i * 5) % 8)
+      const beat = (frame * 0.6 + i * 3.7) % 12
+      const heat = (L * 0.62 + 0.38) * (beat < 6 ? 1 : 0.56)
+      px(ex, ey, heat > 0.74 ? '#ffb03a' : heat > 0.52 ? '#d1560f' : heat > 0.3 ? '#8c2a0a' : '#481605')
+    }
+
+    for (let i = 0; i < FIRE_H; i++) {
+      const y = FIRE_BASE + 1 - i
+      const p = i / FIRE_H
+      const wob = Math.sin(frame * 0.85 + i * 0.5) * 2.4 + Math.sin(frame * 0.47 + i * 0.9) * 1.7
+      const breathe = Math.sin(frame * 0.6) * 1.6
+      /* A teepee, not a cone. The first term narrows hard on the way
+         up; the second pinches the bottom two or three rows back in,
+         because a flame is thinnest where it meets the fuel and the
+         straight linear taper this used to run made the base wider
+         than the log stack it was supposed to be sitting in. */
+      const taper = Math.pow(1 - p, 1.35) * (0.5 + 0.5 * Math.min(1, p * 7))
+      const w = Math.round((taper * 12 + breathe * taper) * height)
+      if (w <= 0) continue
+      const cx = Math.round(FIRE_X + wob * p * 1.5)
+      ctx.fillStyle = '#b8330d'
+      ctx.fillRect(cx - w, y, w * 2 + 1, 1)
+      /* The bands are a FRACTION of the width, not a fixed inset. At
+         eight pixels across, insetting one and two pixels put the
+         yellow and the white at three quarters of the flame; at twelve
+         it made the whole thing a white column with a red edge. */
+      const w2 = Math.round(w * 0.76)
+      if (w2 > 0) {
+        ctx.fillStyle = '#ef7714'
+        ctx.fillRect(cx - w2, y, w2 * 2 + 1, 1)
+      }
+      /* The hot bands go first as it dies. A dying fire does not
+         shrink evenly — it loses its white heart, then its yellow, and
+         what is left is the dull red that was always at the rim.
+         Gating both on L is what makes the last second read as cooling
+         rather than as the same flame scaled down. */
+      const w3 = Math.round(w * 0.46)
+      if (w3 > 0 && p < 0.44 * L) {
+        ctx.fillStyle = '#ffd23a'
+        ctx.fillRect(cx - w3, y, w3 * 2 + 1, 1)
+      }
+      const w4 = Math.round(w * 0.22)
+      if (w4 > 0 && p < 0.19 * L) {
+        ctx.fillStyle = '#fff4b0'
+        ctx.fillRect(cx - w4, y, w4 * 2 + 1, 1)
+      }
+    }
+
+    // the leaners, silhouetted against the flame they are feeding
+    fireLog(FIRE_X - 21, FIRE_BASE + 8, FIRE_X + 3, FIRE_BASE - 17, 5, char, L)
+    fireLog(FIRE_X + 21, FIRE_BASE + 8, FIRE_X - 3, FIRE_BASE - 17, 5, char, L)
+
+    // the front log, and the ring, which is what puts the fire inside
+    // the stones rather than on top of them
+    fireLog(FIRE_X - 25, FIRE_BASE + 13, FIRE_X + 23, FIRE_BASE + 9, 7, char * 0.7, L * 0.7)
+
+    /* Front arc only. The back of the ring is behind the logs and
+       would be six pixels of grey nobody can see.
+
+       Each is drawn as a body with a narrower row on top rather than
+       as one rect: a stone at this scale needs its top corners taken
+       off or the ring reads as a course of bricks, which is what it
+       did. The sizes are all slightly different for the same reason. */
+    const STONES = [[-31, 13, 9, 6], [-22, 15, 7, 5], [-12, 16, 9, 5],
+                    [0, 16, 8, 5], [10, 15, 8, 5], [19, 13, 10, 6]]
+    for (const [sx, sy, sw, sh] of STONES) {
+      const x = FIRE_X + sx
+      const y = FIRE_BASE + sy
+      ctx.fillStyle = '#332c4e'
+      ctx.fillRect(x, y + 1, sw, sh - 1)
+      ctx.fillRect(x + 1, y, sw - 2, 1)
+      ctx.fillStyle = '#4c4470'
+      ctx.fillRect(x + 1, y, sw - 2, 1)
+      ctx.fillStyle = '#1d1830'
+      ctx.fillRect(x, y + sh - 1, sw, 1)
+      // the inner face takes the fire, which is what lights the ring
+      if (L > 0.04) {
+        ctx.fillStyle = L > 0.5 ? '#8a4a22' : '#54301a'
+        ctx.fillRect(x + 2, y, sw - 4, 1)
+      }
+    }
+
+    const sparks = Math.round(20 * L)
+    for (let i = 0; i < sparks; i++) {
+      const t = (frame * 0.6 + i * 4.3) % 58
+      if (t < 4 || t > 54) continue
+      const ey = Math.round(FIRE_BASE - 32 - t * 1.35)
+      const ex = Math.round(FIRE_X + Math.sin(frame * 0.28 + i * 2.1) * (4 + t * 0.2) + (i - 10) * 2)
+      px(ex, ey, t < 16 ? '#ffd23a' : t < 34 ? '#ef7714' : '#7a3210')
+    }
+
+    /* ---- smoke ----
+       It comes in as the flame goes down and is thickest just after it
+       is out, which is when a real one smokes hardest: the fuel is
+       still hot and there is no longer a flame burning the smoke off.
+       Drawn on the same dithered column the vent steam uses, but grey
+       rather than the steam's violet, so the two never read as the
+       same thing.
+
+       It has to be a good deal lighter than smoke actually is. The
+       roof it rises off is `#090318` — near black — and a physically
+       honest dark grey plume against that is invisible, which is the
+       usual trade in a dark scene: value separation beats accuracy. */
+    const smoke = 1 - L
+    if (smoke > 0.03) {
+      for (let i = 0; i < 34; i++) {
+        const age = (frame * 1.15 + i * 1.7) % 56
+        const y = Math.round(FIRE_BASE - 4 - age * 1.2)
+        if (y < ROOF_TOP - 56 || y >= H) continue
+        const spread = 2.5 + age * 0.24
+        const drift = Math.sin(age * 0.13 + i * 1.7) * spread
+        const x = Math.round(FIRE_X - 2 + drift)
+        const fade = (1 - age / 56) * smoke
+        /* Blocks that widen as they rise, for the same reason the vent
+           steam is blocks: a column of lone pixels at this scale does
+           not read as smoke, it reads as dirt on the lens. */
+        const w = 3 + Math.round(age / 9)
+        for (let k = 0; k < w; k++) {
+          dot(ctx, x + k, y, fade * 0.9, age < 15 ? '#8d84a6' : '#665d7e')
+          dot(ctx, x + k, y - 1, fade * 0.5, '#554d6b')
+        }
+      }
+    }
+  }
 
   /* Steam off the vent pipe — a column that widens and drifts as it
      rises, redrawn each frame so it never repeats exactly. */
@@ -8171,7 +8134,7 @@
     if (flash) for (let y = 0; y < SKYLINE; y++) washRow(ctx, y, W, T.lightning, flash)
 
     if (T.stars && (weather === 'none' || snowLevel < 0.5)) drawStars()
-    blit(clouds, -Math.round(scrollT * (12 / 7) * S) / S)
+    blit(clouds, -Math.floor(frame / 7))
     if (flash > 0.5) drawBolt(strikeSeed)
     /* ---- the events ----
        Everything with a beginning and an end goes quiet in reading
@@ -8225,17 +8188,19 @@
       flicker(L, off, LIFT[i + 1])
       nearOff = off
     }
-    /* The rotating beams are off. Two lines sweeping out of the
-       skyline and back, once a second, is motion the eye is obliged
-       to track — and this is a backdrop behind a page somebody is
-       trying to read. Kept in the file, not called. */
-    // if (T.stars) drawLightBeams(nearOff)
+    if (T.stars) drawLightBeams(nearOff) // a lighthouse beam by day is a smudge
 
     // In front of the skyline, behind the elevated line — it is flying
     // over the city, not through it.
     // The airship is gone: it carried a lit banner with words on it,
     // and words in the backdrop compete with words on the page.
 
+    /* The elevated line sits in front of the city and behind the roof.
+       It does NOT drift: it is thirty feet away and bolted down, and
+       the camera is a fixed shot from one rooftop. Only the train on
+       it moves. */
+    blit(viaduct, drift(5))
+    if (!quiet) drawTrain()
 
     drawShells()
 
@@ -8272,6 +8237,10 @@
       drawRipples()
     }
 
+    if (T.fire) {
+      drawFire()
+      drawIgnition()
+    }
 
     /* No second flash pass here. An earlier version also washed the
        city and the roof on a strike, which is what lightning physically
@@ -8305,6 +8274,7 @@
     const p = weather === 'none' ? null : panelRect()
 
     // the brazier reads the same panel rect the weather does
+    stepFire(dt, p)
 
     if (weather === 'rain') {
       stepRain(p, live, k)
@@ -8358,10 +8328,6 @@
   function setCity(key) {
     if (!CITIES[key] || key === cityKey) return
     cityKey = key
-    /* The interface re-themes with the skyline: the wordmark, the panel
-       and its neon border all read their colours from CSS variables
-       that a `[data-city]` block overrides. */
-    document.documentElement.dataset.city = key
     applyPalette()
     seedPetals()
     stageRebuild()
@@ -8392,7 +8358,6 @@
 
   seedPetals()
   setTheme('night')
-  document.documentElement.dataset.city = cityKey
 
   /* A reload straight into snow never passes through setWeather, so the
      ledges are seeded here too. */
@@ -8454,12 +8419,6 @@
     },
     secret: () => secret,
 
-    /* Freeze the scene while a full-screen wipe covers it, so the wipe's
-       animation gets the main thread to itself. Off restores motion. */
-    pause(on) {
-      paused = !!on
-    },
-
     /* ---- reading mode ----
        Called by the router when it leaves home. The city dims and
        stops; coming back brings it up again. Both over half a second,
@@ -8477,16 +8436,6 @@
       focusTo = on ? 1 : 0
       if (!animating) focus = focusTo
     },
-
-    /* The stage. Unlike focus, which takes the city DARK and STILL for
-       reading, the stage keeps it moving and only turns the lights
-       down: a half-strength wash so the L2 content in front stays
-       legible while the city carries on behind it. Used when a page
-       opens beside the navigation rather than over the whole frame. */
-    setStage(on) {
-      stageTo = on ? 1 : 0
-      if (!animating) stage = stageTo
-    },
   }
 
   /* ==================================================================
@@ -8496,11 +8445,6 @@
 
   function loop(t) {
     requestAnimationFrame(loop)
-    /* Held behind an opaque wipe: keep the last painted frame on screen
-       and do nothing else, so the wipe's own animation has the thread to
-       itself. `last` is banked so the content clock does not fire a burst
-       of catch-up ticks when the hold lifts. */
-    if (paused) { last = t; lastRaf = t; return }
     const dt = Math.min(120, lastRaf ? t - lastRaf : 1000 / 60)
     lastRaf = t
 
@@ -8508,11 +8452,6 @@
     if (focus !== focusTo) {
       const step = dt / FOCUS_MS
       focus = focusTo > focus ? Math.min(focusTo, focus + step) : Math.max(focusTo, focus - step)
-    }
-    // the stage wash eases the same way, but never touches `live`
-    if (stage !== stageTo) {
-      const step = dt / FOCUS_MS
-      stage = stageTo > stage ? Math.min(stageTo, stage + step) : Math.max(stageTo, stage - step)
     }
     /* Everything stops. The frame counter included — the fire, the
        cat and the window flicker are all counted in frames, so
@@ -8528,37 +8467,19 @@
 
     overlay(dt * live)
 
-    /* Two reasons to repaint, and keeping them straight is what stops
-       the interference that once read as jitter.
+    /* ONE reason to repaint: the 12fps content tick.
 
-       The CONTENT tick is a fixed 12fps: the frame counter and everything
-       counted off it — window flicker, signage, the fire, the cat — step
-       on that and nothing else. That fixed, EVEN cadence is the fix for
-       the old jitter, which came from stepping content off elapsed time
-       so the steps landed at uneven intervals.
-
-       The SCROLL is continuous and snapped to the device-pixel grid, and
-       the frame is recomposited the moment the scroll crosses a whole
-       device pixel. Both clocks are even, so they do not beat against
-       each other; the buildings slide smoothly while their lit windows
-       still step — smooth background, stepped sprites, which is what the
-       hardware this imitates actually did. */
-    /* `live` gates motion outright. At zero the frame counter holds, the
-       scroll clock holds, nothing re-renders, and present() goes on
-       showing the last painted frame — the still picture reading mode
-       wants, held for free.
-
-       When live, two clocks run. The CONTENT tick is still a fixed 12fps:
-       the frame counter, and everything counted in frames (flicker, fire,
-       cat, signage), step on it and only on it. The SCROLL is continuous
-       — scrollT accrues real time — and the frame is recomposited
-       whenever the scroll has crossed a whole device pixel, so the
-       parallax slides smoothly between content ticks instead of jumping
-       once per tick. An active event (a firework, a passing craft) also
-       forces the repaint, since those move on their own clock too. */
+       There used to be a second — a parallax layer having crossed a
+       whole pixel — which meant renders happened at two unrelated
+       cadences that drifted against each other. The city moved on one
+       clock and everything in it on another, and the interference
+       between them is what read as jitter. One clock now, and the
+       parallax is a division of it. */
+    /* `live` gates the content tick outright. At zero the frame
+       counter holds, nothing re-renders, and present() goes on
+       showing the last painted frame — which is exactly the still
+       picture reading mode wants, and costs nothing to hold. */
     if (live > 0) {
-      let doRender = false
-      scrollT += (dt / 1000) * live
       if (t - last >= 1000 / FPS) {
         last = t
         frame++
@@ -8570,15 +8491,10 @@
           const step = Math.sign(d) * Math.max(6, Math.round(Math.abs(d) / 5))
           panX = Math.abs(d) <= Math.abs(step) ? panTo : panX + step
         }
-        doRender = true
+        render()
       }
-      const sig = driftSig()
-      if (sig !== lastDriftSig) { lastDriftSig = sig; doRender = true }
-      // events that animate off wall-clock, not the frame counter
-      if (shells.length || craft.length) doRender = true
-      if (doRender) render()
     } else {
-      // keep both clocks from banking time while stopped, so coming back
+      // keep the clock from banking time while stopped, so coming back
       // does not fire a burst of catch-up frames
       last = t
     }
@@ -8597,16 +8513,6 @@
     if (focus > 0.002) {
       screenCtx.save()
       screenCtx.globalAlpha = focus * LIGHTS_OUT
-      screenCtx.fillStyle = T.edge
-      screenCtx.fillRect(0, 0, W, H)
-      screenCtx.restore()
-    }
-
-    /* The stage wash. Same dark glass, half the strength, and it does
-       not gate `live` — so the city keeps moving behind it. */
-    if (stage > 0.002) {
-      screenCtx.save()
-      screenCtx.globalAlpha = stage * STAGE_DIM
       screenCtx.fillStyle = T.edge
       screenCtx.fillRect(0, 0, W, H)
       screenCtx.restore()

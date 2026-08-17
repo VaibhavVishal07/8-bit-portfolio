@@ -1,7 +1,7 @@
-# Portfolio — Vaibhav Vishal
+# 8-bit portfolio
 
-A product-design portfolio with a hand-drawn 8-bit city behind it. No build
-step, no framework, no dependencies, no image files.
+An 8-bit game title screen, as a personal portfolio landing page. One screen,
+no build step, no dependencies.
 
 Open `index.html` in a browser, or serve the folder:
 
@@ -10,77 +10,11 @@ npx serve -l 4173 .
 ```
 
 ```
-index.html   The home page and the about page
-styles.css   Everything. Tokens at the top, the current page at the bottom
-scene.js     The background — a 960x540 pixel canvas, drawn in code
-work.js      The four case studies: content, diagrams, and the renderer
-script.js    Boot, city controls, the router, the transition between pages
-posters.js   Generated cover art for the shelf preview
-flowers.js   The flower drift along the foot of the page
+index.html    Markup + the heart sprite definition
+styles.css    HUD panel, title-screen type, day/night overrides
+scene.js      The background — a 960x540 pixel canvas, drawn in code
+script.js     Day/night + rain toggles, arcade keyboard menu
 ```
-
-## Two grounds
-
-The page is one scroll with a seam in it.
-
-**Above the seam** is the city, at full strength, carrying the name and one
-sentence about what I do. Nothing sits in a panel and nothing has a border: the
-type is held by a dithered clearing burned into the middle of the picture, so
-the skyline is never cropped by a box.
-
-**Below the seam** a solid, still surface rises over the city and carries
-everything that has to be *read* — the work, the point of view, the about, the
-way to get in touch. The join between them is three rows of 8px cells at a
-quarter, a half and three-quarter density: an ordered dither, which is the same
-idea every gradient in the scene is built from.
-
-The reason for the split is the whole argument of the site. The city is the
-memorable part and the work is the hireable part, and each one makes the other
-worse if they share a surface. So the shell is playful and the work is not, and
-the scroll is where you cross from one to the other.
-
-Crossing into a case study takes it further: the scene stops behind a scrim, the
-pixel face steps off everything except the eyebrow, and the page becomes a
-document set in one reading face. A retro costume on top of a systems diagram
-makes the diagram look like a joke.
-
-## The case studies
-
-All four live in `work.js` as data, rendered by a small block vocabulary.
-
-The point of doing it that way is not that it saves code — it is that each study
-gets to be a **different shape**. A portfolio where every project runs Overview /
-Problem / Solution / Outcome tells the reader that the designer has one move. So
-each one picks the blocks its story actually needs:
-
-| | |
-| --- | --- |
-| `section` | a heading and prose |
-| `decision` | the options that were on the table, which one was taken, and why |
-| `tradeoff` | two columns: what it gave up, what it bought |
-| `principles` | numbered rules the work was held to |
-| `seams` | a list of specific failures, each named |
-| `diag` | a full-bleed schematic |
-| `split` | two schematics side by side, usually before and after |
-| `outcome` | what changed |
-
-Adding a fifth project is one entry in the `WORK` array. The card on the home
-page and the case study behind it are generated from the same object, so they
-cannot drift apart.
-
-### The figures
-
-The work is under NDA, so there are no screenshots — and rather than fill the
-gap with stock photography or an apology, every figure is an **inline SVG
-schematic** drawn to one grid: hairline strokes, square corners, mono labels,
-two accents.
-
-That turns out to be the better answer regardless. You cannot show the pixels,
-but you can show the *structure*, and the structure is the part a design
-director is reading for. The prose that explains each figure lives in its
-`<figcaption>` rather than inside the SVG, so it is selectable, readable by a
-screen reader, and does not shrink to five pixels on a phone — the diagram
-itself scrolls inside its own box instead.
 
 ## The concept
 
@@ -160,9 +94,11 @@ with out-of-phase nav lights and an engine wash behind them, a stairwell hutch
 with a neon over its door and a tag on its flank, a water tank on legs with a
 ladder, air handlers with fan grills and louvers, ducting on brackets, crates,
 a satellite dish with a feed arm, **string lights** sagging in catenaries between
-four poles with a bulb every few pixels guttering on its own cycle, and a steam vent
-whose plume widens as it rises, thirty puffs of it, each one drawn a little
-wider and a little fainter than the last.
+four poles with a bulb every few pixels guttering on its own cycle, a steam vent
+whose plume widens as it rises, and a campfire whose flame is generated per frame
+rather than being a fixed sprite — each row tapers toward the tip, is displaced
+by two out-of-phase sines, and is filled in four bands from a dark red rim to a
+near-white core.
 
 **Detail is drawn as form, not as speckle.** Every gravel stone is a lit pixel
 with a dark one directly under it — a chip with its own shadow — and there are
@@ -171,8 +107,8 @@ density, not count. The tar seams are straight runs with one deliberate step in
 each rather than random walks: a seam is laid by a person, so a wobbling line
 reads as a mistake.
 
-**The rooftop layer does not scroll.** The cat stands on it, so if it moved it
-would appear to slide across the ground.
+**The rooftop layer does not scroll.** The cat and the campfire stand on it, so
+if it moved they would appear to slide across the ground.
 
 **The parapet is drawn with a hard, near-black rim along the top of its
 coping.** That single line is what makes it read as foreground; without it the
@@ -226,6 +162,30 @@ carried, so it costs no extra random draw.
 Both themes keep the same number of random draws per building whether or not the
 result is used, which is the rule the signage geometry already followed: the
 city must never rearrange itself when you toggle day and night.
+
+## The train
+
+**An event, not a loop.** It crosses, then the line is empty for about
+seventeen seconds. It is drawn in screen space rather than into the viaduct
+buffer, so it runs along the deck at its own speed instead of being carried by
+the parallax.
+
+Eleven cars at 76px is **longer than the canvas is wide**, and at twenty pixels
+a frame it clears the frame in about four seconds — so it reads as an express
+rather than as a shuttle. What sells the speed is not the number: it is the
+**smear of window light left behind along the whole train**, drawn before the
+cars so they sit on top of it.
+
+The viaduct was rebuilt to carry it. A lattice girder with alternating diagonals
+under the deck, sleepers and two running rails on top, and a **catenary** strung
+above on cantilever masts. Every fifth car raises a **pantograph** to that wire,
+and the shoe throws an arc every seventh frame. Without the wire a fast train
+reads as a sticker sliding along a shelf; with it, it is being pulled by
+something.
+
+**The canvas is cleared every frame.** The layers do not cover every pixel, and
+without a clear those rows keep the previous frame — which on a theme switch
+means the old palette bleeding through.
 
 ## Weather
 
@@ -298,8 +258,8 @@ the weather clears. Three things had to be fixed for that to hold:
   not draw the last twenty. Every random draw is made before that decision.
 - The **same gravel** is laid in both states, wet just draws fewer of the stones.
 
-The frame counter is never reset either, so the parallax carries on from
-exactly where it was. Toggling rain or snow on and off now returns the
+The frame counter is never reset either, so the parallax and the train carry on
+from exactly where they were. Toggling rain or snow on and off now returns the
 scene pixel-for-pixel.
 
 ### Rain
@@ -353,7 +313,8 @@ trail.
 It is all held in normalised panel space, 0 to 1 across and down, so the water
 stays on the window when the viewport changes shape instead of sliding off it.
 
-**Lightning** strikes on a timer — every eight to twenty-eight seconds. It plays a short envelope of discrete steps rather than a
+**Lightning** strikes on a timer, the same way the train runs — every eight to
+twenty-eight seconds. It plays a short envelope of discrete steps rather than a
 fade: a hard flash, a gap of almost nothing, then a weaker second one. That is
 what a strike does, and what a fade never reads as. Each step is one whole frame
 at 12fps, so it comes out stepped for free.
@@ -408,7 +369,67 @@ is mostly deciding not to draw something.
 | Paper plane | glides in | — | — |
 | Moths | round the lights | — | — |
 | Rat | runs the parapet | runs the parapet | — |
+| Campfire | normal | **guttering**, short reach | **banked right up**, twice the light |
 | Steam vent | thirty puffs | **sixteen** | **fifty-two** |
+
+The campfire reads it hardest, because a fire is the one object on the roof whose
+whole purpose changes with the weather. Same forty-four rows of flame; three
+numbers different.
+
+### The campfire needs the window
+
+The window sits directly over the fire, and the rain already treats the window
+as a surface — a drop in that column lands on its lip instead of the roof. Which
+meant the fire had survived every storm this scene has ever run, as the one
+object on the roof still drawn as though none of that mattered.
+
+It depends on the window now. **Take the panel out of the column above the fire
+while it is raining or snowing — drag it aside, minimise it, close it — and the
+flame drops, guts, and is out in about two and a half seconds.** The hot bands
+go first: it loses its white heart, then its yellow, and the last thing burning
+is the dull red that was always at the rim, because a dying fire does not shrink
+evenly. What is left is a charred stack over coals and a thread of smoke coming
+off it — smoke is thickest just *after* a fire is out, which is when a real one
+smokes hardest, the fuel still hot and no flame left to burn the smoke off.
+
+Put cover back and it catches again over about four seconds. Slower than it
+died, because nothing relights as fast as it goes out.
+
+### Why it stopped being an oil drum
+
+It used to be a brazier: twenty-six pixels across, eighteen tall, a flame you
+could cover with a thumb. Fine while it was scenery, wrong the moment it became
+something that can go out — **an event you cannot see is not an event.**
+
+So it is a campfire. Four logs over a bed of embers inside a ring of stones,
+with a flame half again as tall over twice the footprint, which is enough that
+losing it registers from across the frame. Three things make it read:
+
+- **Draw order is back to front** — back log, embers, flame, the two leaners,
+  front log, stones. The leaners started out behind the flame and were
+  completely invisible, because a dark log inside a bright flame is nothing. In
+  front they are silhouettes crossing the light, which is the single strongest
+  read a campfire has.
+- **The flame is a teepee, not a cone.** It narrows on a power curve rather than
+  linearly and pinches back in at the very bottom, because a flame is thinnest
+  where it meets the fuel — the old straight taper made the base wider than the
+  logs it was supposed to be sitting in.
+- **The colour bands are a fraction of the width, not a fixed inset.** At eight
+  pixels across, insetting one and two pixels put the yellow and the white at
+  three quarters of the flame and looked right. At twelve it made the whole
+  thing a white column with a red edge.
+
+The logs char from the middle outward and the ends stay wood-coloured — both
+what a log in a fire looks like and the only reason four dark bars are still
+legible against the light. The char does not clear when the fire dies; having it
+lighten looked like the logs were healing.
+
+The life value is ticked against real elapsed time on the 60fps side, so "a
+couple of seconds" is a couple of seconds and not a count of 12fps frames that a
+slow machine would stretch. In clear weather the fire is never in danger, and a
+maximised window counts as cover — it is covering the whole roof.
+
+Both settings persist in `localStorage`.
 
 ## Day / night
 
@@ -420,7 +441,7 @@ layers and nothing else; the choice persists in `localStorage`.
 | Sky | Violet-black up to a purple haze | Teal zenith down into an amber smog band |
 | Orb | Moon, bare — maria and lit western rims, no glow | Sun, with corona and halo |
 | City | Hot neon over a dark base | Cool desaturated towers, neon still burning |
-| Extras | Stars, satellites, craft | Birds, craft, steam |
+| Extras | Campfire, stars, satellites, craft | Birds, craft, steam |
 | Panel | Neon on deep violet | Magenta and teal on pale lilac |
 
 The night base is deliberately kept very dark — violet-black rather than a rich
@@ -534,8 +555,8 @@ discrete thing you can name, so there is something to find on the fourth look.
 Placed by hand, none of it overlapping anything else: a **water tank** on legs
 with a ladder and a **weathervane**, a **stairwell hutch** with a neon over the
 door, a **tag** on its flank and an **antenna array** on its roof, a **washing
-line** with four garments, a **bike** leaning where somebody left it,
-**crates**, a **telescope** on a tripod pointed up and to the left
+line** with four garments, a **bike** leaning where somebody left it, a
+**campfire**, **crates**, a **telescope** on a tripod pointed up and to the left
 — at the moon, which is up and to the left — a striped **deck chair**, a
 **planter run** with five tomato plants on canes, a **skateboard**, a
 **boombox** with a mug of coffee going cold on it, a **chess game** on a crate
@@ -581,24 +602,13 @@ parapet and the lowest row that survives the crop, and it is the real constraint
 on the whole scene: **the closest, most detailed part of it is also the
 thinnest.**
 
-The crop used to be taken out of the sky — `object-position: 50% 72%` — on the
-argument that the roof is the only part you can read individual objects in. That
-stopped being true once the roof was cleared: below the parapet is now a flat,
-near-black deck with nothing on it, and on a full-bleed hero it read as a dead
-shelf between the skyline and the reading ground.
-
-So the canvas is **dropped** instead. `--scene-drop` in `styles.css` makes the
-element a fifth taller than the viewport, anchored at the top, which pushes that
-empty deck off the bottom edge and brings the skyline down to meet the ground —
-and brings the whole scene up a fifth in the bargain, which on a pixel grid costs
-nothing.
-
-It is one number, and it lives only in the stylesheet. `viewMap()` reads the
-canvas's own box and its computed `object-position` rather than restating any of
-it, so the panel projection the weather uses and the tap that sets off a firework
-both follow the CSS automatically. They did not before: the portrait rule had
-moved the horizontal anchor to 72% and `viewMap` was still hard-coded to 50%, so
-every tap on a phone landed off to one side.
+The crop is why `object-position` is `50% 72%` rather than centred. `cover` on a
+viewport wider than 16:9 has to cut top and bottom, and the two are not worth the
+same — the sky is mostly gradient and repeats, while the roof is the only part
+you can read individual objects in. So the crop comes out of the sky. Everything
+that maps between page and canvas coordinates goes through one `viewMap()` that
+undoes exactly that: the panel projection the weather uses, and the cat's hit
+test.
 
 ## Things that live here
 
@@ -690,8 +700,194 @@ Big ones first, then the ones you are not meant to find straight away.
   uses, and listens on the window because the stage sits over the canvas.
 - **The Konami code** — up up down down left right left right B A. Every bulb on
   the roof burns steady, the cat turns round and stays turned round, and the
-  line under the name changes. The check is a single index walked forward on a match
+  window retitles itself. The check is a single index walked forward on a match
   and reset on a miss; no buffer, no slicing.
+
+## The game layer
+
+The L2 pages stopped being documents, because a retro game never shows you a
+document — it shows you a **place, objects in it, and something that talks**.
+
+**The cat narrates every page.** Each .EXE carries a dialogue box pinned to the
+bottom of the scrolling document — where a game HUD puts it — with the rooftop
+cat sitting beside it. It types an intro when the window first opens, and any
+element carrying `data-say` re-types the box when pointed at or focused. The
+typing is character-by-character on a timer: the one animation in the project
+that is stepped by its very nature. Writing voice lines is just editing
+`data-say` attributes.
+
+**ABOUT is a room, not a form.** A character sheet up top (name, CLASS, LV), then
+**ON THE SHELF**: two boards carrying pixel objects built from blocks — a book,
+a cartridge, a VHS tape, a record half out of its sleeve, a toolbox, and the
+cat's yarn ball (point at it: *"That one is mine. Do not touch it."*). Objects
+lift when pointed at, one per board fidgets on its own, and the cat describes
+whatever you touch. Hobbies became **SIDE QUESTS** with statuses — ACTIVE,
+DAILY, COMPLETE, a blinking NEW!.
+
+**WORK is a world map.** The career runs left to right as WORLD 1 → 2 → 3 along
+a dotted path, oldest first, with the current job as the furthest world reached
+— flag flying. Case studies are **SELECT STAGE** cards that still expand in
+place; their stills are numbered SCREEN 1/2/3 by CSS counters.
+
+**CONTACT is the join screen.** PLAYER 2 WANTED, three channels, and a
+CONTINUE? counter in the footer that counts 9 to 0 and rolls over forever,
+because that is what an arcade board does when nobody puts a coin in.
+
+**Adding images:** any dashed rectangle with an `IMG` corner tag is a slot —
+drop an `<img>` inside it and the CSS crops, covers and pixel-renders it.
+
+## Windows
+
+The title bar has had minimise, maximise and close on it since the beginning and
+they did nothing. Now they do, and there is a second window — **WORK.EXE** —
+which opens from the menu.
+
+Tapping `1 WORK` sends the title screen down to a taskbar and brings up a wider
+window with the experience and the case studies in it. All of the copy in there
+is placeholder, meant to be replaced.
+
+None of it is Windows 98 in *appearance*. Beveled grey fought the neon city,
+which is the whole reason the panel became a terminal HUD in the first place. It
+is Windows 98 in **behaviour**: one window at a time, minimise to a bar along the
+bottom, click the task to bring it back.
+
+Each window is in one of three states and no more:
+
+| | |
+| --- | --- |
+| `up` | on screen, and the only one on screen |
+| `min` | alive, but down on the taskbar |
+| `closed` | gone, and not on the taskbar either |
+
+Opening a window sends whatever was up to `min`. Closing one promotes the first
+thing still minimised, so the screen is never left bare. `Esc` closes the top
+window unless it is the title screen. Maximise makes the window a flex column so
+the document actually fills it — otherwise the screen keeps its natural height
+and most of a maximised window is empty.
+
+**The taskbar only exists when there is more than one window in play.** On the
+bare title screen it would be covering the rooftop, which is the most detailed
+part of the scene. Open WORK and it appears; close WORK and it goes again.
+
+### Elevation
+
+The panel needed to sit *above* the backdrop rather than in it, and there is no
+blur anywhere in this project — so height is expressed the way a tile engine
+would express it. Reading outward: the raised edge catching light along the
+top-left, the same edge falling away bottom-right, a keyline, then a cast shadow
+stepping off the scene in two hard jumps rather than fading. Four flat colours
+doing the job of one blur, and all of it swaps with the theme.
+
+### Title-bar buttons
+
+They were 16x14 with a flat coloured square inside — too small to hit, and no
+indication of which was which. They are proper targets now and each draws its
+actual glyph: a low bar for minimise, a hollow box with a heavy title bar for
+maximise, and an X for close built from two stepped diagonals, two pixels at a
+time. A rotated rule would have been one line of CSS and also the only
+antialiased edge in the entire project.
+
+### Desktop icons
+
+**WORK**, **ABOUT**, **CONTACT** and **HOME**, top-left, one column, where they
+have always gone — and out the whole time, not only when every window is down.
+A desktop with nothing on it until you put every window away is not a desktop,
+it is an easter egg. They sit *under* the windows, which is where desktop icons
+have always sat, so nothing has to move out of anything's way; on a viewport
+narrow enough for the window to reach them the window simply covers them, the
+same as a maximised window covers the real thing.
+
+Each is a **16x16 sprite** rather than a CSS slab with pseudo-element decoration
+bolted on. The old set was a folder with a tab, a document with three lines, an
+envelope with a stepped chevron and a bare rectangle — four silhouettes at four
+sizes with nothing in common but a drop shadow, and only the envelope really
+said what it opened. The new four are drawn on one grid with one ink outline and
+one accent colour each, and every one of them says what is behind it: a
+**cartridge** for WORK.EXE, which is a rack of them; **player one** for
+ABOUT.EXE, which says PLAYER 1 / READY; a sealed **envelope**; and the **CRT**
+running the title screen. They live in the `<defs>` block at the foot of
+`index.html` next to the heart, and they are sized in whole multiples of
+sixteen — 64, 80, 96 at the three breakpoints — because a pixel sprite on a
+`clamp()` comes out with some pixels five wide and some six.
+
+ABOUT.EXE and CONTACT.EXE exist as windows now too, with placeholder copy. The
+title-screen menu, the desktop icons and the taskbar all go through the same
+`launch()`, so all three routes behave identically.
+
+### Dragging
+
+By the title bar, as in the original. The stage centres a window until you touch
+it; the first drag pins it exactly where it already was and moves it from there,
+so it never jumps on the first pixel. Windows 98 dragged an *outline* and only
+moved the window on release — this moves the window itself, because that is what
+a hand expects now, but the position is rounded to whole pixels every frame so a
+window in flight never lands between them.
+
+The title bar is never allowed off screen. Lose that and the window is gone:
+there is no way to grab it back. A resize re-clamps anything that was left near
+an edge.
+
+Double-clicking the bar maximises, as it always has. Maximising has to give up
+any dragged position first, or the inline `left`/`top` beat the class's `inset`
+and the window "maximises" to wherever you happened to leave it.
+
+### The zoom rectangle
+
+Minimise and restore do what Windows 98 did: an outline walks the gap between
+the window and its taskbar button in eight jumps and is gone in about a sixth of
+a second. It does not tween, it **steps** — same rule as everything else in the
+project, and for the same reason: the machine this is pretending to be could not
+tween. Long enough to say where the window went, short enough that it never
+feels like it is being animated at you.
+
+The window it is travelling to hides while the outline is in flight, so the
+rectangle *arrives* and the window appears, rather than the two being on screen
+together. Opening WORK from the menu runs both halves at once — the title screen
+dropping to the bar while the new window comes up off it. Closing stays instant,
+because there is nothing to fly to and whatever gets promoted is simply revealed
+underneath.
+
+### Sizing
+
+Three things were set for a narrow window and looked wrong on a wide display:
+
+- **The taskbar** was nine pixels of Press Start 2P — smaller than anything else
+  on screen, when telling at a glance which window is up is the only job it has.
+  It now sizes off the same clamp as the window titles, and then some.
+- **WORK.EXE** capped at 1180px, which on a wide display is about a third of the
+  screen: a dialog box rather than the thing you came to read. The cap is now
+  deliberately enormous so the `vw` term is what binds.
+- **The case studies** were sized like list rows and read as an afterthought
+  under the experience, when they are the thing you actually want clicked. They
+  get a thumbnail, a number you can read across the room, and a border thick
+  enough to make them objects rather than boxes. The thumbnail is a banner, not
+  16:9 — at 16:9 on a card that wide it was taller than everything under it and
+  pushed the title off the bottom. Its placeholder pattern runs in vertical bars
+  because a diagonal hatch is the one thing on the page that would have to be
+  antialiased.
+
+Two things had to follow the windows around:
+
+- **The weather.** `panelRect()` used to grab `.window` and there is more than
+  one of those now, so the window manager marks whichever is up and the rain and
+  snow land on that. When everything is minimised they land on nothing.
+- **The scene controls.** They sit above the stage, so a maximised window cannot
+  cover them — which would be fine except that its own close button ends up
+  underneath them. They step down out of the way instead of the window being
+  raised over them, because losing the weather toggles behind a full-screen
+  window would be the worse trade.
+
+Day mode also has to flip `--cream`, the default ink. It never mattered on the
+title screen, where everything sets its own colour, but the work document leans
+on it for headings — and near-white headings on a near-white screen is not a
+subtle bug, it is an invisible one.
+
+## The window
+
+A terminal HUD panel, not desktop chrome — beveled grey fought the neon city
+behind it. A thin cyan frame, a magenta offset shadow standing in for depth,
+magenta corner brackets, and neon indicator blocks in the title bar. Still hard
+edges only: no radius, no blur.
 
 ## The wordmark
 
@@ -747,15 +943,33 @@ Same two rules as the scene, applied to the DOM:
 | `title-flash` | `steps(1)` | Wordmark snaps between cyan and white (night only) |
 | `scanroll` | `steps(8)` | Scanlines roll one line at a time |
 
+## Music
+
+Synthesised in the page with the Web Audio API — square waves for the bass and
+lead, a triangle counter-line, filtered noise bursts for the drums, over Am–F–C–G
+at 108bpm. Not a file.
+
+That is partly a licensing answer and mostly a design one. **A chiptune is a
+program, not a recording**, and a title screen that ships an mp3 in order to
+sound eight-bit has rather missed the point. It also keeps the project honest:
+still no dependencies, still no build step, still nothing to download.
+
+Nothing is constructed until the button is pressed — browsers will not start an
+`AudioContext` without a gesture, and they are right not to. The scheduler is the
+standard lookahead loop: a `setTimeout` every 25ms queueing any note that falls
+in the next 100ms, so the timing comes from the audio clock rather than from
+`setTimeout`, which is not accurate enough to hold a beat.
+
+The **visualiser** hangs off an `AnalyserNode` on the master bus, so the bars are
+the music rather than a loop running next to it. Heights snap to whole cells and
+each bar is drawn as a stack of discrete segments — a meter that slides
+continuously is a modern meter; one that lights whole segments is the meter this
+machine would have had.
+
 ## Fonts
 
-Three, one job each. **Press Start 2P** is the interface — the wordmark, the
-section markers, the city controls, anything that is furniture. **JetBrains
-Mono** is the machine's speaking voice: labels, captions, the readout under the
-name, every word inside a diagram. **Geist** carries the reading — the case
-studies and the about page.
-
-A pixel font is a costume, and nobody should have to read a costume.
+Both free, from Google Fonts: **Press Start 2P** for the wordmark, menu and
+labels; **Pixelify Sans** for body text.
 
 ## Editing
 
@@ -764,9 +978,9 @@ there and both the static layers and the animation follow. UI colours are custom
 properties at the top of `styles.css`; day overrides the same names rather than
 adding new ones, so anything you add for night follows into day for free.
 
-Home-page copy is plain text in `index.html`. Case-study copy is the `WORK`
-array in `work.js`. If the name needs a third line, add a `.wordmark__line` span
-and give it its own `font-size` — the trapezoid is only a sequence of sizes.
+Copy is plain text in `index.html`: the two `.wordmark__line` spans, `YOUR ROLE`,
+and the three menu rows. If the name needs a third line, add a span and give it
+its own `font-size` — the trapezoid is only a sequence of sizes.
 
 The parapet's separation from the deck is deliberately re-asserted **after** the
 weather is applied, in `buildRoof`. Whatever is drawn on the coping, the hard rim
@@ -774,10 +988,8 @@ along its top and the shadow under its foot are what keep it reading as a plane
 in front of the city. Weather is allowed to change the shape of the parapet; it
 is not allowed to dissolve its edge.
 
-Routes are hashes, so static hosting needs no rewrite rules, the back button
-works and a link can be shared. Every route change moves focus to the new page's
-`<h1>` and retitles the document, because a hash route swaps the whole view
-without telling anybody otherwise.
+The menu is keyboard-driven: arrow keys move the cursor, `1`–`3` jump straight
+to a row, Enter follows it.
 
 Both the scene and the UI honour `prefers-reduced-motion` — the canvas holds its
 first frame and the CSS animations hold theirs.

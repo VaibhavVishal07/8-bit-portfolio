@@ -57,15 +57,14 @@
   /* Sprites written as strings: one character per pixel, '.' is a
      hole. Legible in the source, which is the whole point of pixel
      art living in a text file. */
-  function sprite(g, rows, ox, oy, map, s) {
-    const k = s || 1
+  function sprite(g, rows, ox, oy, map) {
     for (let y = 0; y < rows.length; y++) {
       const row = rows[y]
       for (let x = 0; x < row.length; x++) {
         const c = row[x]
         if (c === '.' || !map[c]) continue
         g.fillStyle = map[c]
-        g.fillRect(ox + x * k, oy + y * k, k, k)
+        g.fillRect(ox + x, oy + y, 1, 1)
       }
     }
   }
@@ -74,16 +73,6 @@
      Each kind gets its own family so a shelf of posters reads as a
      shelf of different things, not four prints of one thing. */
   const PAL = {
-    /* One hue per project, carried over from the covers these replace —
-       the coral, the green, the blue and the pink. Four cards in four
-       colours is how a set of four stays a set and still lets you say
-       "the green one". */
-    cover: [
-      { bg: '#120a0a', grid: '#7a423a', cell: '#3a221e', ink: '#2e1714', hi: '#f5a08f', lo: '#a8564a' },
-      { bg: '#0a140d', grid: '#44784c', cell: '#1f3a26', ink: '#132d1a', hi: '#a8e8a0', lo: '#4f8a58' },
-      { bg: '#0a0d16', grid: '#4d6396', cell: '#232d46', ink: '#161e33', hi: '#aec2f5', lo: '#5c72ac' },
-      { bg: '#150a12', grid: '#96507c', cell: '#42233a', ink: '#301628', hi: '#ffb0dc', lo: '#b85f92' },
-    ],
     work: [
       { sky: ['#1a0c3a', '#4a2a8c'], ink: '#0a0420', hi: '#ff3ea0', lo: '#7b4fd8', band: '#12082c' },
       { sky: ['#0d2340', '#2a7ab0'], ink: '#04101f', hi: '#19d7e8', lo: '#3f9fd0', band: '#07182c' },
@@ -656,340 +645,8 @@
     for (let x = 10; x < W - 10; x += 5) g.fillRect(x, H - 18, 1, 12)
   }
 
-  /* ==================================================================
-     PROJECT COVERS
-
-     Four covers, one per case study, drawn rather than photographed.
-     Each carries the title and one picture of what the project was, and
-     nothing else — no number, no frame, no chrome. The tile draws its
-     own border in CSS; the drawing does the rest.
-     ================================================================== */
-
-  /* ---- the display face ----
-     5x7, not 3x5. Three pixels of width has to spell M, N and W with
-     the same two uprights, so at the size a tile actually renders,
-     BANNERS and ONCE came out as guesswork. Seven rows costs a little
-     more of the card and buys letters that are letters. */
-  const FONT = {
-    A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
-    B: ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
-    C: ['.####', '#....', '#....', '#....', '#....', '#....', '.####'],
-    D: ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
-    E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
-    F: ['#####', '#....', '#....', '####.', '#....', '#....', '#....'],
-    G: ['.####', '#....', '#....', '#..##', '#...#', '#...#', '.####'],
-    H: ['#...#', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
-    I: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '#####'],
-    J: ['..###', '....#', '....#', '....#', '....#', '#...#', '.###.'],
-    K: ['#...#', '#..#.', '#.#..', '##...', '#.#..', '#..#.', '#...#'],
-    L: ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
-    M: ['#...#', '##.##', '#.#.#', '#...#', '#...#', '#...#', '#...#'],
-    N: ['#...#', '##..#', '#.#.#', '#..##', '#...#', '#...#', '#...#'],
-    O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
-    P: ['####.', '#...#', '#...#', '####.', '#....', '#....', '#....'],
-    Q: ['.###.', '#...#', '#...#', '#...#', '#.#.#', '#..#.', '.##.#'],
-    R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
-    S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
-    T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
-    U: ['#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
-    V: ['#...#', '#...#', '#...#', '#...#', '#...#', '.#.#.', '..#..'],
-    W: ['#...#', '#...#', '#...#', '#...#', '#.#.#', '##.##', '#...#'],
-    X: ['#...#', '#...#', '.#.#.', '..#..', '.#.#.', '#...#', '#...#'],
-    Y: ['#...#', '#...#', '.#.#.', '..#..', '..#..', '..#..', '..#..'],
-    Z: ['#####', '....#', '...#.', '..#..', '.#...', '#....', '#####'],
-    '?': ['.###.', '#...#', '....#', '..##.', '..#..', '.....', '..#..'],
-    ',': ['.....', '.....', '.....', '.....', '..##.', '..#..', '.#...'],
-    ' ': ['.....', '.....', '.....', '.....', '.....', '.....', '.....'],
-  }
-
-  /* Space and comma get a narrow advance. Setting them at full width is
-     what pushed the longest line off the edge of the card. */
-  const NARROW = { ' ': 4, ',': 4 }
-
-  function text(g, str, x, y, s, col) {
-    g.fillStyle = col
-    let cx = x
-    for (const ch of str.toUpperCase()) {
-      const gl = FONT[ch]
-      if (gl) {
-        for (let r = 0; r < 7; r++) {
-          for (let c = 0; c < 5; c++) {
-            if (gl[r][c] === '#') g.fillRect(cx + c * s, y + r * s, s, s)
-          }
-        }
-      }
-      cx += (NARROW[ch] || 6) * s
-    }
-  }
-
-  /* ---- 01 ----
-     A banner: a picture, two lines of copy and a button, with carousel
-     dots underneath saying there are more of them.
-
-     This was a strip of film with three frames, on the strength of the
-     "lights, camera" in the title. That is a joke about the name rather
-     than a picture of the work — anybody who has not read the title
-     sees a film strip on a project about banner design. So: an actual
-     banner. Look twice, and the creative in it is the rooftop cat. */
-  function drawBanners(g, p, y0, h) {
-    const x = 13
-    const w = 150
-    const bh = Math.min(28, h - 12)
-
-    g.fillStyle = p.hi
-    g.fillRect(x, y0, w, bh)
-
-    // the picture well, and the cat who is the creative in this one
-    g.fillStyle = p.ink
-    g.fillRect(x + 4, y0 + 4, 26, bh - 8)
-    sprite(
-      g,
-      [
-        '.##......##.',
-        '.###....###.',
-        '.##########.',
-        '############',
-        '############',
-        '############',
-        '############',
-        '.###########',
-        '.###########',
-        '.###########',
-        '.####..#####',
-      ],
-      x + 11,
-      y0 + Math.floor((bh - 11) / 2),
-      { '#': p.hi }
-    )
-
-    // two lines of copy
-    g.fillStyle = p.ink
-    g.fillRect(x + 36, y0 + 8, 58, 5)
-    g.fillRect(x + 36, y0 + 17, 40, 4)
-
-    // and the button
-    g.fillRect(x + 102, y0 + 8, 42, bh - 16)
-    g.fillStyle = p.hi
-    g.fillRect(x + 109, y0 + Math.floor(bh / 2) - 2, 28, 4)
-
-    /* Three dots: this banner is one of a set, which is the subject of
-       the project rather than a decoration on it. */
-    const dy = y0 + bh + 6
-    for (let d = 0; d < 3; d++) {
-      g.fillStyle = d === 0 ? p.hi : p.lo
-      g.fillRect(x + 62 + d * 12, dy, 6, 5)
-    }
-  }
-
-  /* ---- 02 ----
-     A play key and a level meter. A player is a shape everybody can
-     already read, so the pixels go on the two marks that say it.
-     Look twice: the meter is the Tokyo skyline standing behind this
-     page, and the tall bar keeps its spire. */
-  function drawPlayer(g, p, y0, h) {
-    const x = 13
-    const base = y0 + h - 4
-    const key = Math.min(30, h - 12)
-
-    g.fillStyle = p.lo
-    g.fillRect(x, base - key, key, key)
-    g.fillStyle = p.bg
-    g.fillRect(x + 3, base - key + 3, key - 6, key - 6)
-    g.fillStyle = p.hi
-    const tri = Math.floor((key - 10) / 2)
-    for (let i = 0; i < tri; i++) {
-      const hh = tri * 2 - 1 - i * 2
-      g.fillRect(x + 8 + i, base - Math.floor(key / 2) - Math.floor(hh / 2), 1, hh)
-    }
-
-    const SKY = [8, 12, 10, 18, 14, 24, 16, 12, 20, 40, 18, 14, 24, 12, 22, 16, 10, 14, 28, 12, 8, 18, 10, 16]
-    const top = h - 10
-    for (let i = 0; i < SKY.length; i++) {
-      const bh = Math.max(2, Math.round((SKY[i] / 40) * top))
-      g.fillStyle = i === 9 ? p.hi : p.lo
-      g.fillRect(x + 36 + i * 5, base - bh, 3, bh)
-    }
-    // the tower keeps its spire
-    g.fillStyle = p.hi
-    g.fillRect(x + 82, base - top - 5, 1, 5)
-  }
-
-  /* ---- 03 ----
-     Four services on the left, one screen on the right, and a play
-     triangle on the screen.
-
-     The screen used to show the moon over a skyline. That is a nice
-     picture and it says nothing about subscriptions — a viewer reads
-     "night scene, on a television". What the work did was put four
-     services behind one thing you press play on, so that is what is
-     drawn now. Look twice: the moon is still up there, top right of
-     the screen, keeping out of the way. */
-  function drawScreens(g, p, y0, h) {
-    const t = Math.min(18, Math.floor((h - 3) / 2))
-    const cells = [
-      [13, y0],
-      [16 + t, y0],
-      [13, y0 + t + 3],
-      [16 + t, y0 + t + 3],
-    ]
-    for (const [cx, cy] of cells) {
-      g.fillStyle = p.lo
-      g.fillRect(cx, cy, t, t)
-      g.fillStyle = p.ink
-      g.fillRect(cx + 2, cy + 2, t - 4, t - 4)
-    }
-
-    // into one — the point goes on the right, towards the screen
-    const mid = y0 + t + 1
-    g.fillStyle = p.hi
-    for (let i = 0; i < 8; i++) {
-      g.fillRect(56 + i, mid - (7 - i), 2, 2)
-      g.fillRect(56 + i, mid + (7 - i), 2, 2)
-    }
-
-    // the screen
-    const sx = 70
-    const sw = 93
-    const sh = h - 2
-    g.fillStyle = p.lo
-    g.fillRect(sx, y0, sw, sh)
-    g.fillStyle = p.ink
-    g.fillRect(sx + 3, y0 + 3, sw - 6, sh - 6)
-
-    // one play triangle, which is what the four of them became
-    g.fillStyle = p.hi
-    const ph = Math.min(11, Math.floor((sh - 12) / 2))
-    for (let i = 0; i < ph; i++) {
-      const hh = ph * 2 - 1 - i * 2
-      g.fillRect(
-        sx + Math.floor(sw / 2) - Math.floor(ph / 2) + i,
-        y0 + Math.floor(sh / 2) - Math.floor(hh / 2),
-        1,
-        hh
-      )
-    }
-
-    // the moon, still up there
-    g.fillStyle = '#f4ecd8'
-    for (let yy = -3; yy <= 3; yy++) {
-      for (let xx = -3; xx <= 3; xx++) {
-        if (xx * xx + yy * yy <= 9) g.fillRect(sx + sw - 13 + xx, y0 + 12 + yy, 1, 1)
-      }
-    }
-  }
-
-  /* ---- 04 ----
-     Two options and a decision: one card lit, one not, and a tick on
-     the corner of the one that won.
-     Look twice: the coin is still in the air on the right. It is the
-     method the project was built to replace. */
-  function drawChoice(g, p, y0, h) {
-    const cw = 56
-    const ch = h - 4
-
-    for (let i = 0; i < 2; i++) {
-      const cx = 13 + i * (cw + 6)
-      const on = i === 1
-      g.fillStyle = on ? p.hi : p.lo
-      g.fillRect(cx, y0, cw, ch)
-      g.fillStyle = p.ink
-      g.fillRect(cx + 3, y0 + 3, cw - 6, ch - 6)
-      g.fillStyle = on ? p.hi : p.lo
-      g.fillRect(cx + 8, y0 + 10, 24, 6)
-    }
-
-    // the tick, on the corner of the one that won
-    const bx = 13 + cw + 6 + cw - 4
-    const by = y0 + 4
-    for (let yy = -9; yy <= 9; yy++) {
-      for (let xx = -9; xx <= 9; xx++) {
-        const d = xx * xx + yy * yy
-        if (d > 81) continue
-        g.fillStyle = d > 60 ? p.bg : p.hi
-        g.fillRect(bx + xx, by + yy, 1, 1)
-      }
-    }
-    sprite(
-      g,
-      ['......#', '.....##', '#...##.', '##.##..', '.####..', '..##...'],
-      bx - 7,
-      by - 6,
-      { '#': p.ink },
-      2
-    )
-
-    // and the coin, still turning
-    const cx = 152
-    const cy = y0 + Math.floor(ch / 2) + 4
-    for (let yy = -7; yy <= 7; yy++) {
-      for (let xx = -7; xx <= 7; xx++) {
-        const d = xx * xx + yy * yy
-        if (d > 49) continue
-        g.fillStyle = d > 30 ? p.hi : p.lo
-        g.fillRect(cx + xx, cy + yy, 1, 1)
-      }
-    }
-    text(g, '?', cx - 2, cy - 3, 1, p.hi)
-    g.fillStyle = p.lo
-    g.fillRect(cx - 10, cy - 4, 1, 4)
-    g.fillRect(cx + 10, cy - 1, 1, 4)
-  }
-
-  const COVER_ART = [drawBanners, drawPlayer, drawScreens, drawChoice]
-
-  /* Three lines for the first one. Its title is the longest of the four
-     and will not go across the card at a size worth reading. */
-  const COVER_TITLE = [
-    ['LIGHTS,', 'CAMERA,', 'BANNERS'],
-    ['THE SOUND', 'OF STYLE'],
-    ['EVERYTHING,', 'ALL AT ONCE'],
-    ['HOW TO', 'DECIDE?'],
-  ]
-
-  function drawCover(g, W, H) {
-    const i = (((currentSeed - 1) % 4) + 4) % 4
-    const p = PAL.cover[i]
-
-    g.fillStyle = p.bg
-    g.fillRect(0, 0, W, H)
-
-    const L = 5
-    const R = W - 6
-    const B = H - 6
-
-    /* The title sets first and everything else is measured off it, so a
-       three-line title and a two-line one both sit correctly without
-       either being given its own layout. */
-    const lines = COVER_TITLE[i]
-    const S = 2
-    const LH = 7 * S
-    const GAP = 2
-    let ty = 8
-    for (const line of lines) {
-      text(g, line, L + 5, ty, S, p.hi)
-      ty += LH + GAP
-    }
-
-    const rule = ty + 1
-    g.fillStyle = p.grid
-    g.fillRect(L, rule, R - L + 1, 1)
-
-    const y0 = rule + 7
-    COVER_ART[i](g, p, y0, B - y0)
-
-    /* Scanlines over the picture only.
-
-       They used to run over the whole card, and a row of shadow every
-       third row across a fourteen-row letter takes four bites out of
-       it — which is most of why the titles were hard to read. Below the
-       rule they are texture; above it they were damage. */
-    g.fillStyle = 'rgba(0, 0, 0, 0.12)'
-    for (let y = rule + 2; y < B; y += 3) g.fillRect(L + 1, y, R - L - 1, 1)
-  }
-
   const KIND = {
     work: drawWork,
-    cover: drawCover,
     book: drawBook,
     game: drawGame,
     film: drawFilm,
@@ -1008,8 +665,8 @@
 
     // Internal resolution is fixed and small; CSS stretches it with
     // image-rendering: pixelated, so the art scales without softening.
-    const W = kind === 'work' || kind === 'cover' ? 176 : kind === 'gb' ? 104 : kind === 'cart' ? 152 : 96
-    const H = kind === 'cover' ? 110 : kind === 'work' ? 99 : kind === 'gb' ? 150 : kind === 'cart' ? 112 : 132
+    const W = kind === 'work' ? 176 : kind === 'gb' ? 104 : kind === 'cart' ? 152 : 96
+    const H = kind === 'work' ? 99 : kind === 'gb' ? 150 : kind === 'cart' ? 112 : 132
     cv.width = W
     cv.height = H
 
